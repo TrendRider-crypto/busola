@@ -1,0 +1,550 @@
+<!doctype html>
+<html lang="pl" class="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Busola</title>
+<meta name="theme-color" content="#0d0e11">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Busola">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%230d0e11'/%3E%3Ccircle cx='50' cy='50' r='34' fill='%23d4af5a'/%3E%3Cg transform='rotate(40 50 50)'%3E%3Cpath d='M50 24 L58 50 L42 50 Z' fill='%231a1405'/%3E%3Cpath d='M50 76 L58 50 L42 50 Z' fill='%231a1405' opacity='.45'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif&display=swap">
+<script>
+// motyw ustawiany zanim strona się narysuje (bez mignięcia)
+(function () {
+  try {
+    var t = localStorage.getItem('busola_theme');
+    if (t !== 'light' && t !== 'dark') t = (window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
+    document.documentElement.className = t;
+    var m = document.querySelector('meta[name=theme-color]'); if (m) m.content = t === 'light' ? '#f5f2ea' : '#0d0e11';
+  } catch (e) { /* zostaje ciemny */ }
+})();
+</script>
+<style>
+:root { color-scheme: dark; }
+.dark {
+  --bg: #0d0e11; --surface: #16171c; --surface2: #1e2027; --line: #272a33;
+  --fg: #f1ede4; --muted: #8e919b;
+  --gold: #d4af5a; --gold-ink: #1a1405; --gold-soft: rgba(212,175,90,.13); --gold-line: rgba(212,175,90,.45);
+  --up: #4cc38a; --up-soft: rgba(76,195,138,.15); --down: #ef6b5b; --down-soft: rgba(239,107,91,.15);
+  color-scheme: dark;
+}
+.light {
+  --bg: #f5f2ea; --surface: #ffffff; --surface2: #efebe1; --line: #e3ded1;
+  --fg: #1b1a17; --muted: #6b675d;
+  --gold: #8a6510; --gold-ink: #ffffff; --gold-soft: rgba(138,101,16,.10); --gold-line: rgba(138,101,16,.4);
+  --up: #0f7752; --up-soft: rgba(15,119,82,.12); --down: #b93526; --down-soft: rgba(185,53,38,.11);
+  color-scheme: light;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; background: var(--bg); color: var(--fg); }
+body { font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif; font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased; }
+button { font-family: inherit; color: inherit; cursor: pointer; }
+a { color: inherit; }
+[hidden] { display: none !important; }
+.up { color: var(--up); }
+.down { color: var(--down); }
+
+.app { max-width: 520px; margin: 0 auto; min-height: 100vh; padding-bottom: calc(48px + env(safe-area-inset-bottom, 0px)); }
+.hdr { padding: calc(env(safe-area-inset-top, 0px) + 28px) 20px 0; display: flex; align-items: center; justify-content: space-between; }
+.brand { display: flex; align-items: center; gap: 10px; font-family: 'Instrument Serif', Georgia, serif; font-size: 32px; line-height: 1; letter-spacing: -.01em; }
+.logo { flex: none; color: var(--gold); }
+.hbtns { display: flex; gap: 8px; }
+.ibtn { width: 44px; height: 44px; padding: 0; border-radius: 14px; border: 1px solid var(--line); background: var(--surface); display: flex; align-items: center; justify-content: center; }
+.ibtn:active { background: var(--surface2); }
+.spin svg { animation: sp 1s linear infinite; }
+@keyframes sp { to { transform: rotate(360deg); } }
+.meta { padding: 12px 20px 0; display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--muted); min-height: 30px; }
+.dot { width: 6px; height: 6px; flex: none; border-radius: 50%; background: var(--up); }
+.dot.busy { background: var(--gold); }
+.dot.err { background: var(--down); }
+.bar { height: 2px; margin: 8px 20px 0; border-radius: 2px; background: var(--line); overflow: hidden; }
+.bar i { display: block; height: 100%; width: 0; background: var(--gold); transition: width .25s; }
+
+.seg { margin: 16px 20px 0; padding: 4px; display: flex; gap: 4px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); }
+.segb { flex: 1; height: 40px; border: 0; border-radius: 12px; background: transparent; color: var(--muted); font-size: 13.5px; font-weight: 600; }
+.segb.on { background: var(--gold-soft); color: var(--gold); box-shadow: inset 0 0 0 1px var(--gold-line); }
+
+.sect { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 26px 20px 12px; }
+.sect h2 { margin: 0; font-size: 12.5px; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
+.sect span { font-size: 12px; color: var(--muted); text-align: right; }
+
+.car { display: flex; gap: 12px; padding: 0 20px 2px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
+.car::-webkit-scrollbar { display: none; }
+.tcard { flex: 0 0 min(292px, 80vw); scroll-snap-align: start; padding: 16px; border-radius: 22px; background: var(--surface); border: 1px solid var(--line); box-shadow: inset 0 1px 0 var(--gold-line); text-align: left; display: block; }
+.light .tcard, .light .list, .light .dcard { box-shadow: 0 1px 3px rgba(40,30,10,.07), inset 0 1px 0 var(--gold-line); }
+.tcard.sel { box-shadow: inset 0 0 0 1px var(--gold); }
+.tc-head { display: flex; align-items: center; gap: 12px; }
+.tc-name { flex: 1; min-width: 0; }
+.mono { position: relative; width: 40px; height: 40px; flex: none; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--surface2); border: 1px solid var(--line); color: var(--gold); font-size: 15px; font-weight: 600; overflow: hidden; }
+.mono img { position: absolute; inset: 6px; width: calc(100% - 12px); height: calc(100% - 12px); object-fit: contain; }
+.mono.has span { visibility: hidden; }
+.sym { font-size: 17px; font-weight: 650; letter-spacing: .01em; }
+.sym small { font-size: 12px; font-weight: 500; color: var(--muted); margin-left: 3px; }
+.dir { margin-top: 2px; font-size: 12px; font-weight: 600; }
+.tc-price { display: flex; align-items: baseline; justify-content: space-between; margin-top: 16px; }
+.big { font-size: 30px; font-weight: 650; letter-spacing: -.02em; }
+.chg { font-size: 14px; font-weight: 600; }
+.spark { display: block; }
+.spark polyline, .chart polyline { vector-effect: non-scaling-stroke; }
+.tc-spark { margin-top: 10px; width: 100%; height: 48px; }
+.tfs { display: flex; gap: 6px; margin-top: 14px; }
+.tf { flex: 1; height: 30px; border-radius: 10px; background: var(--surface2); display: flex; align-items: center; justify-content: center; gap: 5px; font-size: 12px; font-weight: 600; color: var(--muted); }
+.tf b { font-size: 10px; }
+.tf.up b { color: var(--up); }
+.tf.down b { color: var(--down); }
+.oi { display: flex; gap: 8px; margin-top: 8px; }
+.oic { flex: 1; display: flex; justify-content: space-between; padding: 8px 10px; border-radius: 10px; background: var(--surface2); font-size: 12px; color: var(--muted); }
+.oic b { font-weight: 650; }
+
+.pill { display: inline-flex; align-items: center; height: 24px; padding: 0 10px; border-radius: 999px; font-size: 11px; font-weight: 700; letter-spacing: .06em; white-space: nowrap; }
+.pill.s { height: 20px; padding: 0 8px; font-size: 10px; }
+.p-trig { background: var(--gold); color: var(--gold-ink); }
+.p-wait { color: var(--gold); box-shadow: inset 0 0 0 1px var(--gold-line); }
+.p-no { background: var(--surface2); color: var(--muted); }
+
+.list { margin: 0 20px; border-radius: 20px; background: var(--surface); border: 1px solid var(--line); overflow: hidden; }
+.item { border-top: 1px solid var(--line); }
+.item:first-child { border-top: 0; }
+.row { display: flex; align-items: center; gap: 10px; width: 100%; padding: 12px 14px; border: 0; background: transparent; text-align: left; }
+.rname { flex: 1; min-width: 0; }
+.rsym { font-size: 15px; font-weight: 650; }
+.rsub { display: flex; align-items: center; gap: 6px; margin-top: 4px; font-size: 11.5px; font-weight: 600; }
+.rspark { width: 56px; height: 24px; flex: none; }
+.rprice { width: 80px; text-align: right; flex: none; }
+.item.open .row { background: var(--surface2); }
+.rsub { flex-wrap: wrap; }
+@media (max-width: 370px) { .rspark { display: none; } }
+.rp { font-size: 15px; font-weight: 600; }
+.rc { margin-top: 2px; font-size: 12.5px; font-weight: 600; }
+.chev { flex: none; color: var(--muted); display: flex; }
+.item.open .chev svg { transform: rotate(180deg); }
+
+.panel { padding: 2px 14px 18px; }
+.dcard { margin: 12px 20px 0; padding: 4px 14px 18px; border-radius: 22px; background: var(--surface); border: 1px solid var(--line); box-shadow: inset 0 1px 0 var(--gold-line); }
+.lab { margin: 16px 0 8px; font-size: 11px; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
+.grid5 { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.cell { padding: 9px 0; border-radius: 12px; background: var(--surface2); text-align: center; }
+.cell small { display: block; margin-bottom: 2px; font-size: 11px; color: var(--muted); }
+.cell b { font-size: 12.5px; }
+.chartw { position: relative; }
+.chart { display: block; width: 100%; height: 110px; }
+.mk { position: absolute; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; border: 2px solid var(--surface); }
+.mk.hi { background: var(--up); }
+.mk.lo { background: var(--down); }
+.cl { display: flex; justify-content: space-between; margin-top: 6px; font-size: 11.5px; color: var(--muted); }
+.cond { display: flex; align-items: flex-start; gap: 10px; padding: 7px 0; font-size: 13px; line-height: 1.4; }
+.ck { flex: none; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-top: 1px; }
+.ck.ok { background: var(--up-soft); color: var(--up); }
+.ck.no { background: var(--down-soft); color: var(--down); }
+.ck.na { background: var(--surface2); color: var(--muted); }
+.cta { display: flex; align-items: center; justify-content: center; width: 100%; height: 46px; margin-top: 14px; border-radius: 14px; background: var(--gold); color: var(--gold-ink); font-size: 14px; font-weight: 650; text-decoration: none; }
+.loading { padding: 18px 0 6px; font-size: 13px; color: var(--muted); }
+
+.empty { margin: 0 20px; padding: 18px; border-radius: 18px; background: var(--surface); border: 1px dashed var(--line); font-size: 13px; line-height: 1.5; color: var(--muted); }
+.banner { margin: 14px 20px 0; padding: 12px 14px; border-radius: 14px; background: var(--down-soft); color: var(--fg); font-size: 13px; line-height: 1.45; display: flex; gap: 10px; align-items: center; justify-content: space-between; }
+.banner.demo { background: var(--gold-soft); }
+.banner button { flex: none; height: 34px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--gold-line); background: transparent; color: var(--gold); font-size: 12.5px; font-weight: 600; }
+.fine { margin: 18px 20px 0; font-size: 11.5px; line-height: 1.55; color: var(--muted); }
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+<noscript><p style="padding:24px">Busola wymaga włączonego JavaScriptu.</p></noscript>
+<script>
+(() => {
+'use strict';
+
+// ===================== LOGIC-START =====================
+// Czysta logika (bez przeglądarki): kierunek trendu, zmiany cen, status coina, ranking Top 3, formatowanie liczb.
+const N_PIV = 3;            // pivot N, jak w terminalu
+const OI_MIN = 0.1;         // OI musi wzrosnąć o więcej niż 0,1% w oknie, żeby uznać wzrost za potwierdzenie
+
+  function findPivots(c, N) {
+    const out = [];
+    for (let i = N; i < c.length - N; i++) {
+      let isH = true, isL = true;
+      for (let k = 1; k <= N; k++) {
+        if (!(c[i].high > c[i - k].high && c[i].high >= c[i + k].high)) isH = false;
+        if (!(c[i].low < c[i - k].low && c[i].low <= c[i + k].low)) isL = false;
+        if (!isH && !isL) break;
+      }
+      if (isH) out.push({ idx: i, type: 'H', price: c[i].high, confirm: i + N });
+      if (isL) out.push({ idx: i, type: 'L', price: c[i].low, confirm: i + N });
+    }
+    // etykiety HH/LH/HL/LL względem poprzedniego pivota tego samego typu
+    let pH = null, pL = null;
+    out.sort((a, b) => a.idx - b.idx).forEach(p => {
+      if (p.type === 'H') { p.label = pH == null ? 'H' : (p.price > pH ? 'HH' : 'LH'); pH = p.price; }
+      else { p.label = pL == null ? 'L' : (p.price > pL ? 'HL' : 'LL'); pL = p.price; }
+    });
+    return out;
+  }
+
+  function analyze(c, N) {
+    const pivots = findPivots(c, N);
+    const byConfirm = new Map();
+    pivots.forEach(p => { if (!byConfirm.has(p.confirm)) byConfirm.set(p.confirm, []); byConfirm.get(p.confirm).push(p); });
+    let lastH = null, lastL = null, trend = 0;
+    const events = [];
+    for (let i = 0; i < c.length; i++) {
+      (byConfirm.get(i) || []).forEach(p => {
+        if (p.type === 'H') lastH = { idx: p.idx, price: p.price, broken: false };
+        else lastL = { idx: p.idx, price: p.price, broken: false };
+      });
+      const cl = c[i].close;
+      if (lastH && !lastH.broken && cl > lastH.price) {
+        events.push({ idx: i, from: lastH.idx, price: lastH.price, dir: 1, kind: trend === -1 ? 'CHoCH' : 'BOS' });
+        trend = 1; lastH.broken = true;
+      } else if (lastL && !lastL.broken && cl < lastL.price) {
+        events.push({ idx: i, from: lastL.idx, price: lastL.price, dir: -1, kind: trend === 1 ? 'CHoCH' : 'BOS' });
+        trend = -1; lastL.broken = true;
+      }
+    }
+    return { pivots, events, trend, lastH, lastL };
+  }
+
+
+const trendOf = c => (c && c.length >= 30) ? analyze(c, N_PIV).trend : 0;
+const closedOnly = (c, now) => (c.length && c[c.length - 1].closeTime > now) ? c.slice(0, -1) : c;
+// zamknięcie ostatniej świecy, która zamknęła się najpóźniej ms milisekund temu (cena sprzed okresu); null gdy historia za krótka
+function refClose(c, now, ms) {
+  const t = now - ms;
+  for (let i = c.length - 1; i >= 0; i--) if (c[i].closeTime <= t) return c[i].close;
+  return null;
+}
+const pct = (a, b) => (a != null && b != null && b > 0 && isFinite(a) && isFinite(b)) ? (a / b - 1) * 100 : null;
+
+// OI w kontraktach (sumOpenInterest), nie w dolarach: wartość w dolarach zmienia się razem z ceną i zafałszowałaby pytanie "czy OI rośnie razem z ceną".
+// h: próbki co 5 minut, rosnąco. 12 próbek = 1H, 48 próbek = 4H.
+function oiChanges(h) {
+  if (!Array.isArray(h) || h.length < 13) return { oi1h: null, oi4h: null };
+  const v = h.map(x => +x.sumOpenInterest), last = v[v.length - 1];
+  return { oi1h: pct(last, v[v.length - 13]), oi4h: v.length >= 49 ? pct(last, v[v.length - 49]) : null };
+}
+
+// Status: NO TRADE = kierunki 1D/4H/1H/15M nie są zgodne; TRIGGER = zgodne i OI rośnie razem z ceną na 1H i 4H
+// (LONG: cena rośnie, OI rośnie; SHORT: cena spada, OI rośnie); WAIT = zgodne, ale OI nie potwierdza.
+function classify(x) {
+  const arr = [x.t.d1, x.t.h4, x.t.h1, x.t.m15];
+  if (!(x.t.d1 !== 0 && arr.every(v => v === x.t.d1))) return { status: 'NO TRADE', dir: 0, aligned: false, conds: [] };
+  const dir = x.t.d1;
+  const mk = (label, p, oi) => {
+    if (p == null || oi == null) return { label, na: true, ok: false, p, oi };
+    const pOk = dir > 0 ? p > 0 : p < 0, oiOk = oi > OI_MIN;
+    return { label, p, oi, pOk, oiOk, ok: pOk && oiOk };
+  };
+  const conds = [mk('1H', x.p1h, x.oi1h), mk('4H', x.p4h, x.oi4h)];
+  return { status: conds[0].ok && conds[1].ok ? 'TRIGGER' : 'WAIT', dir, aligned: true, conds };
+}
+
+// Top 3: najpierw TRIGGER wg zmiany OI na 4H (malejąco), potem WAIT wg liczby spełnionych warunków i zmiany OI na 4H. Remis: wolumen 24h.
+function rankTop(items, n = 3) {
+  const okN = i => i.conds.filter(c => c.ok).length, oi4 = i => (i.oi4h == null ? -Infinity : i.oi4h);
+  return items.filter(i => i.status !== 'NO TRADE').sort((a, b) => {
+    const ta = a.status === 'TRIGGER' ? 1 : 0, tb = b.status === 'TRIGGER' ? 1 : 0;
+    if (ta !== tb) return tb - ta;
+    if (!ta && okN(a) !== okN(b)) return okN(b) - okN(a);
+    if (oi4(a) !== oi4(b)) return oi4(b) - oi4(a);
+    return (b.vol || 0) - (a.vol || 0);
+  }).slice(0, n);
+}
+
+// formatowanie po polsku: spacja jako separator tysięcy, przecinek dziesiętny
+function groupInt(s) { return s.replace(/\B(?=(\d{3})+(?!\d))/g, ' '); }
+function fmtPrice(v) {
+  if (v == null || !isFinite(v)) return '–';
+  const a = Math.abs(v), d = a >= 10 ? 2 : a >= 1 ? 3 : a >= 0.1 ? 4 : a >= 0.01 ? 5 : 6;
+  const [i, f] = Math.abs(v).toFixed(d).split('.');
+  return (v < 0 ? '−' : '') + groupInt(i) + ',' + f;
+}
+function fmtPct(v) {
+  if (v == null || !isFinite(v)) return '–';
+  const d = Math.abs(v) < 0.1 && v !== 0 ? 2 : 1, s = Math.abs(v).toFixed(d).replace('.', ',');
+  return (v > 0 ? '+' : v < 0 ? '−' : '') + s + '%';
+}
+const arrow = d => d > 0 ? '▲' : d < 0 ? '▼' : '–';
+const cls = d => d > 0 ? 'up' : d < 0 ? 'down' : '';
+// ===================== LOGIC-END =====================
+
+// ---------- sieć ----------
+const BASE = 'https://fapi.binance.com';
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const DUR = { '15m': 900, '1h': 3600, '4h': 14400, '1d': 86400 };
+async function getJSON(url, tries = 3) {
+  for (let a = 0; a < tries; a++) {
+    const ctl = new AbortController(), to = setTimeout(() => ctl.abort(), 15000);
+    try {
+      const r = await fetch(url, { signal: ctl.signal }); clearTimeout(to);
+      if (r.status === 429 || r.status === 418) { await sleep(1500 * (a + 1)); continue; }
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return await r.json();
+    } catch (e) { clearTimeout(to); if (a === tries - 1) throw e; await sleep(500 * (a + 1)); }
+  }
+  throw new Error('limit zapytań giełdy');
+}
+const mapK = k => k.map(x => ({ time: Math.floor(x[0] / 1000), open: +x[1], high: +x[2], low: +x[3], close: +x[4], volume: +x[5], closeTime: x[6] }));
+const S = { demo: false, coins: [], D: {}, filter: 'all', open: null, scanning: false, prog: 0, progTxt: '', ts: 0, err: '', note: '' };
+try { const f = localStorage.getItem('busola_filter'); if (f === 'long' || f === 'short' || f === 'all') S.filter = f; } catch (e) { /* tylko w pamięci */ }
+
+let demoNow = 0;
+function hashStr(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+function rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+// dane DEMO: sztuczne (losowy spacer z dryfem zależnym od coina), tylko żeby zobaczyć wygląd
+function demoKlines(sym, tf, limit) {
+  const dur = DUR[tf] * 1000, now = demoNow, h = hashStr(sym), r = rng(h ^ hashStr(tf)), base = 0.5 + (h % 5000) / 5, drift = (((h >>> 8) % 200) - 100) / 100 * 0.0009, out = [];
+  let p = base * (1 - drift * limit * 0.5), t0 = Math.floor(now / dur) * dur - (limit - 1) * dur;
+  for (let i = 0; i < limit; i++) {
+    const o = p; p = p * (1 + drift + (r() - 0.5) * 0.012); const hi = Math.max(o, p) * (1 + r() * 0.003), lo = Math.min(o, p) * (1 - r() * 0.003);
+    out.push({ time: Math.floor((t0 + i * dur) / 1000), open: o, high: hi, low: lo, close: p, volume: 1000 + r() * 1000, closeTime: t0 + (i + 1) * dur - 1 });
+  }
+  return out;
+}
+const DEMO_SYMS = ['BTC', 'ETH', 'SOL', 'XRP', 'BNB', 'DOGE', 'ADA', 'AVAX', 'LINK', 'TRX', 'LTC', 'DOT', 'SUI', 'NEAR', 'APT', 'ARB', 'OP', 'INJ', 'ATOM', 'FIL', 'AAVE', 'UNI', 'TON', 'HBAR', 'ETC'];
+async function klines(sym, tf, limit) { return S.demo ? demoKlines(sym, tf, limit) : mapK(await getJSON(`${BASE}/fapi/v1/klines?symbol=${sym}&interval=${tf}&limit=${limit}`)); }
+async function oiHist(sym) {
+  if (S.demo) { const r = rng(hashStr(sym + 'oi')), up = r() > 0.35; let v = 1e6; return Array.from({ length: 49 }, () => ({ sumOpenInterest: (v *= 1 + (up ? 0.0012 : -0.0004) + (r() - 0.5) * 0.001) })); }
+  return getJSON(`${BASE}/futures/data/openInterestHist?symbol=${sym}&period=5m&limit=49`);
+}
+
+const TRADFI_RE = /^(SPY|QQQ|SQQQ|TQQQ|IWM|DIA|META|AMD|NVDA|TSLA|AAPL|MSFT|AMZN|GOOGL?|NFLX|COIN|MSTR|HOOD|PLTR|INTC|ORCL|BABA|XAU|XAG|XPT|XPD|CL|BZ|NATGAS|EURUSD|GBPUSD|USDJPY)USDT$/;
+const STABLE_RE = /^(USDC|FDUSD|TUSD|BUSD|USDP|DAI|EUR|AEUR)USDT$/;
+async function loadCoins() {
+  if (S.demo) { demoNow = Date.now(); return DEMO_SYMS.map((s, i) => { const k = demoKlines(s + 'USDT', '1h', 300), z = k.slice(-25); return { sym: s + 'USDT', last: k[299].close, chg: (k[299].close / z[0].close - 1) * 100, vol: 1e9 / (i + 1), hi: Math.max(...z.map(x => x.high)), lo: Math.min(...z.map(x => x.low)) }; }); }
+  const [t, ei] = await Promise.all([getJSON(`${BASE}/fapi/v1/ticker/24hr`), getJSON(`${BASE}/fapi/v1/exchangeInfo`).catch(() => null)]);
+  const tf = new Set(); if (ei && ei.symbols) ei.symbols.forEach(x => { if (x.underlyingType && x.underlyingType !== 'COIN') tf.add(x.symbol); });
+  return t.filter(x => x.symbol.endsWith('USDT') && !x.symbol.includes('_') && !STABLE_RE.test(x.symbol) && !tf.has(x.symbol) && !TRADFI_RE.test(x.symbol))
+    .map(x => ({ sym: x.symbol, last: +x.lastPrice, chg: +x.priceChangePercent, vol: +x.quoteVolume, hi: +x.highPrice, lo: +x.lowPrice }))
+    .sort((a, b) => b.vol - a.vol).slice(0, 100);
+}
+
+// ---------- obliczenia na coinie ----------
+function seriesOf(c, n) { const s = c.slice(-n).map(x => x.close); return s; }
+function chartData(d) {
+  // wykres 24h: z 15M (96 świec) gdy są, inaczej z 1H (24 świece); markery na najniższym i najwyższym zamknięciu serii
+  const c = d.c15 && d.c15.length >= 96 ? d.c15.slice(-96) : d.c1h ? d.c1h.slice(-24) : null;
+  if (!c || c.length < 8) return null;
+  const v = c.map(x => x.close); v[v.length - 1] = d.last;
+  const lo = Math.min(...v), hi = Math.max(...v), span = (hi - lo) || 1, n = v.length;
+  const xy = v.map((x, i) => [i / (n - 1) * 322, 100 - (x - lo) / span * 90]);
+  let iMin = 0, iMax = 0; v.forEach((x, i) => { if (x < v[iMin]) iMin = i; if (x > v[iMax]) iMax = i; });
+  return { xy, iMin, iMax, low: Math.min(...c.map(x => x.low)), high: Math.max(...c.map(x => x.high)) };
+}
+function applyChanges(d, now) {
+  const r1 = d.c15 ? refClose(d.c15, now, 3600e3) : (d.c1h ? refClose(d.c1h, now, 3600e3) : null);
+  d.ch = { h1: pct(d.last, r1), d1: d.chg24, w1: pct(d.last, refClose(d.cd, now, 7 * 86400e3)), m1: pct(d.last, refClose(d.cd, now, 30 * 86400e3)), y1: pct(d.last, refClose(d.cd, now, 365 * 86400e3)) };
+  d.p1h = d.c15 ? pct(d.last, refClose(d.c15, now, 3600e3)) : null;
+  d.p4h = d.c15 ? pct(d.last, refClose(d.c15, now, 4 * 3600e3)) : null;
+}
+function finalize(d) {
+  const r = classify({ t: d.t, p1h: d.p1h, p4h: d.p4h, oi1h: d.oi1h, oi4h: d.oi4h });
+  Object.assign(d, { status: r.status, dir: r.dir, aligned: r.aligned, conds: r.conds });
+}
+
+async function stage1(c, now) {
+  const [kd, k4, k1] = await Promise.all([klines(c.sym, '1d', 400), klines(c.sym, '4h', 300), klines(c.sym, '1h', 300)]);
+  const d = { sym: c.sym, last: c.last, chg24: c.chg, vol: c.vol, hi24: c.hi, lo24: c.lo, cd: kd, c1h: k1, t: { d1: trendOf(closedOnly(kd, now)), h4: trendOf(closedOnly(k4, now)), h1: trendOf(closedOnly(k1, now)), m15: 0 }, spark: seriesOf(k1, 24).concat([c.last]) };
+  d.pending = d.t.d1 !== 0 && d.t.d1 === d.t.h4 && d.t.d1 === d.t.h1;
+  applyChanges(d, now); d.status = 'NO TRADE'; d.dir = 0; d.aligned = false; d.conds = [];
+  return d;
+}
+async function stage2(d, now) {
+  const [k15, oi] = await Promise.all([klines(d.sym, '15m', 300), oiHist(d.sym).then(h => oiChanges(h)).catch(() => ({ oi1h: null, oi4h: null, fail: true }))]);
+  d.c15 = k15; d.t.m15 = trendOf(closedOnly(k15, now)); d.oi1h = oi.oi1h; d.oi4h = oi.oi4h; d.oiFail = !!oi.fail; d.pending = false;
+  applyChanges(d, now); finalize(d);
+}
+async function lazy15(d) {   // po rozwinięciu coina, który nie przeszedł do 2. etapu: tylko świece 15M do wykresu i zmiany 1H
+  if (d.c15 || d.loading) return; d.loading = true; render();
+  try { const now = Date.now(); d.c15 = await klines(d.sym, '15m', 300); d.t.m15 = trendOf(closedOnly(d.c15, now)); applyChanges(d, now); } catch (e) { d.loadErr = true; }
+  d.loading = false; render();
+}
+async function pool(items, n, fn) { let i = 0; await Promise.all(Array.from({ length: n }, async () => { while (i < items.length) { const it = items[i++]; await fn(it); } })); }
+
+async function scan() {
+  if (S.scanning) return;
+  S.scanning = true; S.err = ''; S.prog = 0; S.progTxt = 'Pobieram listę coinów…'; render();
+  try {
+    S.coins = await loadCoins();
+    if (!S.coins.length) throw new Error('pusta lista coinów');
+    const now = Date.now(), D = {}; let n = 0;
+    S.progTxt = `Pobieram dane 0/${S.coins.length}`; setProg(0);
+    await pool(S.coins, 4, async c => {
+      try { D[c.sym] = await stage1(c, now); } catch (e) { /* coin pomijamy */ }
+      n++; setProg(n / S.coins.length * 0.7, `Pobieram dane ${n}/${S.coins.length}`);
+    });
+    if (!Object.keys(D).length) throw new Error('nie udało się pobrać żadnych świec');
+    S.D = D; S.ts = now; render();
+    const cands = Object.values(D).filter(d => d.pending); let m = 0;
+    await pool(cands, 4, async d => {
+      try { await stage2(d, now); } catch (e) { d.pending = false; d.stageErr = true; }
+      m++; setProg(0.7 + m / Math.max(1, cands.length) * 0.3, `Sprawdzam OI i 15M ${m}/${cands.length}`);
+    });
+  } catch (e) { S.err = (e && e.message) || 'błąd połączenia'; }
+  S.scanning = false; S.prog = 1; render();
+}
+function setProg(f, txt) {
+  S.prog = f; if (txt) S.progTxt = txt;
+  const b = document.querySelector('.bar i'), m = document.getElementById('metaTxt');
+  if (b) b.style.width = Math.round(f * 100) + '%'; if (m && txt) m.textContent = txt;
+}
+
+// ---------- widok ----------
+const $app = document.getElementById('app');
+const esc = s => String(s).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+const base = sym => sym.replace(/USDT$/, '');
+const iconName = sym => base(sym).replace(/^1000000|^1000|^1M/, '').toLowerCase();
+const svgI = (p, w = 18, sw = 2) => `<svg width="${w}" height="${w}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+const ICO = {
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  moon: '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
+  refresh: '<path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 5v6h-6"/>',
+  down: '<path d="M6 9l6 6 6-6"/>', check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>', x: '<path d="M6 6l12 12M18 6L6 18"/>', dash: '<path d="M6 12h12"/>'
+};
+const LOGO = '<svg class="logo" width="32" height="32" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="42" fill="currentColor"/><g transform="rotate(40 50 50)"><path d="M50 20 L60 50 L40 50 Z" fill="var(--gold-ink)"/><path d="M50 80 L60 50 L40 50 Z" fill="var(--gold-ink)" opacity="0.45"/></g><circle cx="50" cy="50" r="4" fill="currentColor"/></svg>';
+const monoHtml = sym => `<div class="mono"><span>${esc(base(sym)[0] || '?')}</span><img src="https://cdn.jsdelivr.net/gh/spothq/cryptocurrency-icons@master/128/color/${encodeURIComponent(iconName(sym))}.png" alt="" loading="lazy" referrerpolicy="no-referrer" onload="this.parentNode.classList.add('has')" onerror="this.remove()"></div>`;
+function sparkSvg(v, w, h, cl, sw) {
+  if (!v || v.length < 2) return `<svg class="${cl}" viewBox="0 0 ${w} ${h}" aria-hidden="true"></svg>`;
+  const lo = Math.min(...v), hi = Math.max(...v), sp = (hi - lo) || 1, p = 3;
+  return `<svg class="${cl}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" fill="none" stroke="currentColor" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="${v.map((x, i) => (i / (v.length - 1) * w).toFixed(1) + ',' + (h - p - (x - lo) / sp * (h - 2 * p)).toFixed(1)).join(' ')}"/></svg>`;
+}
+const pillHtml = (d, small) => d.pending ? `<span class="pill ${small ? 's ' : ''}p-no">…</span>` : `<span class="pill ${small ? 's ' : ''}${d.status === 'TRIGGER' ? 'p-trig' : d.status === 'WAIT' ? 'p-wait' : 'p-no'}">${d.status}</span>`;
+const dirTxt = d => d.dir > 0 ? 'LONG' : d.dir < 0 ? 'SHORT' : '';
+const tfChips = d => ['d1', 'h4', 'h1', 'm15'].map((k, i) => { const v = d.t[k]; return `<span class="tf ${cls(v)}">${['1D', '4H', '1H', '15M'][i]} <b>${arrow(v)}</b></span>`; }).join('');
+
+function visibleCoins() {
+  const all = Object.values(S.D);
+  const f = S.filter === 'long' ? 1 : S.filter === 'short' ? -1 : 0;
+  return f ? all.filter(d => d.dir === f) : all;
+}
+function topCardHtml(d) {
+  const dc = d.ch.d1;
+  return `<button class="tcard${S.open === d.sym ? ' sel' : ''}" data-sym="${d.sym}" aria-expanded="${S.open === d.sym}">
+    <div class="tc-head">${monoHtml(d.sym)}<div class="tc-name"><div class="sym">${esc(base(d.sym))}<small>/USDT</small></div><div class="dir ${cls(d.dir)}">${dirTxt(d)} · 4/4 interwały</div></div>${pillHtml(d)}</div>
+    <div class="tc-price"><span class="big">${fmtPrice(d.last)}</span><span class="chg ${cls(dc)}">${dc == null ? '' : arrow(dc) + ' ' + fmtPct(Math.abs(dc)).replace('+', '')}</span></div>
+    ${sparkSvg(d.spark, 260, 48, 'spark tc-spark ' + cls(dc), 2)}
+    <div class="tfs">${tfChips(d)}</div>
+    <div class="oi"><span class="oic">OI 1H <b class="${cls(d.oi1h)}">${fmtPct(d.oi1h)}</b></span><span class="oic">OI 4H <b class="${cls(d.oi4h)}">${fmtPct(d.oi4h)}</b></span></div>
+  </button>`;
+}
+function rowHtml(d) {
+  const open = S.open === d.sym, dc = d.ch.d1;
+  return `<div class="item${open ? ' open' : ''}"><button class="row" data-sym="${d.sym}" aria-expanded="${open}">
+    ${monoHtml(d.sym)}
+    <div class="rname"><div class="rsym">${esc(base(d.sym))}</div><div class="rsub">${pillHtml(d, true)}${d.dir ? `<span class="${cls(d.dir)}">${dirTxt(d)}</span>` : ''}</div></div>
+    ${sparkSvg(d.spark, 64, 24, 'spark rspark ' + cls(dc), 1.6)}
+    <div class="rprice"><div class="rp">${fmtPrice(d.last)}</div><div class="rc ${cls(dc)}">${dc == null ? '' : arrow(dc) + ' ' + fmtPct(Math.abs(dc)).replace('+', '')}</div></div>
+    </button>${open ? `<div class="panel">${detailInner(d)}</div>` : ''}</div>`;
+}
+function condHtml(ok, text) { return `<div class="cond"><span class="ck ${ok === true ? 'ok' : ok === false ? 'no' : 'na'}">${svgI(ok === true ? ICO.check : ok === false ? ICO.x : ICO.dash, 12, 3)}</span><span>${text}</span></div>`; }
+function detailInner(d) {
+  const g = (l, v) => `<div class="cell"><small>${l}</small><b class="${cls(v)}">${fmtPct(v)}</b></div>`;
+  let h = `<div class="lab">Zmiana ceny</div><div class="grid5">${g('1H', d.ch.h1)}${g('1D', d.ch.d1)}${g('1W', d.ch.w1)}${g('1M', d.ch.m1)}${g('1Y', d.ch.y1)}</div>`;
+  const cd = chartData(d);
+  if (cd) {
+    const pts = cd.xy.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' '), c24 = cls(d.ch.d1 || 0);
+    h += `<div class="lab">Ostatnie 24 godziny</div><div class="chartw ${c24}"><svg class="chart" viewBox="0 0 322 110" preserveAspectRatio="none" fill="none" aria-hidden="true"><defs><linearGradient id="gC" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="currentColor" stop-opacity=".28"/><stop offset="1" stop-color="currentColor" stop-opacity="0"/></linearGradient></defs><path d="M${pts.replace(/ /g, ' L')} L322,110 L0,110 Z" fill="url(#gC)"/><polyline points="${pts}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><i class="mk lo" style="left:${(cd.xy[cd.iMin][0] / 322 * 100).toFixed(1)}%;top:${(cd.xy[cd.iMin][1] / 110 * 100).toFixed(1)}%"></i><i class="mk hi" style="left:${(cd.xy[cd.iMax][0] / 322 * 100).toFixed(1)}%;top:${(cd.xy[cd.iMax][1] / 110 * 100).toFixed(1)}%"></i></div><div class="cl"><span>min ${fmtPrice(cd.low)}</span><span>max ${fmtPrice(cd.high)}</span></div>`;
+  } else if (d.loading) h += '<div class="loading">Pobieram wykres…</div>';
+  h += `<div class="lab">Kierunki</div><div class="tfs" style="margin-top:0">${tfChips(d)}</div>`;
+  if (d.pending) h += '<div class="loading">Sprawdzam OI i interwał 15M…</div>';
+  else if (d.status === 'NO TRADE') {
+    const names = ['1D', '4H', '1H', '15M'], vals = [d.t.d1, d.t.h4, d.t.h1, d.t.m15];
+    const lacks = d.c15 ? '' : ' (15M jeszcze nie sprawdzano, bo już trzy wyższe interwały się nie zgadzają)';
+    h += `<div class="lab">Dlaczego NO TRADE</div>` + condHtml(false, `Kierunki się nie zgadzają: ${names.map((n, i) => `${n} ${arrow(vals[i])}`).join(' · ')}${(vals[0] !== vals[1] || vals[0] !== vals[2]) ? lacks : ''}`);
+  } else {
+    h += `<div class="lab">${d.status === 'TRIGGER' ? 'Spełnione warunki' : 'Dlaczego WAIT, a nie TRIGGER'}</div>` + condHtml(true, `Cztery interwały zgodne: ${dirTxt(d)}`);
+    for (const c of d.conds) {
+      if (c.na) h += condHtml(null, `Brak danych OI ${c.label}${d.oiFail ? ' (giełda nie odpowiedziała)' : ''}`);
+      else if (c.ok) h += condHtml(true, `OI ${c.label} rośnie razem z ceną (OI ${fmtPct(c.oi)}, cena ${fmtPct(c.p)})`);
+      else if (!c.pOk) h += condHtml(false, `Cena ${c.label} idzie przeciwnie do kierunku (cena ${fmtPct(c.p)}, OI ${fmtPct(c.oi)})`);
+      else h += condHtml(false, `OI ${c.label} nie potwierdza (OI ${fmtPct(c.oi)}, cena ${fmtPct(c.p)})`);
+    }
+  }
+  h += `<a class="cta" href="https://www.tradingview.com/chart/?symbol=BINANCE:${encodeURIComponent(d.sym)}.P" target="_blank" rel="noopener">Otwórz wykres</a>`;
+  return h;
+}
+
+function render() {
+  const car = $app.querySelector('.car'), sl = car ? car.scrollLeft : 0, sy = window.scrollY;
+  const vis = visibleCoins(), have = Object.keys(S.D).length > 0;
+  const settled = vis.filter(d => !d.pending);
+  const top = rankTop(settled), topSyms = new Set(top.map(d => d.sym));
+  const rest = vis.filter(d => !topSyms.has(d.sym)).sort((a, b) => {
+    const o = d => d.pending ? 1 : d.status === 'NO TRADE' ? 3 : d.status === 'TRIGGER' ? 0 : 2;
+    return o(a) - o(b) || b.vol - a.vol;
+  });
+  const dark = document.documentElement.classList.contains('dark');
+  let h = `<header class="hdr"><div class="brand">${LOGO}<span>Busola</span></div><div class="hbtns">
+    <button class="ibtn" id="btnTheme" aria-label="${dark ? 'Przełącz na jasny motyw' : 'Przełącz na ciemny motyw'}">${svgI(dark ? ICO.sun : ICO.moon, 20, 1.8)}</button>
+    <button class="ibtn${S.scanning ? ' spin' : ''}" id="btnScan" aria-label="Odśwież skan"${S.scanning ? ' disabled' : ''}>${svgI(ICO.refresh, 20, 1.8)}</button></div></header>`;
+  const when = S.ts ? new Date(S.ts).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' }) : '';
+  h += `<div class="meta"><span class="dot${S.scanning ? ' busy' : S.err ? ' err' : ''}"></span><span id="metaTxt">${S.scanning ? esc(S.progTxt) : S.err ? 'Błąd skanu' : when ? `Ostatni skan ${when} · ${Object.keys(S.D).length} coinów · ${S.demo ? 'DEMO' : 'Binance Futures'}` : 'Gotowy'}</span></div>`;
+  h += S.scanning ? `<div class="bar"><i style="width:${Math.round(S.prog * 100)}%"></i></div>` : '';
+  if (S.err) h += `<div class="banner"><span>Nie udało się pobrać danych z Binance (${esc(S.err)}). Sprawdź połączenie albo zobacz wygląd na danych demo.</span><button id="btnDemo">Dane demo</button></div>`;
+  else if (S.demo) h += `<div class="banner demo"><span>Dane DEMO: sztuczne, tylko do oglądania wyglądu. To nie są prawdziwe ceny.</span><button id="btnLive">Dane live</button></div>`;
+  h += `<div class="seg" role="group" aria-label="Filtr kierunku">${[['all', 'Wszystkie'], ['long', 'LONG'], ['short', 'SHORT']].map(([k, l]) => `<button class="segb${S.filter === k ? ' on' : ''}" data-f="${k}" aria-pressed="${S.filter === k}">${l}</button>`).join('')}</div>`;
+  if (!have && S.scanning) h += `<div class="sect"><h2>Skanuję rynek</h2><span></span></div><div class="empty">Pobieram świece 1D, 4H i 1H dla 100 coinów, a potem OI. To trwa kilkanaście sekund.</div>`;
+  else if (have) {
+    h += `<div class="sect"><h2>Top 3</h2><span>najmocniejsze potwierdzenie OI</span></div>`;
+    if (top.length) {
+      h += `<div class="car">${top.map(topCardHtml).join('')}</div>`;
+      const od = top.find(d => d.sym === S.open); if (od) h += `<div class="dcard">${detailInner(od)}</div>`;
+    } else h += `<div class="empty">${S.scanning ? 'Sprawdzam kandydatów…' : 'Żaden coin nie ma teraz zgodnych kierunków na 1D, 4H, 1H i 15M' + (S.filter !== 'all' ? ' w tym kierunku.' : '.')}</div>`;
+    h += `<div class="sect"><h2>Pozostałe coiny</h2><span>${rest.length}</span></div>`;
+    h += rest.length ? `<div class="list">${rest.map(rowHtml).join('')}</div>` : '<div class="empty">Brak coinów do pokazania przy tym filtrze.</div>';
+    h += `<p class="fine">TRIGGER = 1D, 4H, 1H i 15M w tym samym kierunku oraz OI (w kontraktach) rośnie o więcej niż ${OI_MIN}% razem z ceną (LONG) albo przy spadającej cenie (SHORT) na 1H i 4H. WAIT = kierunki zgodne, OI jeszcze nie potwierdza. To filtr, nie prognoza ani sygnał z udowodnioną przewagą. Kierunek trendu liczony ze struktury szczytów i dołków (pivot ${N_PIV}) na zamkniętych świecach.</p>`;
+  }
+  $app.innerHTML = h;
+  const c2 = $app.querySelector('.car'); if (c2) c2.scrollLeft = sl; window.scrollTo(0, sy);
+}
+
+$app.addEventListener('click', e => {
+  const t = e.target;
+  if (t.closest('a')) return;
+  const th = t.closest('#btnTheme');
+  if (th) {
+    const dk = document.documentElement.classList.contains('dark'), nx = dk ? 'light' : 'dark';
+    document.documentElement.className = nx; try { localStorage.setItem('busola_theme', nx); } catch (er) { /* tylko w pamięci */ }
+    const m = document.querySelector('meta[name=theme-color]'); if (m) m.content = nx === 'light' ? '#f5f2ea' : '#0d0e11';
+    return render();
+  }
+  if (t.closest('#btnScan')) return scan();
+  if (t.closest('#btnDemo')) { S.demo = true; S.err = ''; return scan(); }
+  if (t.closest('#btnLive')) { S.demo = false; S.D = {}; return scan(); }
+  const f = t.closest('[data-f]');
+  if (f) { S.filter = f.dataset.f; try { localStorage.setItem('busola_filter', S.filter); } catch (er) { /* tylko w pamięci */ } return render(); }
+  const s = t.closest('[data-sym]');
+  if (s) {
+    const sym = s.dataset.sym; S.open = S.open === sym ? null : sym; render();
+    const d = S.D[sym]; if (S.open && d && !d.c15 && !d.pending && !d.stageErr) lazy15(d);
+  }
+});
+document.addEventListener('visibilitychange', () => { if (!document.hidden && S.ts && Date.now() - S.ts > 5 * 60e3) scan(); });
+
+// ---------- ikona i manifest (dodanie do ekranu głównego) ----------
+function drawIcon(size) {
+  const c = document.createElement('canvas'); c.width = c.height = size; const g = c.getContext('2d');
+  g.fillStyle = '#0d0e11'; g.fillRect(0, 0, size, size);
+  g.fillStyle = '#d4af5a'; g.beginPath(); g.arc(size / 2, size / 2, size * 0.34, 0, Math.PI * 2); g.fill();
+  g.save(); g.translate(size / 2, size / 2); g.rotate(40 * Math.PI / 180);
+  const u = size / 100; g.fillStyle = '#1a1405';
+  g.beginPath(); g.moveTo(0, -26 * u); g.lineTo(8 * u, 0); g.lineTo(-8 * u, 0); g.closePath(); g.fill();
+  g.globalAlpha = 0.45; g.beginPath(); g.moveTo(0, 26 * u); g.lineTo(8 * u, 0); g.lineTo(-8 * u, 0); g.closePath(); g.fill();
+  g.globalAlpha = 1; g.restore(); g.fillStyle = '#d4af5a'; g.beginPath(); g.arc(size / 2, size / 2, size * 0.035, 0, Math.PI * 2); g.fill();
+  return c.toDataURL('image/png');
+}
+try {
+  const a = document.createElement('link'); a.rel = 'apple-touch-icon'; a.href = drawIcon(180); document.head.appendChild(a);
+  const mf = { name: 'Busola', short_name: 'Busola', start_url: location.href.split('#')[0], display: 'standalone', background_color: '#0d0e11', theme_color: '#0d0e11', icons: [{ src: drawIcon(512), sizes: '512x512', type: 'image/png', purpose: 'any' }] };
+  const l = document.createElement('link'); l.rel = 'manifest'; l.href = URL.createObjectURL(new Blob([JSON.stringify(mf)], { type: 'application/manifest+json' })); document.head.appendChild(l);
+} catch (e) { /* bez ikony na ekranie głównym */ }
+
+if (/[?&]demo\b/.test(location.search)) S.demo = true;
+render(); scan();
+window.__busola = { S, scan, render, classify, rankTop };
+})();
+</script>
+</body>
+</html>
