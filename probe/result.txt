@@ -1,0 +1,32 @@
+czas: 2026-11-15T22:00:30Z
+--- https://fapi.binance.com/fapi/v1/ping
+HTTP 451
+{
+  "code": 0,
+  "msg": "Service unavailable from a restricted location according to 'b. Eligibility' in https://www.binance.com/en/terms. Please contact customer service if you believe you received this message in error
+--- https://fapi.binance.com/fapi/v1/klines?symbol=BTCUSDT&interval=1h&limit=3
+HTTP 451
+{
+  "code": 0,
+  "msg": "Service unavailable from a restricted location according to 'b. Eligibility' in https://www.binance.com/en/terms. Please contact customer service if you believe you received this message in error
+--- https://fapi.binance.com/futures/data/openInterestHist?symbol=BTCUSDT&period=1h&limit=3
+HTTP 451
+{
+  "code": 0,
+  "msg": "Service unavailable from a restricted location according to 'b. Eligibility' in https://www.binance.com/en/terms. Please contact customer service if you believe you received this message in error
+--- https://api.alternative.me/fng/?limit=1
+HTTP 200
+{
+	"name": "Fear and Greed Index",
+	"data": [
+		{
+			"value": "10",
+			"value_classification": "Extreme Fear",
+			"timestamp": "1794700800",
+			"time_until_update": "7170"
+		}
+	],
+	"metadata": {
+		"error": null
+	}
+}
