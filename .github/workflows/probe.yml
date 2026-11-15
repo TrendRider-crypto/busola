@@ -1,0 +1,39 @@
+# Próbny test: czy serwery GitHuba dostają odpowiedź od publicznego API Binance Futures.
+# Zapisuje wynik w probe/result.txt. Uruchamia się po zmianie tego pliku albo ręcznie.
+name: probe-binance
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/probe.yml'
+permissions:
+  contents: write
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Odpytaj API
+        run: |
+          mkdir -p probe
+          {
+            echo "czas: $(date -u +%FT%TZ)"
+            for u in \
+              "https://fapi.binance.com/fapi/v1/ping" \
+              "https://fapi.binance.com/fapi/v1/klines?symbol=BTCUSDT&interval=1h&limit=3" \
+              "https://fapi.binance.com/futures/data/openInterestHist?symbol=BTCUSDT&period=1h&limit=3" \
+              "https://api.alternative.me/fng/?limit=1"; do
+              code=$(curl -s -o /tmp/body -w '%{http_code}' --max-time 20 "$u" || echo "blad")
+              echo "--- $u"
+              echo "HTTP $code"
+              head -c 220 /tmp/body; echo
+            done
+          } > probe/result.txt
+          cat probe/result.txt
+      - name: Zapisz wynik w repo
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@users.noreply.github.com"
+          git add probe/result.txt
+          git commit -m "Wynik próbnego testu API" || echo "bez zmian"
+          git push
