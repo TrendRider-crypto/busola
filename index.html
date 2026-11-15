@@ -30,7 +30,7 @@
   --fg: #f1ede4; --muted: #8e919b;
   --gold: #d4af5a; --gold-ink: #1a1405; --gold-soft: rgba(212,175,90,.13); --gold-line: rgba(212,175,90,.45);
   --up: #4cc38a; --up-soft: rgba(76,195,138,.15); --down: #ef6b5b; --down-soft: rgba(239,107,91,.15);
-  --warn: #e8a23c; --warn-soft: rgba(232,162,60,.14);
+  --warn: #e8a23c; --warn-soft: rgba(232,162,60,.14); --gold-line: rgba(212,175,90,.32);
   color-scheme: dark;
 }
 .light {
@@ -38,7 +38,7 @@
   --fg: #1b1a17; --muted: #6b675d;
   --gold: #8a6510; --gold-ink: #ffffff; --gold-soft: rgba(138,101,16,.10); --gold-line: rgba(138,101,16,.4);
   --up: #0f7752; --up-soft: rgba(15,119,82,.12); --down: #b93526; --down-soft: rgba(185,53,38,.11);
-  --warn: #9a5b08; --warn-soft: rgba(154,91,8,.12);
+  --warn: #9a5b08; --warn-soft: rgba(154,91,8,.12); --gold-line: rgba(138,98,10,.35);
   color-scheme: light;
 }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -171,6 +171,27 @@ a { color: inherit; }
 .tested { padding: 1px 6px; border-radius: 5px; background: var(--gold-soft); color: var(--gold); font-size: 9.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
 .znow { display: flex; align-items: center; justify-content: space-between; margin: 4px 0; padding: 7px 12px; background: var(--bg); border-block: 1px solid var(--line); font-size: 12.5px; font-weight: 600; }
 .znow span:first-child { color: var(--gold); font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; }
+.mood { margin: 12px 20px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.mtile { min-width: 0; padding: 10px 12px 9px; border-radius: 16px; background: var(--surface); border: 1px solid var(--gold-line); display: flex; flex-direction: column; }
+.mlab { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--gold); opacity: .85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mval { display: flex; align-items: center; gap: 7px; margin-top: 6px; color: var(--gold); }
+.mico { display: flex; }
+.mico svg { width: 24px; height: 24px; }
+.mnum { font-size: 22px; font-weight: 700; letter-spacing: -.02em; font-variant-numeric: tabular-nums; color: var(--fg); }
+.mbars { display: flex; gap: 3px; margin-top: 8px; }
+.mb { flex: 1; height: 4px; border-radius: 2px; background: var(--gold); opacity: .2; }
+.mb.on { opacity: 1; }
+.msub { margin-top: 6px; font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fgsub { margin-top: 2px; text-align: center; }
+.gauge { width: 100%; max-width: 104px; margin: 2px auto 0; display: block; overflow: visible; }
+.gnum { font-size: 27px; font-weight: 700; fill: var(--fg); }
+.zdot.lq { background: var(--gold); border-radius: 50%; }
+.eqt { padding: 1px 6px; border-radius: 5px; background: var(--surface); color: var(--muted); font-size: 9.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
+.chip.pb { background: var(--gold-soft); color: var(--gold); }
+.zmeta { margin-top: 1px; font-size: 11.5px; color: var(--muted); }
+.note { margin-top: 8px; font-size: 11.5px; line-height: 1.45; color: var(--muted); }
+.react.pb { background: var(--gold-soft); }
+.react.pb .ic { background: var(--gold); color: #0d0e11; }
 .react { display: flex; gap: 10px; margin-top: 12px; padding: 11px 12px; border-radius: 14px; font-size: 13px; line-height: 1.4; }
 .react.ok { background: var(--up-soft); }
 .react.warn { background: var(--warn-soft); }
@@ -339,6 +360,21 @@ function rankTop(items, n = 3) {
 // ---------- strefy OB / FVG (1H i 4H) i reakcja ceny na OB ----------
 // Silnik stref jak w terminalu (zones): OB z knotami (cały zakres świecy), FVG >= 0,3 ATR. Strefa jest ważna do ZAMKNIĘCIA świecy za jej drugą stroną
 // (popyt: poniżej dołu, podaż: powyżej góry); dotknięcie bez zamknięcia = "testowana". To informacja, nie sygnał: nie zmienia statusu i nie ma udowodnionej przewagi.
+// Dotknięcia strefy po jej powstaniu: kolejne świece, które weszły w strefę, liczą się jako jedno dotknięcie. lastTouch = koniec ostatniej takiej świecy (ms).
+function touchStats(c, z) {
+  let touches = 0, lastTouch = null, prev = false;
+  for (let k = z.formed + 1; k < c.length; k++) {
+    const hit = z.dir > 0 ? c[k].low <= z.top : c[k].high >= z.bottom;
+    if (hit) { if (!prev) touches++; lastTouch = c[k].closeTime; }
+    prev = hit;
+  }
+  return { touches, lastTouch };
+}
+const plTouch = n => n === 1 ? 'dotknięcie' : (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14)) ? 'dotknięcia' : 'dotknięć';
+function agoTxt(ms, now) {
+  const h = (now - ms) / 3600e3;
+  return h < 1 ? '<1 godz. temu' : h < 48 ? Math.round(h) + ' godz. temu' : Math.round(h / 24) + ' dni temu';
+}
 const ZN_MAX = 2;                         // najbliższe strefy po każdej stronie ceny
 const RX_WIN = { '4H': 24, '1H': 16 };    // "świeże" dotknięcie: ostatnie 24 świece 1H (strefa 4H) albo 16 świec 15M (strefa 1H)
 function zonesOf(c1h, c4h, price, now) {
@@ -346,7 +382,8 @@ function zonesOf(c1h, c4h, price, now) {
   const all = [];
   for (const [tf, c] of [['1H', c1h], ['4H', c4h]]) {
     if (!c || c.length < 40) continue;
-    for (const z of zones(closedOnly(c, now), N_PIV)) if (z.t1 === null) all.push({ kind: z.kind, tf, dir: z.dir, top: z.top, bottom: z.bottom, tested: z.tested });
+    const cc = closedOnly(c, now);
+    for (const z of zones(cc, N_PIV)) if (z.t1 === null) all.push({ kind: z.kind, tf, dir: z.dir, top: z.top, bottom: z.bottom, tested: z.tested, ...touchStats(cc, z) });
   }
   const above = [], below = [], inside = [];
   for (const z of all) {
@@ -379,7 +416,58 @@ function reactionsOf(d, now) {
   }
   return ['4H', '1H'].filter(k => best[k]).map(k => best[k]);
 }
+// Pullback (cofnięcie w trendzie): cztery interwały zgodne, a ostatnia godzina (lub 4 godziny) idzie przeciw kierunkowi. Tylko informacja.
+function pullbackOf(d) {
+  if (!d || !d.aligned || !d.conds || d.conds.length < 2) return null;
+  const ag = c => c && !c.na && c.pOk === false;
+  const tf = ag(d.conds[1]) ? '4H' : ag(d.conds[0]) ? '1H' : null;
+  if (!tf) return null;
+  // cena stoi w strefie po stronie kierunku (LONG: popyt, SHORT: podaż); OB ważniejszy od FVG, 4H ważniejszy od 1H
+  const ins = ((d.zn && d.zn.inside) || []).filter(z => z.dir === d.dir).sort((a, b) => (a.kind === 'OB' ? 0 : 1) - (b.kind === 'OB' ? 0 : 1) || (a.tf === '4H' ? 0 : 1) - (b.tf === '4H' ? 0 : 1));
+  return { tf, zone: ins[0] || null };
+}
 function rxFlag(rx) { return !rx || !rx.length ? null : rx.some(r => !r.ok) ? 'warn' : 'ok'; }
+
+// ---------- sentyment rynku, Strach i Chciwość, płynność ----------
+// Sentyment Busoli: średnia suma trendów struktury 1D + 4H + 1H po wszystkich coinach (skala -3...+3). To szerokość rynku w skanowanych coinach, nie prognoza.
+// 15M nie wchodzi, bo jest sprawdzane tylko dla kandydatów.
+const MOOD_LIM = [-1.8, -0.6, 0.6, 1.8];
+const MOOD_LAB = ['bardzo niedźwiedzi', 'niedźwiedzi', 'neutralny', 'byczy', 'bardzo byczy'];
+function moodOf(list) {
+  let sum = 0, n = 0;
+  for (const d of list || []) {
+    if (!d || !d.t) continue;
+    const v = [d.t.d1, d.t.h4, d.t.h1];
+    if (v.some(x => typeof x !== 'number')) continue;
+    sum += v[0] + v[1] + v[2]; n++;
+  }
+  if (n < 10) return null;
+  const score = sum / n, i = MOOD_LIM.findIndex(l => score < l), band = i < 0 ? 4 : i;
+  return { score, n, band, label: MOOD_LAB[band] };
+}
+// Indeks Crypto Fear & Greed (alternative.me), 0-100
+const FG_LAB = ['skrajny strach', 'strach', 'neutralnie', 'chciwość', 'skrajna chciwość'];
+const fgBand = v => v <= 24 ? 0 : v <= 44 ? 1 : v <= 55 ? 2 : v <= 75 ? 3 : 4;
+// Płynność ze struktury: niezdjęte (żadna zamknięta świeca nie przebiła ich knotem) szczyty pivotów nad ceną = stopy shortów, niezdjęte dołki pod ceną = stopy longów.
+// To szacunek ze struktury, nie realne zlecenia ani mapa likwidacji. Równe szczyty/dołki: kilka poziomów w odległości 0,15 ATR.
+// "Zbieranie płynności": trwająca (niezamknięta) świeca albo cena już weszła ponad szczyt / pod dołek, którego nie zdjęła żadna zamknięta świeca.
+// "Blisko": do poziomu zostało nie więcej niż 0,25 ATR.
+function liquidityOf(c, price, now) {
+  if (!c || !(price > 0)) return null;
+  const closed = closedOnly(c, now);
+  if (closed.length < 40) return null;
+  const forming = c.length > closed.length ? c[c.length - 1] : null;
+  const hiNow = forming ? Math.max(forming.high, price) : price, loNow = forming ? Math.min(forming.low, price) : price;
+  const a = analyze(closed, N_PIV), atr = atrArr(closed)[closed.length - 1], tol = 0.15 * atr;
+  const unswept = p => { for (let k = p.idx + 1; k < closed.length; k++) if (p.type === 'H' ? closed[k].high > p.price : closed[k].low < p.price) return false; return true; };
+  const hs = a.pivots.filter(p => p.type === 'H' && unswept(p)).map(p => p.price), ls = a.pivots.filter(p => p.type === 'L' && unswept(p)).map(p => p.price);
+  const sweeps = [];
+  const sh = hs.filter(v => v <= hiNow); if (sh.length) sweeps.push({ side: 'H', price: Math.max(...sh) });
+  const sl = ls.filter(v => v >= loNow); if (sl.length) sweeps.push({ side: 'L', price: Math.min(...sl) });
+  const ah = hs.filter(v => v > hiNow).sort((x, y) => x - y), bl = ls.filter(v => v < loNow).sort((x, y) => y - x);
+  const mk = (arr, sgn) => arr.length ? { price: arr[0], dist: (arr[0] / price - 1) * 100, n: arr.filter(v => Math.abs(v - arr[0]) <= tol).length, equal: arr.filter(v => Math.abs(v - arr[0]) <= tol).length >= 2, near: sgn * (arr[0] - price) <= 0.25 * atr } : null;
+  return { above: mk(ah, 1), below: mk(bl, -1), sweeps };
+}
 
 // formatowanie po polsku: spacja jako separator tysięcy, przecinek dziesiętny
 function groupInt(s) { return s.replace(/\B(?=(\d{3})+(?!\d))/g, ' '); }
@@ -478,6 +566,7 @@ async function stage1(c, now) {
   d.pending = d.t.d1 !== 0 && d.t.d1 === d.t.h4 && d.t.d1 === d.t.h1;
   applyChanges(d, now); d.status = 'NO TRADE'; d.dir = 0; d.aligned = false; d.conds = [];
   try { d.zn = zonesOf(k1, k4, c.last, now); } catch (e) { d.zn = null; }
+  try { d.lq = { '1H': liquidityOf(k1, c.last, now), '4H': liquidityOf(k4, c.last, now) }; } catch (e) { d.lq = null; }
   return d;
 }
 async function stage2(d, now) {
@@ -493,9 +582,18 @@ async function lazy15(d) {   // po rozwinięciu coina, który nie przeszedł do 
 }
 async function pool(items, n, fn) { let i = 0; await Promise.all(Array.from({ length: n }, async () => { while (i < items.length) { const it = items[i++]; await fn(it); } })); }
 
+async function loadFng() {
+  try {
+    const r = await fetch('https://api.alternative.me/fng/?limit=1'); if (!r.ok) throw new Error('fng');
+    const j = await r.json(), v = Number(j && j.data && j.data[0] && j.data[0].value);
+    if (!(v >= 0 && v <= 100)) throw new Error('fng');
+    S.fg = { v: Math.round(v) };
+  } catch (e) { S.fg = null; }
+}
 async function scan() {
   if (S.scanning) return;
   S.scanning = true; S.err = ''; S.prog = 0; S.progTxt = 'Pobieram listę coinów…'; render();
+  loadFng().then(() => render());
   try {
     S.coins = await loadCoins();
     if (!S.coins.length) throw new Error('pusta lista coinów');
@@ -542,6 +640,7 @@ function sparkSvg(v, w, h, cl, sw) {
 }
 const pillHtml = (d, small) => d.pending ? `<span class="pill ${small ? 's ' : ''}p-no">…</span>` : `<span class="pill ${small ? 's ' : ''}${d.status === 'TRIGGER' ? 'p-trig' : d.status === 'WAIT' ? 'p-wait' : 'p-no'}">${d.status}</span>`;
 const dirTxt = d => d.dir > 0 ? 'LONG' : d.dir < 0 ? 'SHORT' : '';
+const pbChip = d => { const p = pullbackOf(d); return p ? `<span class="chip pb">Pullback ${p.tf}</span>` : ''; };
 const rxChip = d => { const f = rxFlag(d.rx); return f ? `<span class="chip ${f}">${f === 'ok' ? 'OB ✓' : 'CHoCH ⚠'}</span>` : ''; };
 const tfChips = d => ['d1', 'h4', 'h1', 'm15'].map((k, i) => { const v = d.t[k]; return `<span class="tf ${cls(v)}">${['1D', '4H', '1H', '15M'][i]} <b>${arrow(v)}</b></span>`; }).join('');
 
@@ -553,7 +652,7 @@ function visibleCoins() {
 function topCardHtml(d) {
   const dc = d.ch.d1;
   return `<button class="tcard${S.open === d.sym ? ' sel' : ''}" data-sym="${d.sym}" aria-expanded="${S.open === d.sym}">
-    <div class="tc-head">${monoHtml(d.sym)}<div class="tc-name"><div class="sym">${esc(base(d.sym))}<small>/USDT</small></div><div class="dir ${cls(d.dir)}">${dirTxt(d)} · 4/4 interwały${rxChip(d)}</div></div>${pillHtml(d)}</div>
+    <div class="tc-head">${monoHtml(d.sym)}<div class="tc-name"><div class="sym">${esc(base(d.sym))}<small>/USDT</small></div><div class="dir ${cls(d.dir)}">${dirTxt(d)} · 4/4 interwały${pbChip(d)}${rxChip(d)}</div></div>${pillHtml(d)}</div>
     <div class="tc-price"><span class="big">${fmtPrice(d.last)}</span><span class="chg ${cls(dc)}">${dc == null ? '' : arrow(dc) + ' ' + fmtPct(Math.abs(dc)).replace('+', '')}</span></div>
     ${sparkSvg(d.spark, 260, 48, 'spark tc-spark ' + cls(dc), 2)}
     <div class="tfs">${tfChips(d)}</div>
@@ -564,13 +663,13 @@ function rowHtml(d) {
   const open = S.open === d.sym, dc = d.ch.d1;
   return `<div class="item${open ? ' open' : ''}"><button class="row" data-sym="${d.sym}" aria-expanded="${open}">
     ${monoHtml(d.sym)}
-    <div class="rname"><div class="rsym">${esc(base(d.sym))}</div><div class="rsub">${pillHtml(d, true)}${d.dir ? `<span class="${cls(d.dir)}">${dirTxt(d)}</span>` : ''}${rxChip(d)}</div></div>
+    <div class="rname"><div class="rsym">${esc(base(d.sym))}</div><div class="rsub">${pillHtml(d, true)}${d.dir ? `<span class="${cls(d.dir)}">${dirTxt(d)}</span>` : ''}${pbChip(d)}${rxChip(d)}</div></div>
     ${sparkSvg(d.spark, 64, 24, 'spark rspark ' + cls(dc), 1.6)}
     <div class="rprice"><div class="rp">${fmtPrice(d.last)}</div><div class="rc ${cls(dc)}">${dc == null ? '' : arrow(dc) + ' ' + fmtPct(Math.abs(dc)).replace('+', '')}</div></div>
     </button>${open ? `<div class="panel">${detailInner(d)}</div>` : ''}</div>`;
 }
 function condHtml(ok, text) { return `<div class="cond"><span class="ck ${ok === true ? 'ok' : ok === false ? 'no' : 'na'}">${svgI(ok === true ? ICO.check : ok === false ? ICO.x : ICO.dash, 12, 3)}</span><span>${text}</span></div>`; }
-const zoneRow = x => `<div class="zone"><span class="zdot ${x.dir < 0 ? 'sup' : 'dem'}"></span><div class="zmain"><div class="ztype">${x.kind} ${x.tf} <small>${x.dir < 0 ? 'podaż' : 'popyt'}</small>${x.tested ? '<span class="tested">testowana</span>' : ''}</div><div class="zrange">${fmtPrice(x.bottom)} – ${fmtPrice(x.top)}</div></div><div class="zdist ${x.dir < 0 ? 'down' : 'up'}">${x.dist === 0 ? 'w strefie' : fmtPct(x.dist)}</div></div>`;
+const zoneRow = x => `<div class="zone"><span class="zdot ${x.dir < 0 ? 'sup' : 'dem'}"></span><div class="zmain"><div class="ztype">${x.kind} ${x.tf} <small>${x.dir < 0 ? 'podaż' : 'popyt'}</small>${x.tested ? '<span class="tested">testowana</span>' : ''}</div><div class="zrange">${fmtPrice(x.bottom)} – ${fmtPrice(x.top)}</div>${x.touches ? `<div class="zmeta">${x.touches} ${plTouch(x.touches)} · ostatnie ${agoTxt(x.lastTouch, Date.now())}</div>` : ''}</div><div class="zdist ${x.dir < 0 ? 'down' : 'up'}">${x.dist === 0 ? 'w strefie' : fmtPct(x.dist)}</div></div>`;
 function zonesHtml(d) {
   const z = d.zn; if (!z) return '';
   const none = '<div class="zone zempty">brak niewypełnionych stref</div>';
@@ -581,6 +680,44 @@ function zonesHtml(d) {
   }
   return h;
 }
+const BEAR = '<svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true"><circle cx="8.5" cy="9" r="4.2" fill="currentColor"/><circle cx="23.5" cy="9" r="4.2" fill="currentColor"/><circle cx="16" cy="18" r="11" fill="currentColor"/><circle cx="12" cy="16" r="1.5" fill="var(--surface)"/><circle cx="20" cy="16" r="1.5" fill="var(--surface)"/><ellipse cx="16" cy="21.5" rx="3.2" ry="2.4" fill="var(--surface)"/></svg>';
+const BULL = '<svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true"><path d="M3.5 5.5c0 6.5 3.2 9 7 9.5M28.5 5.5c0 6.5-3.2 9-7 9.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><rect x="7" y="9" width="18" height="19" rx="8" fill="currentColor"/><circle cx="12.3" cy="16" r="1.5" fill="var(--surface)"/><circle cx="19.7" cy="16" r="1.5" fill="var(--surface)"/><ellipse cx="16" cy="23" rx="5" ry="3" fill="var(--surface)"/></svg>';
+function fmtMood(v) { return (v > 0.005 ? '+' : v < -0.005 ? '−' : '') + Math.abs(v).toFixed(2).replace('.', ','); }
+function gaugeSvg(v) {
+  const cx = 60, cy = 58, r = 46, pt = (val, rr) => [cx - rr * Math.cos(Math.PI * val / 100), cy - rr * Math.sin(Math.PI * val / 100)];
+  const ops = [.28, .45, .62, .8, 1];
+  let arcs = '';
+  for (let i = 0; i < 5; i++) {
+    const a0 = i * 20 + 1.6, a1 = (i + 1) * 20 - 1.6, p0 = pt(a0, r), p1 = pt(a1, r);
+    arcs += `<path d="M${p0[0].toFixed(1)} ${p0[1].toFixed(1)} A${r} ${r} 0 0 1 ${p1[0].toFixed(1)} ${p1[1].toFixed(1)}" stroke="var(--gold)" stroke-opacity="${ops[i]}" stroke-width="8" stroke-linecap="round" fill="none"/>`;
+  }
+  const m = pt(v, r);
+  return `<svg class="gauge" viewBox="0 0 120 70" aria-hidden="true">${arcs}<circle cx="${m[0].toFixed(1)}" cy="${m[1].toFixed(1)}" r="6" fill="var(--bg)" stroke="var(--gold)" stroke-width="3"/><text x="60" y="56" text-anchor="middle" class="gnum">${v}</text></svg>`;
+}
+function moodHtml() {
+  const md = moodOf(Object.values(S.D).filter(d => !d.pending || d.t)), fg = S.fg;
+  if (!md && !fg) return '';
+  let h = '<div class="mood">';
+  if (md) {
+    const icon = md.band <= 1 ? BEAR : md.band >= 3 ? BULL : svgI('<circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/>', 28, 2);
+    const bars = [0, 1, 2, 3, 4].map(i => `<i class="mb${i === md.band ? ' on' : ''}"></i>`).join('');
+    h += `<div class="mtile"><div class="mlab">Sentyment</div><div class="mval"><span class="mico">${icon}</span><span class="mnum">${fmtMood(md.score)}</span></div><div class="mbars">${bars}</div><div class="msub">${md.label} · ${md.n} coinów</div></div>`;
+  }
+  if (fg) h += `<div class="mtile"><div class="mlab">Strach i Chciwość</div>${gaugeSvg(fg.v)}<div class="msub fgsub">${FG_LAB[fgBand(fg.v)]}</div></div>`;
+  return h + '</div>';
+}
+function lqHtml(d) {
+  const L = d.lq; if (!L || (!L['1H'] && !L['4H'])) return '';
+  const row = (lab, sub, x, eq) => x ? `<div class="zone"><span class="zdot lq"></span><div class="zmain"><div class="ztype">${lab} <small>${sub}</small>${x.equal ? `<span class="eqt">${eq} (${x.n})</span>` : ''}</div><div class="zrange">${fmtPrice(x.price)}</div></div><div class="zdist">${fmtPct(x.dist)}</div></div>` : `<div class="zone zempty">brak niezdjętych ${eq === 'równe szczyty' ? 'szczytów' : 'dołków'}</div>`;
+  let h = '<div class="lab">Płynność · szacunek ze struktury</div><div class="zones">', msgs = '';
+  for (const tf of ['1H', '4H']) {
+    const x = L[tf]; if (!x) continue;
+    h += `<div class="zside">${tf}</div>${row('Szczyt nad ceną', 'stopy shortów', x.above, 'równe szczyty')}${row('Dołek pod ceną', 'stopy longów', x.below, 'równe dołki')}`;
+    for (const sw of x.sweeps) msgs += `<div class="react pb"><span class="ic">⚡</span><div><b>Zbieranie płynności ${tf}</b><span class="t">Cena weszła ${sw.side === 'H' ? 'ponad niezdjęty szczyt' : 'pod niezdjęty dołek'} ${fmtPrice(sw.price)} (${sw.side === 'H' ? 'stopy shortów' : 'stopy longów'}).</span></div></div>`;
+    for (const [k, nm] of [['above', 'szczytu'], ['below', 'dołka']]) if (x[k] && x[k].near && !x.sweeps.length) msgs += `<div class="react pb"><span class="ic">≈</span><div><b>Cena blisko płynności ${tf}</b><span class="t">Zbliża się do niezdjętego ${nm} ${fmtPrice(x[k].price)} (${fmtPct(x[k].dist)}).</span></div></div>`;
+  }
+  return h + '</div>' + msgs + '<div class="note">Szacunek ze struktury (niezdjęte szczyty i dołki pivotów), nie realne zlecenia ani mapa likwidacji.</div>';
+}
 function detailInner(d) {
   const g = (l, v) => `<div class="cell"><small>${l}</small><b class="${cls(v)}">${fmtPct(v)}</b></div>`;
   let h = `<div class="lab">Zmiana ceny</div><div class="grid5">${g('1H', d.ch.h1)}${g('1D', d.ch.d1)}${g('1W', d.ch.w1)}${g('1M', d.ch.m1)}${g('1Y', d.ch.y1)}</div>`;
@@ -589,7 +726,7 @@ function detailInner(d) {
     const pts = cd.xy.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' '), c24 = cls(d.ch.d1 || 0);
     h += `<div class="lab">Ostatnie 24 godziny</div><div class="chartw ${c24}"><svg class="chart" viewBox="0 0 322 110" preserveAspectRatio="none" fill="none" aria-hidden="true"><defs><linearGradient id="gC" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="currentColor" stop-opacity=".28"/><stop offset="1" stop-color="currentColor" stop-opacity="0"/></linearGradient></defs><path d="M${pts.replace(/ /g, ' L')} L322,110 L0,110 Z" fill="url(#gC)"/><polyline points="${pts}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><i class="mk lo" style="left:${(cd.xy[cd.iMin][0] / 322 * 100).toFixed(1)}%;top:${(cd.xy[cd.iMin][1] / 110 * 100).toFixed(1)}%"></i><i class="mk hi" style="left:${(cd.xy[cd.iMax][0] / 322 * 100).toFixed(1)}%;top:${(cd.xy[cd.iMax][1] / 110 * 100).toFixed(1)}%"></i></div><div class="cl"><span>min ${fmtPrice(cd.low)}</span><span>max ${fmtPrice(cd.high)}</span></div>`;
   } else if (d.loading) h += '<div class="loading">Pobieram wykres…</div>';
-  h += `<div class="lab">Kierunki</div><div class="tfs" style="margin-top:0">${tfChips(d)}</div>`;
+  h += `<div class="lab">Kierunki</div><div class="tfs" style="margin-top:0">${tfChips(d)}</div><div class="note">Kierunek to trend struktury rynku na danym interwale (wyższe lub niższe szczyty i dołki), a nie ruch ceny z ostatniej godziny.</div>`;
   if (d.pending) h += '<div class="loading">Sprawdzam OI i interwał 15M…</div>';
   else if (d.status === 'NO TRADE') {
     const names = ['1D', '4H', '1H', '15M'], vals = [d.t.d1, d.t.h4, d.t.h1, d.t.m15];
@@ -600,11 +737,17 @@ function detailInner(d) {
     for (const c of d.conds) {
       if (c.na) h += condHtml(null, `Brak danych OI ${c.label}${d.oiFail ? ' (giełda nie odpowiedziała)' : ''}`);
       else if (c.ok) h += condHtml(true, `OI ${c.label} rośnie razem z ceną (OI ${fmtPct(c.oi)}, cena ${fmtPct(c.p)})`);
-      else if (!c.pOk) h += condHtml(false, `Cena ${c.label} idzie przeciwnie do kierunku (cena ${fmtPct(c.p)}, OI ${fmtPct(c.oi)})`);
+      else if (!c.pOk) h += condHtml(false, `Cofnięcie w trendzie ${dirTxt(d)}: ${c.label === '1H' ? 'ostatnia godzina' : 'ostatnie 4 godziny'} cena ${fmtPct(c.p)} (przeciw ${dirTxt(d)}), OI ${fmtPct(c.oi)}`);
       else h += condHtml(false, `OI ${c.label} nie potwierdza (OI ${fmtPct(c.oi)}, cena ${fmtPct(c.p)})`);
     }
   }
+  const pb = pullbackOf(d);
+  if (pb) {
+    const zt = pb.zone ? ` Cena stoi w strefie ${pb.zone.kind} ${pb.zone.tf} ${pb.zone.dir > 0 ? 'popytu' : 'podaży'}, czyli cofnięcie dotarło do strefy.` : '';
+    h += `<div class="react pb"><span class="ic">↩</span><div><b>Pullback ${pb.tf}: cofnięcie w trendzie ${dirTxt(d)}</b><span class="t">Kierunek ze struktury zostaje, a ostatnio cena idzie przeciw niemu.${zt} Status zostaje ${d.status}.</span></div></div>`;
+  }
   h += zonesHtml(d);
+  h += lqHtml(d);
   h += `<a class="cta" href="https://www.tradingview.com/chart/?symbol=BINANCE:${encodeURIComponent(d.sym)}.P" target="_blank" rel="noopener">Otwórz wykres</a>`;
   return h;
 }
@@ -627,6 +770,7 @@ function render() {
   h += S.scanning ? `<div class="bar"><i style="width:${Math.round(S.prog * 100)}%"></i></div>` : '';
   if (S.err) h += `<div class="banner"><span>Nie udało się pobrać danych z Binance (${esc(S.err)}). Sprawdź połączenie albo zobacz wygląd na danych demo.</span><button id="btnDemo">Dane demo</button></div>`;
   else if (S.demo) h += `<div class="banner demo"><span>Dane DEMO: sztuczne, tylko do oglądania wyglądu. To nie są prawdziwe ceny.</span><button id="btnLive">Dane live</button></div>`;
+  h += moodHtml();
   h += `<div class="seg" role="group" aria-label="Filtr kierunku">${[['all', 'Wszystkie'], ['long', 'LONG'], ['short', 'SHORT']].map(([k, l]) => `<button class="segb${S.filter === k ? ' on' : ''}" data-f="${k}" aria-pressed="${S.filter === k}">${l}</button>`).join('')}</div>`;
   if (!have && S.scanning) h += `<div class="sect"><h2>Skanuję rynek</h2><span></span></div><div class="empty">Pobieram świece 1D, 4H i 1H dla 100 coinów, a potem OI. To trwa kilkanaście sekund.</div>`;
   else if (have) {
@@ -637,7 +781,7 @@ function render() {
     } else h += `<div class="empty">${S.scanning ? 'Sprawdzam kandydatów…' : 'Żaden coin nie ma teraz zgodnych kierunków na 1D, 4H, 1H i 15M' + (S.filter !== 'all' ? ' w tym kierunku.' : '.')}</div>`;
     h += `<div class="sect"><h2>Pozostałe coiny</h2><span>${rest.length}</span></div>`;
     h += rest.length ? `<div class="list">${rest.map(rowHtml).join('')}</div>` : '<div class="empty">Brak coinów do pokazania przy tym filtrze.</div>';
-    h += `<p class="fine">TRIGGER = 1D, 4H, 1H i 15M w tym samym kierunku oraz OI (w kontraktach) rośnie o więcej niż ${OI_MIN}% razem z ceną (LONG) albo przy spadającej cenie (SHORT) na 1H i 4H. WAIT = kierunki zgodne, OI jeszcze nie potwierdza. To filtr, nie prognoza ani sygnał z udowodnioną przewagą. Strefy OB i FVG (1H i 4H, niewypełnione, z knotami, ważne do zamknięcia świecy za strefą) oraz znacznik reakcji (OB ✓ / CHoCH ⚠) to tylko informacja: nie zmieniają statusu i też nie mają udowodnionej przewagi. Kierunek trendu liczony ze struktury szczytów i dołków (pivot ${N_PIV}) na zamkniętych świecach.</p>`;
+    h += `<p class="fine">TRIGGER = 1D, 4H, 1H i 15M w tym samym kierunku oraz OI (w kontraktach) rośnie o więcej niż ${OI_MIN}% razem z ceną (LONG) albo przy spadającej cenie (SHORT) na 1H i 4H. WAIT = kierunki zgodne, OI jeszcze nie potwierdza. To filtr, nie prognoza ani sygnał z udowodnioną przewagą. Strefy OB i FVG (1H i 4H, niewypełnione, z knotami, ważne do zamknięcia świecy za strefą) oraz znacznik reakcji (OB ✓ / CHoCH ⚠) to tylko informacja: nie zmieniają statusu i też nie mają udowodnionej przewagi. Sentyment to średni trend struktury (1D, 4H, 1H) wszystkich skanowanych coinów, a Strach i Chciwość to indeks z alternative.me; oba tylko opisują rynek. Płynność to szacunek ze struktury (niezdjęte szczyty i dołki), nie realne zlecenia. Znacznik Pullback oznacza cofnięcie w trendzie (kierunek zgodny, a ostatnia godzina lub 4 godziny idą przeciw) i też jest tylko informacją. Kierunek trendu liczony ze struktury szczytów i dołków (pivot ${N_PIV}) na zamkniętych świecach.</p>`;
   }
   $app.innerHTML = h;
   const c2 = $app.querySelector('.car'); if (c2) c2.scrollLeft = sl; window.scrollTo(0, sy);
