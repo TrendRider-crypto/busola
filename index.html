@@ -187,6 +187,30 @@ a { color: inherit; }
 .gnum { font-size: 27px; font-weight: 700; fill: var(--fg); }
 .zdot.lq { background: var(--gold); border-radius: 50%; }
 .eqt { padding: 1px 6px; border-radius: 5px; background: var(--surface); color: var(--muted); font-size: 9.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
+.jcard { margin: 14px 20px 0; padding: 14px; border-radius: 18px; background: var(--surface); border: 1px solid var(--gold-line); }
+.jlab { font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--gold); }
+.jbig { margin-top: 6px; font-size: 20px; font-weight: 700; letter-spacing: -.01em; }
+.jsub { margin-top: 6px; font-size: 12.5px; line-height: 1.45; color: var(--muted); }
+.jpg { margin-top: 12px; } .jrow { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 12px; color: var(--muted); } .jrow b { color: var(--fg); font-weight: 600; }
+.jbar { height: 6px; border-radius: 3px; background: var(--gold-soft); overflow: hidden; } .jbar i { display: block; height: 100%; border-radius: 3px; background: var(--gold); }
+.jcrit { display: flex; gap: 8px; align-items: flex-start; margin-top: 8px; font-size: 13px; line-height: 1.4; }
+.jic { flex: none; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; } .jic.ok { background: var(--up-soft); color: var(--up); } .jic.no { background: var(--down-soft); color: var(--down); }
+.jseg { margin: 14px 20px 0; display: flex; padding: 4px; gap: 4px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); }
+.jsb { flex: 1; padding: 8px 0; border: 0; border-radius: 10px; background: transparent; color: var(--muted); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.jsb.on { background: var(--gold-soft); color: var(--gold); box-shadow: inset 0 0 0 1px var(--gold-line); }
+.jh2 { margin: 20px 20px 8px; font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.jtbl, .jlist { margin: 0 20px; border-radius: 16px; background: var(--surface2); overflow: hidden; }
+.jth, .jtr { display: grid; grid-template-columns: 1.5fr .45fr .85fr .9fr; gap: 6px; align-items: center; padding: 10px 12px; font-size: 12.5px; }
+.jth { padding-bottom: 4px; font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); } .jtr { border-top: 1px solid var(--line); }
+.jtr b { font-weight: 600; } .r { text-align: right; } .jn { color: var(--muted); font-variant-numeric: tabular-nums; }
+.jv { font-weight: 650; color: var(--muted); font-variant-numeric: tabular-nums; } .jv.up { color: var(--up); } .jv.dn { color: var(--down); }
+.jci { font-size: 10.5px; color: var(--muted); font-variant-numeric: tabular-nums; } .jsm { display: block; margin-top: 1px; font-size: 10.5px; font-weight: 400; color: var(--muted); }
+.jit { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-top: 1px solid var(--line); } .jit:first-child { border-top: 0; }
+.jm { flex: 1; min-width: 0; } .js { font-weight: 650; font-size: 13.5px; } .jd { margin-top: 1px; font-size: 11.5px; color: var(--muted); }
+.jres { text-align: right; font-weight: 700; font-size: 13.5px; font-variant-numeric: tabular-nums; } .jres small { display: block; font-size: 10.5px; font-weight: 500; color: var(--muted); } .jres.up { color: var(--up); } .jres.dn { color: var(--down); } .jres.mu { color: var(--muted); }
+.chip.trg { background: var(--gold); color: var(--gold-ink); } .jit .chip { margin-left: 5px; }
+.jnote { margin: 12px 20px 0; font-size: 11.5px; line-height: 1.55; color: var(--muted); }
+.brand .ibtn { flex: none; }
 .chip.pb { background: var(--gold-soft); color: var(--gold); }
 .zmeta { margin-top: 1px; font-size: 11.5px; color: var(--muted); }
 .note { margin-top: 8px; font-size: 11.5px; line-height: 1.45; color: var(--muted); }
@@ -469,6 +493,103 @@ function liquidityOf(c, price, now) {
   return { above: mk(ah, 1), below: mk(bl, -1), sweeps };
 }
 
+// ---------- Dziennik wyników: zapis sygnałów, rozliczanie, statystyki ----------
+// Reguły ustalone z góry: wejście po cenie z chwili zapisu (bez patrzenia w przyszłość), wynik po 1, 4 i 24 godzinach w kierunku sygnału,
+// minus koszt JR_COST (%, round-trip). Przedział = bootstrap po dniach (dni są jednostką, bo sygnały z jednego dnia nie są niezależne).
+// Werdykt tylko dla grupy TRIGGER po 4 godzinach: n >= 100, dni >= 30, średnia > 0, dolna granica > 0, średnia > losowy kierunek.
+const JR_COST = 0.1, JR_H = { h1: 1, h4: 4, h24: 24 }, JR_NMIN = 100, JR_DMIN = 30, JR_GMIN = 20, JR_MAX = 6000;
+const jrHash = s => { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; };
+const jrRng = seed => { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; };
+const jrDay = ms => new Date(ms).toISOString().slice(0, 10);
+// Wykładnik Hursta (R/S, okna 8-128 na zwrotach logarytmicznych). Szacunek jest szumny na krótkiej próbce, dlatego tylko zapisujemy go do analizy.
+function hurstRS(closes) {
+  if (!closes || closes.length < 65) return null;
+  const r = []; for (let i = 1; i < closes.length; i++) r.push(Math.log(closes[i] / closes[i - 1]));
+  const pts = [];
+  for (const n of [8, 16, 32, 64, 128]) {
+    if (n > r.length / 2) continue;
+    const rs = [];
+    for (let s0 = 0; s0 + n <= r.length; s0 += n) {
+      const seg = r.slice(s0, s0 + n), m = seg.reduce((a, b) => a + b, 0) / n;
+      let cum = 0, mx = -Infinity, mn = Infinity, ss = 0;
+      for (const v of seg) { cum += v - m; mx = Math.max(mx, cum); mn = Math.min(mn, cum); ss += (v - m) * (v - m); }
+      const sd = Math.sqrt(ss / n); if (sd > 0) rs.push((mx - mn) / sd);
+    }
+    if (rs.length) pts.push([Math.log(n), Math.log(rs.reduce((a, b) => a + b, 0) / rs.length)]);
+  }
+  if (pts.length < 3) return null;
+  const mx = pts.reduce((a, p) => a + p[0], 0) / pts.length, my = pts.reduce((a, p) => a + p[1], 0) / pts.length;
+  let sxy = 0, sxx = 0; for (const [x, y] of pts) { sxy += (x - mx) * (y - my); sxx += (x - mx) * (x - mx); }
+  return sxx > 0 ? sxy / sxx : null;
+}
+// Wpis dziennika z karty coina: tylko coiny ze zgodnymi 4 interwałami (TRIGGER albo WAIT). Jeden wpis na coin, kierunek, dobę (UTC) i status: pierwsze pojawienie się.
+function jrEntry(d, now, ctx) {
+  if (!d || !d.dir || !d.aligned || (d.status !== 'TRIGGER' && d.status !== 'WAIT') || !(d.last > 0)) return null;
+  const rxf = rxFlag(d.rx), pb = pullbackOf(d);
+  const inZone = !!(d.zn && d.zn.inside && d.zn.inside.some(z => z.dir === d.dir));
+  const sweep = !!(d.lq && ['1H', '4H'].some(tf => d.lq[tf] && d.lq[tf].sweeps && d.lq[tf].sweeps.length));
+  let hu = null; try { const h = hurstRS(closedOnly(d.c1h || [], now).slice(-257).map(c => c.close)); if (h !== null) hu = Math.round(h * 100) / 100; } catch (e) { hu = null; }
+  return { id: `${d.sym}|${d.dir}|${jrDay(now)}|${d.status}`, t: now, sym: d.sym, dir: d.dir, status: d.status, price: d.last, ob: rxf, pb: pb ? pb.tf : null, zone: inZone, liq: sweep, fg: ctx && ctx.fg != null ? ctx.fg : null, mood: ctx && ctx.mood != null ? Math.round(ctx.mood * 100) / 100 : null, hurst: hu, res: {} };
+}
+function jrMerge(list, entry) {
+  if (!entry || list.some(e => e.id === entry.id)) return false;
+  list.push(entry);
+  if (list.length > JR_MAX) { list.sort((a, b) => a.t - b.t); list.splice(0, list.length - JR_MAX); }
+  return true;
+}
+// Rozliczenie wpisu ze świec 15M: cena zamknięcia ostatniej świecy zamkniętej do chwili t + h. Zwraca true, jeśli coś rozliczono.
+function jrSettleEntry(e, k15, now) {
+  let changed = false;
+  for (const [key, h] of Object.entries(JR_H)) {
+    if (e.res[key] != null) continue;
+    const target = e.t + h * 3600e3; if (target > now) continue;
+    let c = null; for (let i = k15.length - 1; i >= 0; i--) if (k15[i].closeTime <= target) { c = k15[i]; break; }
+    if (!c || c.closeTime < target - 20 * 60e3 || !(c.close > 0)) continue;
+    e.res[key] = Math.round((c.close / e.price - 1) * 100 * e.dir * 1e4) / 1e4; changed = true;
+  }
+  return changed;
+}
+function jrBoot(vals, days, B = 1000, seed = 7) {
+  const by = new Map(); vals.forEach((v, i) => { const k = days[i]; if (!by.has(k)) by.set(k, []); by.get(k).push(v); });
+  const arr = [...by.values()]; if (arr.length < 2) return null;
+  const r = jrRng(seed), means = [];
+  for (let b = 0; b < B; b++) { let sm = 0, c = 0; for (let i = 0; i < arr.length; i++) { const g = arr[Math.floor(r() * arr.length)]; for (const v of g) { sm += v; c++; } } means.push(sm / c); }
+  means.sort((a, b) => a - b); return [means[Math.floor(0.025 * B)], means[Math.floor(0.975 * B) - 1]];
+}
+const JR_GROUPS = [
+  { k: 'trigger', lab: 'TRIGGER', f: e => e.status === 'TRIGGER' },
+  { k: 'wait', lab: 'WAIT (zgodne 4/4)', sub: 'grupa porównawcza', f: e => e.status === 'WAIT' },
+  { k: 'ob', lab: 'OB ✓', f: e => e.ob === 'ok' },
+  { k: 'choch', lab: 'CHoCH ⚠', f: e => e.ob === 'warn' },
+  { k: 'pb', lab: 'Pullback', f: e => !!e.pb },
+  { k: 'zone', lab: 'W strefie', f: e => !!e.zone },
+  { k: 'liq', lab: 'Zbieranie płynności', f: e => !!e.liq },
+  { k: 'rand', lab: 'Losowy kierunek', sub: 'te same coiny i czasy', f: () => true, rand: true }
+];
+const jrSign = id => jrRng(jrHash(id))() < 0.5 ? 1 : -1;
+function jrGroupStat(entries, g, hk) {
+  const sel = entries.filter(e => g.f(e) && e.res && e.res[hk] != null);
+  const vals = sel.map(e => (g.rand ? e.res[hk] * e.dir * jrSign(e.id) : e.res[hk]) - JR_COST), days = sel.map(e => jrDay(e.t));
+  const n = vals.length, nd = new Set(days).size, mean = n ? vals.reduce((a, b) => a + b, 0) / n : null;
+  return { k: g.k, n, days: nd, mean, ci: n >= JR_GMIN ? jrBoot(vals, days) : null };
+}
+function jrVerdict(entries) {
+  const tr = jrGroupStat(entries, JR_GROUPS[0], 'h4'), rd = jrGroupStat(entries, JR_GROUPS[7], 'h4');
+  if (tr.n < JR_NMIN || tr.days < JR_DMIN || !tr.ci) return { state: 'wait', n: tr.n, days: tr.days };
+  const crit = [
+    { ok: tr.mean > 0, txt: 'Średni wynik po kosztach powyżej zera', v: tr.mean },
+    { ok: tr.ci[0] > 0, txt: 'Dolna granica przedziału powyżej zera', v: tr.ci[0] },
+    { ok: rd.mean !== null && tr.mean > rd.mean, txt: 'Lepiej niż losowy kierunek', v: rd.mean }
+  ];
+  return { state: crit.every(c => c.ok) ? 'ok' : 'no', n: tr.n, days: tr.days, crit };
+}
+function jrCsv(entries) {
+  const head = ['czas_utc', 'coin', 'kierunek', 'status', 'cena', 'ob', 'pullback', 'w_strefie', 'zbieranie_plynnosci', 'fear_greed', 'sentyment', 'hurst_1h', 'wynik_1h_proc', 'wynik_4h_proc', 'wynik_24h_proc'];
+  const f = v => v == null ? '' : String(v);
+  const rows = entries.slice().sort((a, b) => a.t - b.t).map(e => [new Date(e.t).toISOString(), e.sym, e.dir > 0 ? 'LONG' : 'SHORT', e.status, e.price, e.ob || '', e.pb || '', e.zone ? 1 : 0, e.liq ? 1 : 0, f(e.fg), f(e.mood), f(e.hurst), f(e.res && e.res.h1), f(e.res && e.res.h4), f(e.res && e.res.h24)].join(','));
+  return [head.join(',')].concat(rows).join('\n');
+}
+
 // formatowanie po polsku: spacja jako separator tysięcy, przecinek dziesiętny
 function groupInt(s) { return s.replace(/\B(?=(\d{3})+(?!\d))/g, ' '); }
 function fmtPrice(v) {
@@ -503,8 +624,34 @@ async function getJSON(url, tries = 3) {
   throw new Error('limit zapytań giełdy');
 }
 const mapK = k => k.map(x => ({ time: Math.floor(x[0] / 1000), open: +x[1], high: +x[2], low: +x[3], close: +x[4], volume: +x[5], closeTime: x[6] }));
-const S = { demo: false, coins: [], D: {}, filter: 'all', open: null, scanning: false, prog: 0, progTxt: '', ts: 0, err: '', note: '' };
+const S = { view: 'home', jr: [], jrH: 'h4', jrNoStore: false, demo: false, coins: [], D: {}, filter: 'all', open: null, scanning: false, prog: 0, progTxt: '', ts: 0, err: '', note: '' };
 try { const f = localStorage.getItem('busola_filter'); if (f === 'long' || f === 'short' || f === 'all') S.filter = f; } catch (e) { /* tylko w pamięci */ }
+
+// ---------- Dziennik: pamięć przeglądarki, zapis po skanie, rozliczanie ----------
+try { const j = JSON.parse(localStorage.getItem('busola_journal_v1') || 'null'); if (j && Array.isArray(j.e)) S.jr = j.e.filter(e => e && e.id && e.res); } catch (e) { S.jrNoStore = true; }
+function jrSave() { try { localStorage.setItem('busola_journal_v1', JSON.stringify({ v: 1, e: S.jr })); S.jrNoStore = false; } catch (e) { S.jrNoStore = true; } }
+function jrLog() {
+  const now = Date.now(), md = moodOf(Object.values(S.D)), ctx = { fg: S.fg ? S.fg.v : null, mood: md ? md.score : null };
+  let add = 0; for (const d of Object.values(S.D)) { try { if (jrMerge(S.jr, jrEntry(d, now, ctx))) add++; } catch (e) { /* wpis pomijamy */ } }
+  if (add) jrSave();
+}
+let jrBusy = false;
+async function jrSettle() {
+  if (jrBusy || S.demo || !S.jr.length) return; jrBusy = true;
+  try {
+    const now = Date.now(), need = S.jr.filter(e => Object.entries(JR_H).some(([k, h]) => e.res[k] == null && e.t + h * 3600e3 <= now));
+    const bySym = new Map(); for (const e of need) { if (!bySym.has(e.sym)) bySym.set(e.sym, []); bySym.get(e.sym).push(e); }
+    const jobs = []; for (const [sym, es] of bySym) { es.sort((a, b) => a.t - b.t); while (es.length) { const t0 = es[0].t, chunk = []; while (es.length && es[0].t <= t0 + 8 * 864e5) chunk.push(es.shift()); jobs.push([sym, t0, chunk]); } }
+    let changed = false;
+    await pool(jobs, 4, async ([sym, t0, chunk]) => { try { const k = mapK(await getJSON(`${BASE}/fapi/v1/klines?symbol=${sym}&interval=15m&startTime=${t0}&limit=1000`)); for (const e of chunk) if (jrSettleEntry(e, k, now)) changed = true; } catch (e) { /* następnym razem */ } });
+    if (changed) jrSave();
+  } finally { jrBusy = false; }
+  if (S.view === 'journal') render();
+}
+function jrAfterScan() { if (!S.demo && !S.err) jrLog(); jrSettle(); }
+function jrDownload() {
+  try { const u = URL.createObjectURL(new Blob([jrCsv(S.jr)], { type: 'text/csv;charset=utf-8' })), a = document.createElement('a'); a.href = u; a.download = 'busola-dziennik.csv'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 4000); } catch (e) { /* brak pobierania */ }
+}
 
 let demoNow = 0;
 function hashStr(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
@@ -611,7 +758,7 @@ async function scan() {
       m++; setProg(0.7 + m / Math.max(1, cands.length) * 0.3, `Sprawdzam OI i 15M ${m}/${cands.length}`);
     });
   } catch (e) { S.err = (e && e.message) || 'błąd połączenia'; }
-  S.scanning = false; S.prog = 1; render();
+  S.scanning = false; S.prog = 1; render(); jrAfterScan();
 }
 function setProg(f, txt) {
   S.prog = f; if (txt) S.progTxt = txt;
@@ -629,6 +776,7 @@ const ICO = {
   sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
   moon: '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
   refresh: '<path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 5v6h-6"/>',
+  journal: '<path d="M5 20V11M12 20V4M19 20v-6"/>', back: '<path d="M15 18l-6-6 6-6"/>', dl: '<path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/>',
   down: '<path d="M6 9l6 6 6-6"/>', check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>', x: '<path d="M6 6l12 12M18 6L6 18"/>', dash: '<path d="M6 12h12"/>'
 };
 const LOGO = '<svg class="logo" width="32" height="32" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="42" fill="currentColor"/><g transform="rotate(40 50 50)"><path d="M50 20 L60 50 L40 50 Z" fill="var(--gold-ink)"/><path d="M50 80 L60 50 L40 50 Z" fill="var(--gold-ink)" opacity="0.45"/></g><circle cx="50" cy="50" r="4" fill="currentColor"/></svg>';
@@ -752,7 +900,42 @@ function detailInner(d) {
   return h;
 }
 
+const jrF = (v, dec = 2) => (v > 0.0049 ? '+' : v < -0.0049 ? '−' : '') + Math.abs(v).toFixed(dec).replace('.', ',');
+const jrWhen = ms => { const d = new Date(ms), t = d.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' }); return jrDay(Date.now()) === jrDay(ms) && d.getDate() === new Date().getDate() ? `dziś ${t}` : `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')} ${t}`; };
+function journalHtml() {
+  const hk = S.jrH, all = S.jr, hl = { h1: '1 godz.', h4: '4 godz.', h24: '24 godz.' };
+  const v = jrVerdict(all), days = new Set(all.map(e => jrDay(e.t))).size, settled = all.filter(e => e.res.h4 != null).length;
+  let h = `<header class="hdr"><div class="brand"><button class="ibtn" id="btnBack" aria-label="Wróć">${svgI(ICO.back, 20, 2.2)}</button><span>Dziennik</span></div><div class="hbtns"><button class="ibtn" id="btnCsv" aria-label="Eksport do CSV"${all.length ? '' : ' disabled'}>${svgI(ICO.dl, 20, 1.8)}</button></div></header>`;
+  h += `<div class="meta"><span id="metaTxt">Zapisano ${all.length} ${all.length === 1 ? 'sygnał' : 'sygnałów'} · ${days} ${days === 1 ? 'dzień' : 'dni'} · rozliczone ${settled}</span></div>`;
+  if (S.jrNoStore) h += `<div class="banner"><span>Ta przeglądarka nie pozwala zapisywać danych. Dziennik zniknie po zamknięciu karty. Eksportuj CSV albo otwórz Busolę w zwykłej karcie.</span></div>`;
+  if (!all.length) return h + `<div class="empty">Dziennik jest pusty. Wpis powstaje przy każdym skanie, gdy któryś coin ma zgodne cztery interwały (TRIGGER albo WAIT). Wyniki pojawią się po 1, 4 i 24 godzinach od zapisu.</div>`;
+  h += `<div class="jcard"><div class="jlab">Werdykt</div>`;
+  if (v.state === 'wait') {
+    const bar = (lab, a, b) => `<div class="jpg"><div class="jrow"><span>${lab}</span><b>${a} / ${b}</b></div><div class="jbar"><i style="width:${Math.min(100, Math.round(a / b * 100))}%"></i></div></div>`;
+    h += `<div class="jbig">Za mało danych</div><div class="jsub">Wnioski pokażę dopiero po ${JR_NMIN} sygnałach TRIGGER z co najmniej ${JR_DMIN} różnych dni, rozliczonych po 4 godzinach. Wcześniej średnie wyglądają przekonująco przypadkiem.</div>${bar('Sygnały TRIGGER', v.n, JR_NMIN)}${bar('Dni', v.days, JR_DMIN)}`;
+  } else {
+    h += `<div class="jbig">${v.state === 'ok' ? 'Spełnia kryteria' : 'Nie spełnia kryteriów'}</div><div class="jsub">Grupa TRIGGER po 4 godzinach, ${v.n} sygnałów z ${v.days} dni.</div>${v.crit.map(c => `<div class="jcrit"><span class="jic ${c.ok ? 'ok' : 'no'}">${c.ok ? '✓' : '✕'}</span><span>${c.txt} <b>(${jrF(c.v)}%)</b></span></div>`).join('')}<div class="jsub">${v.state === 'ok' ? 'To jedna próbka. Sprawdź jeszcze na nowych danych, zanim uznasz to za przewagę.' : 'Na tej próbce przewagi nie widać.'}</div>`;
+  }
+  h += `</div><div class="jseg" role="group" aria-label="Okres wyniku">${Object.keys(JR_H).map(k => `<button class="jsb${hk === k ? ' on' : ''}" data-jh="${k}">${hl[k]}</button>`).join('')}</div>`;
+  h += `<div class="jh2">Średni wynik po kosztach (${JR_COST.toFixed(1).replace('.', ',')}%)</div><div class="jtbl"><div class="jth"><span>Grupa</span><span class="r">n</span><span class="r">Wynik</span><span class="r">Przedział</span></div>`;
+  const ready = v.state !== 'wait';
+  for (const g of JR_GROUPS) {
+    const st = jrGroupStat(all, g, hk), sig = ready && st.ci && (st.ci[0] > 0 || st.ci[1] < 0);
+    h += `<div class="jtr"><span><b>${g.lab}</b>${g.sub ? `<span class="jsm">${g.sub}</span>` : ''}</span><span class="r jn">${st.n}</span><span class="r jv${sig ? (st.mean > 0 ? ' up' : ' dn') : ''}">${st.mean === null ? '—' : jrF(st.mean) + '%'}</span><span class="r jci">${st.ci ? `${jrF(st.ci[0], 1)}…${jrF(st.ci[1], 1)}` : 'za mało'}</span></div>`;
+  }
+  h += `</div><div class="jnote">Szare wartości: jeszcze bez wniosku (n poniżej ${JR_GMIN}, przedział obejmuje zero albo werdykt czeka na próg). Kolor pojawia się dopiero po spełnieniu progu z werdyktu.</div>`;
+  h += `<div class="jh2">Ostatnie sygnały</div><div class="jlist">`;
+  const now = Date.now();
+  for (const e of all.slice().sort((a, b) => b.t - a.t).slice(0, 30)) {
+    const r = e.res[hk], due = e.t + JR_H[hk] * 3600e3, left = Math.max(1, Math.ceil((due - now) / 36e5));
+    const res = r != null ? `<div class="jres ${r - JR_COST > 0 ? 'up' : 'dn'}">${jrF(r - JR_COST, 1)}%<small>po ${hl[hk]}</small></div>` : `<div class="jres mu">czeka<small>${due > now ? `ok. ${left} godz.` : 'brak danych'}</small></div>`;
+    h += `<div class="jit">${monoHtml(e.sym)}<div class="jm"><div class="js">${esc(base(e.sym))} <span class="${cls(e.dir)}">${e.dir > 0 ? 'LONG' : 'SHORT'}</span><span class="chip ${e.status === 'TRIGGER' ? 'trg' : 'pb'}">${e.status}</span>${e.ob ? `<span class="chip ${e.ob === 'ok' ? 'ok' : 'warn'}">${e.ob === 'ok' ? 'OB ✓' : 'CHoCH ⚠'}</span>` : ''}${e.pb ? `<span class="chip pb">Pullback ${e.pb}</span>` : ''}</div><div class="jd">${jrWhen(e.t)} · ${fmtPrice(e.price)}</div></div>${res}</div>`;
+  }
+  h += `</div><div class="jnote">Wynik liczony od ceny w chwili zapisu, w kierunku sygnału, minus ${JR_COST.toFixed(1).replace('.', ',')}% kosztów. Przedział to bootstrap po dniach. Sygnały zapisują się tylko przy otwartej aplikacji, więc próbka zależy od tego, kiedy zaglądasz. Dane są w tej przeglądarce na tym urządzeniu. To nie jest rada inwestycyjna.</div>`;
+  return h;
+}
 function render() {
+  if (S.view === 'journal') { const sy0 = window.scrollY; $app.innerHTML = journalHtml(); window.scrollTo(0, sy0); return; }
   const car = $app.querySelector('.car'), sl = car ? car.scrollLeft : 0, sy = window.scrollY;
   const vis = visibleCoins(), have = Object.keys(S.D).length > 0;
   const settled = vis.filter(d => !d.pending);
@@ -763,6 +946,7 @@ function render() {
   });
   const dark = document.documentElement.classList.contains('dark');
   let h = `<header class="hdr"><div class="brand">${LOGO}<span>Busola</span></div><div class="hbtns">
+    <button class="ibtn" id="btnJr" aria-label="Dziennik wyników">${svgI(ICO.journal, 20, 1.8)}</button>
     <button class="ibtn" id="btnTheme" aria-label="${dark ? 'Przełącz na jasny motyw' : 'Przełącz na ciemny motyw'}">${svgI(dark ? ICO.sun : ICO.moon, 20, 1.8)}</button>
     <button class="ibtn${S.scanning ? ' spin' : ''}" id="btnScan" aria-label="Odśwież skan"${S.scanning ? ' disabled' : ''}>${svgI(ICO.refresh, 20, 1.8)}</button></div></header>`;
   const when = S.ts ? new Date(S.ts).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' }) : '';
@@ -781,7 +965,7 @@ function render() {
     } else h += `<div class="empty">${S.scanning ? 'Sprawdzam kandydatów…' : 'Żaden coin nie ma teraz zgodnych kierunków na 1D, 4H, 1H i 15M' + (S.filter !== 'all' ? ' w tym kierunku.' : '.')}</div>`;
     h += `<div class="sect"><h2>Pozostałe coiny</h2><span>${rest.length}</span></div>`;
     h += rest.length ? `<div class="list">${rest.map(rowHtml).join('')}</div>` : '<div class="empty">Brak coinów do pokazania przy tym filtrze.</div>';
-    h += `<p class="fine">TRIGGER = 1D, 4H, 1H i 15M w tym samym kierunku oraz OI (w kontraktach) rośnie o więcej niż ${OI_MIN}% razem z ceną (LONG) albo przy spadającej cenie (SHORT) na 1H i 4H. WAIT = kierunki zgodne, OI jeszcze nie potwierdza. To filtr, nie prognoza ani sygnał z udowodnioną przewagą. Strefy OB i FVG (1H i 4H, niewypełnione, z knotami, ważne do zamknięcia świecy za strefą) oraz znacznik reakcji (OB ✓ / CHoCH ⚠) to tylko informacja: nie zmieniają statusu i też nie mają udowodnionej przewagi. Sentyment to średni trend struktury (1D, 4H, 1H) wszystkich skanowanych coinów, a Strach i Chciwość to indeks z alternative.me; oba tylko opisują rynek. Płynność to szacunek ze struktury (niezdjęte szczyty i dołki), nie realne zlecenia. Znacznik Pullback oznacza cofnięcie w trendzie (kierunek zgodny, a ostatnia godzina lub 4 godziny idą przeciw) i też jest tylko informacją. Kierunek trendu liczony ze struktury szczytów i dołków (pivot ${N_PIV}) na zamkniętych świecach.</p>`;
+    h += `<p class="fine">TRIGGER = 1D, 4H, 1H i 15M w tym samym kierunku oraz OI (w kontraktach) rośnie o więcej niż ${OI_MIN}% razem z ceną (LONG) albo przy spadającej cenie (SHORT) na 1H i 4H. WAIT = kierunki zgodne, OI jeszcze nie potwierdza. To filtr, nie prognoza ani sygnał z udowodnioną przewagą. Strefy OB i FVG (1H i 4H, niewypełnione, z knotami, ważne do zamknięcia świecy za strefą) oraz znacznik reakcji (OB ✓ / CHoCH ⚠) to tylko informacja: nie zmieniają statusu i też nie mają udowodnionej przewagi. Sentyment to średni trend struktury (1D, 4H, 1H) wszystkich skanowanych coinów, a Strach i Chciwość to indeks z alternative.me; oba tylko opisują rynek. Płynność to szacunek ze struktury (niezdjęte szczyty i dołki), nie realne zlecenia. Znacznik Pullback oznacza cofnięcie w trendzie (kierunek zgodny, a ostatnia godzina lub 4 godziny idą przeciw) i też jest tylko informacją. Dziennik (ikona wykresu u góry) zapisuje w tej przeglądarce sygnały ze zgodnymi czterema interwałami i rozlicza je po 1, 4 i 24 godzinach; wnioski pokazuje dopiero po spełnieniu progów ustalonych z góry. Kierunek trendu liczony ze struktury szczytów i dołków (pivot ${N_PIV}) na zamkniętych świecach.</p>`;
   }
   $app.innerHTML = h;
   const c2 = $app.querySelector('.car'); if (c2) c2.scrollLeft = sl; window.scrollTo(0, sy);
@@ -797,6 +981,10 @@ $app.addEventListener('click', e => {
     const m = document.querySelector('meta[name=theme-color]'); if (m) m.content = nx === 'light' ? '#f5f2ea' : '#0d0e11';
     return render();
   }
+  if (t.closest('#btnJr')) { S.view = 'journal'; window.scrollTo(0, 0); render(); return jrSettle(); }
+  if (t.closest('#btnBack')) { S.view = 'home'; render(); return window.scrollTo(0, 0); }
+  if (t.closest('#btnCsv')) return jrDownload();
+  const jh = t.closest('[data-jh]'); if (jh) { S.jrH = jh.dataset.jh; return render(); }
   if (t.closest('#btnScan')) return scan();
   if (t.closest('#btnDemo')) { S.demo = true; S.err = ''; return scan(); }
   if (t.closest('#btnLive')) { S.demo = false; S.D = {}; return scan(); }
