@@ -31,6 +31,7 @@
   --gold: #d4af5a; --gold-ink: #1a1405; --gold-soft: rgba(212,175,90,.13); --gold-line: rgba(212,175,90,.45);
   --up: #4cc38a; --up-soft: rgba(76,195,138,.15); --down: #ef6b5b; --down-soft: rgba(239,107,91,.15);
   --warn: #e8a23c; --warn-soft: rgba(232,162,60,.14); --gold-line: rgba(212,175,90,.32);
+  --fl-up: #d6ffe9; --fl-dn: #ffdcd5;
   color-scheme: dark;
 }
 .light {
@@ -39,6 +40,7 @@
   --gold: #8a6510; --gold-ink: #ffffff; --gold-soft: rgba(138,101,16,.10); --gold-line: rgba(138,101,16,.4);
   --up: #0f7752; --up-soft: rgba(15,119,82,.12); --down: #b93526; --down-soft: rgba(185,53,38,.11);
   --warn: #9a5b08; --warn-soft: rgba(154,91,8,.12); --gold-line: rgba(138,98,10,.35);
+  --fl-up: #04402b; --fl-dn: #7a1c10;
   color-scheme: light;
 }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -271,12 +273,19 @@ a { color: inherit; }
 .mp-quad { margin: 8px 20px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .mp-q { padding: 10px 12px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); font-size: 12px; line-height: 1.4; color: var(--muted); }
 .mp-q b { display: block; margin-bottom: 2px; font-size: 12.5px; }
-.mp-ctl { display: flex; gap: 8px; padding: 0 8px 6px; }
+.mp-ctl { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 8px 6px; }
 .mp-btn { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface2); font-size: 12.5px; font-weight: 600; }
 .mp-btn:first-child { border-color: var(--gold-line); color: var(--gold); }
 .mp-btn.on { background: var(--gold-soft); border-color: var(--gold-line); color: var(--gold); }
 .mp-range { display: block; width: calc(100% - 20px); margin: 4px 10px 6px; accent-color: var(--gold); }
 .tvset { display: block; width: 100%; margin-top: 8px; padding: 8px 6px; border: 0; background: transparent; color: var(--muted); font-size: 12.5px; text-decoration: underline; text-underline-offset: 3px; }
+/* impulsy światła (światłowód): dwie kopie ścieżki, szeroka poświata i wąski rdzeń, przesuwane przez stroke-dashoffset */
+.mp-fl { fill: none; stroke-linecap: round; stroke-dasharray: 4 46; animation: mp-fl var(--d, 3s) linear infinite; pointer-events: none; }
+.mp-fl.glow { stroke-width: 5; opacity: .2; } .mp-fl.glow.up { stroke: var(--up); } .mp-fl.glow.dn { stroke: var(--down); }
+.mp-fl.core { stroke-width: 1.6; opacity: .9; } .mp-fl.core.hi { stroke-width: 2.2; }
+.mp-fl.core.up { stroke: var(--fl-up); } .mp-fl.core.dn { stroke: var(--fl-dn); }
+@keyframes mp-fl { to { stroke-dashoffset: -50; } }
+@media (prefers-reduced-motion: reduce) { .mp-flg { display: none; } }
 .mp-cur { stroke: var(--gold); stroke-width: 1; opacity: .6; }
 </style>
 </head>
@@ -794,7 +803,8 @@ async function getJSON(url, tries = 3) {
   throw new Error('limit zapytań giełdy');
 }
 const mapK = k => k.map(x => ({ time: Math.floor(x[0] / 1000), open: +x[1], high: +x[2], low: +x[3], close: +x[4], volume: +x[5], closeTime: x[6] }));
-const S = { view: 'home', jr: [], jrH: 'h4', jrNoStore: false, tvLayout: '', mapLast: {}, mapF: 1, mapPlay: false, mapTrim: false, mapCache: null, mapOiBusy: false, mapOiN: 0, mapOiTot: 0, mapTs: 0, demo: false, coins: [], D: {}, filter: 'all', open: null, scanning: false, prog: 0, progTxt: '', ts: 0, err: '', note: '' };
+const S = { view: 'home', jr: [], jrH: 'h4', jrNoStore: false, tvLayout: '', mapFl: true, mapLast: {}, mapF: 1, mapPlay: false, mapTrim: false, mapCache: null, mapOiBusy: false, mapOiN: 0, mapOiTot: 0, mapTs: 0, demo: false, coins: [], D: {}, filter: 'all', open: null, scanning: false, prog: 0, progTxt: '', ts: 0, err: '', note: '' };
+try { S.mapFl = localStorage.getItem('busola_map_fl') !== '0'; } catch (e) { /* tylko w pamięci */ }
 try { S.tvLayout = tvLayoutId(localStorage.getItem('busola_tv_layout')) || ''; } catch (e) { S.tvLayout = ''; }
 try { const f = localStorage.getItem('busola_filter'); if (f === 'long' || f === 'short' || f === 'all') S.filter = f; } catch (e) { /* tylko w pamięci */ }
 
@@ -1196,6 +1206,15 @@ function mapChartHtml(items, f = 1, trim = false) {
   for (const x of cur) if (!labSet.has(x.sym)) s += `<path class="mp-pl ${x.chg >= 0 ? 'up' : 'dn'}" d="${path(x.c)}"/>`;
   for (const x of lab) s += `<path class="mp-pl hi ${x.chg >= 0 ? 'up' : 'dn'}" d="${path(x.c)}"/>`;
   s += '</g>';
+  if (full && S.mapFl) {   // "światłowód": krótkie impulsy światła biegną wzdłuż linii; faza liczona z zegara, więc odświeżenie wykresu nie zrywa ruchu
+    const others = cur.filter(x => !labSet.has(x.sym)).sort((a, b) => hashStr(a.sym) - hashStr(b.sym)).slice(0, 24), sec = Date.now() / 1000;
+    s += '<g clip-path="url(#mpclip)" class="mp-flg">';
+    for (const x of lab.concat(others)) {
+      const h = hashStr(x.sym), dur = 2.4 + (h % 21) / 10, delay = -((sec + (h % 97) / 10) % dur), c = x.chg >= 0 ? 'up' : 'dn', d = path(x.c), hi = labSet.has(x.sym);
+      s += `<path class="mp-fl glow ${c}" pathLength="100" d="${d}" style="--d:${dur.toFixed(1)}s;animation-delay:${delay.toFixed(2)}s"/><path class="mp-fl core ${c}${hi ? ' hi' : ''}" pathLength="100" d="${d}" style="--d:${dur.toFixed(1)}s;animation-delay:${delay.toFixed(2)}s"/>`;
+    }
+    s += '</g>';
+  }
   if (!full) s += `<line class="mp-cur" x1="${px(tc).toFixed(1)}" x2="${px(tc).toFixed(1)}" y1="${Y0}" y2="${Y1}"/>`;
   const ord = lab.slice().sort((a, b) => py(a.chg) - py(b.chg)), ys = mapSpread(ord.map(x => cl(py(x.chg), Y0, Y1)), 10, Y0 + 4, Y1);
   const ex = full ? X1 : px(tc);
@@ -1221,7 +1240,7 @@ function mapHtml() {
   const oiNote = S.mapOiBusy ? `OI ${S.mapOiN}/${S.mapOiTot}` : br.oiN < items.length ? `OI dla ${br.oiN} z ${items.length}` : '';
   h += `<div class="mp-chips">${btc && btc.chg != null ? `<span class="mp-chip">BTC <span class="${cls(btc.chg)}">${fmtPct(btc.chg)}</span></span>` : ''}<span class="mp-chip">Ceny: ${br.pUp} w górę / ${br.pDown} w dół</span>${oiNote ? `<span class="mp-chip g">${oiNote}</span>` : ''}</div></div>`;
   const chart = mapChartHtml(items, S.mapF, S.mapTrim);
-  if (chart) h += `<div class="mp-sec">Ścieżki ${mode === 'day' ? 'od początku dnia' : 'z 24 godzin'}</div><div class="mp-card mp-chart"><div class="mp-ctl"><button class="mp-btn" id="mpPlay" aria-label="Odtwórz dzień">${mapBtnHtml()}</button><button class="mp-btn${S.mapTrim ? ' on' : ''}" id="mpTrim" aria-pressed="${S.mapTrim}">Bez skrajnych</button></div><div id="mpPlot">${chart}</div><input class="mp-range" id="mpRange" type="range" min="0" max="1000" value="${Math.round(S.mapF * 1000)}" aria-label="Moment dnia"><div class="mp-sub">Każda linia to jeden coin (zmiana ceny w %). Zielone: powyżej poziomu startu, czerwone: poniżej. Podpisane są trzy najsilniejsze i trzy najsłabsze w danym momencie. ${S.mapTrim ? 'Oś ucięta do środkowych 98% punktów, skrajne linie wychodzą poza ramkę (ich wynik jest przy podpisie).' : ''}</div></div>`;
+  if (chart) h += `<div class="mp-sec">Ścieżki ${mode === 'day' ? 'od początku dnia' : 'z 24 godzin'}</div><div class="mp-card mp-chart"><div class="mp-ctl"><button class="mp-btn" id="mpPlay" aria-label="Odtwórz dzień">${mapBtnHtml()}</button><button class="mp-btn${S.mapTrim ? ' on' : ''}" id="mpTrim" aria-pressed="${S.mapTrim}">Bez skrajnych</button><button class="mp-btn${S.mapFl ? ' on' : ''}" id="mpFl" aria-pressed="${S.mapFl}">Promienie</button></div><div id="mpPlot">${chart}</div><input class="mp-range" id="mpRange" type="range" min="0" max="1000" value="${Math.round(S.mapF * 1000)}" aria-label="Moment dnia"><div class="mp-sub">Każda linia to jeden coin (zmiana ceny w %). Zielone: powyżej poziomu startu, czerwone: poniżej. Podpisane są trzy najsilniejsze i trzy najsłabsze w danym momencie. ${S.mapTrim ? 'Oś ucięta do środkowych 98% punktów, skrajne linie wychodzą poza ramkę (ich wynik jest przy podpisie).' : ''}</div></div>`;
   const sec = mapSectors(items);
   if (sec.length) {
     const m = Math.max(0.5, ...sec.map(s => Math.abs(s.avg)));
@@ -1297,6 +1316,7 @@ $app.addEventListener('click', e => {
     return S.mapF >= 1 ? mapAnimate(9000, 0) : mapAnimate(9000 * (1 - S.mapF), S.mapF);
   }
   if (t.closest('#btnTv')) return tvAsk();
+  if (t.closest('#mpFl')) { S.mapFl = !S.mapFl; try { localStorage.setItem('busola_map_fl', S.mapFl ? '1' : '0'); } catch (er) { /* tylko w pamięci */ } return render(); }
   if (t.closest('#mpTrim')) { S.mapTrim = !S.mapTrim; return render(); }
   if (t.closest('#btnMapRef')) { mapPrices(); return mapLoadOi(true); }
   if (t.closest('#btnBack')) { mapStop(); S.view = 'home'; render(); return window.scrollTo(0, 0); }
