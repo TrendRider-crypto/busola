@@ -224,6 +224,53 @@ a { color: inherit; }
 .react.warn .ic { background: var(--warn); color: #0d0e11; }
 .react b { display: block; margin-bottom: 1px; font-size: 13px; }
 .react .t { font-size: 12.5px; color: var(--muted); }
+/* Mapa */
+@media (max-width: 420px) { .hbtns { gap: 6px; } .ibtn { width: 42px; height: 42px; } }
+@media (max-width: 370px) { .brand { font-size: 24px; } .logo { width: 28px; height: 28px; } }
+.mp-card { margin: 14px 20px 0; padding: 14px; border-radius: 18px; background: var(--surface); border: 1px solid var(--gold-line); }
+.mp-lab { font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--gold); }
+.mp-sub { margin: 4px 4px 2px; font-size: 12px; line-height: 1.45; color: var(--muted); }
+.mp-br { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 8px; }
+.mp-n { font-size: 26px; font-weight: 700; letter-spacing: -.02em; }
+.mp-t { margin-top: 2px; font-size: 11.5px; color: var(--muted); }
+.mp-bar { display: flex; height: 8px; margin-top: 10px; border-radius: 6px; overflow: hidden; background: var(--surface2); }
+.mp-bar i { display: block; height: 100%; }
+.mp-chips { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.mp-chip { font-size: 11.5px; font-weight: 600; padding: 5px 10px; border-radius: 999px; background: var(--surface2); border: 1px solid var(--line); }
+.mp-chip.g { background: var(--gold-soft); border-color: var(--gold-line); color: var(--gold); }
+.mp-sec { margin: 22px 20px 0; font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.mp-chart { padding: 10px 6px 6px; }
+.mp-chart svg { display: block; }
+.mp-grid { stroke: var(--line); stroke-width: .6; }
+.mp-zero { stroke: var(--gold); stroke-width: 1; stroke-dasharray: 3 3; opacity: .8; }
+.mp-ax { font-size: 8px; fill: var(--muted); } .mp-ax.now { fill: var(--gold); font-weight: 600; }
+.mp-pl { fill: none; stroke-width: .9; stroke-opacity: .42; stroke-linejoin: round; }
+.mp-pl.hi { stroke-width: 1.8; stroke-opacity: .95; }
+.mp-pl.up, .mp-dot.up { stroke: var(--up); } .mp-pl.dn, .mp-dot.dn { stroke: var(--down); }
+.mp-dot.up { fill: var(--up); } .mp-dot.dn { fill: var(--down); }
+.mp-tx { font-size: 8.5px; font-weight: 700; } .mp-tx.up { fill: var(--up); } .mp-tx.dn { fill: var(--down); }
+.mp-rows { margin: 8px 20px 0; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); overflow: hidden; }
+.mp-srow { display: grid; grid-template-columns: 124px 1fr 56px; align-items: center; gap: 8px; padding: 10px 14px; border-top: 1px solid var(--line); font-size: 13px; }
+.mp-srow:first-child { border-top: 0; }
+.mp-nm { font-weight: 600; } .mp-nm small { display: block; margin-top: 1px; font-size: 10.5px; font-weight: 400; color: var(--muted); }
+.mp-dv { position: relative; height: 8px; border-radius: 5px; background: var(--surface2); }
+.mp-dv:before { content: ""; position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: var(--line); }
+.mp-dv i { position: absolute; top: 0; bottom: 0; border-radius: 5px; }
+.mp-pc { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+.mp-grid2 { margin: 8px 20px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.mp-tile { display: block; min-width: 0; padding: 11px 12px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); text-decoration: none; }
+.mp-tile.u { border-color: rgba(76,195,138,.35); } .mp-tile.d { border-color: rgba(239,107,91,.35); }
+.mp-h { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; }
+.mp-tk { font-weight: 700; font-size: 14px; overflow: hidden; text-overflow: ellipsis; } .mp-p { font-weight: 700; font-size: 13px; }
+.mp-tag { display: inline-block; margin-top: 6px; font-size: 10.5px; font-weight: 600; padding: 3px 8px; border-radius: 999px; }
+.mp-tag.lb { background: var(--up-soft); color: var(--up); } .mp-tag.sc { background: var(--gold-soft); color: var(--gold); }
+.mp-tag.sb { background: var(--down-soft); color: var(--down); } .mp-tag.lu { background: var(--warn-soft); color: var(--warn); }
+.mp-tag.flat, .mp-tag.na { background: var(--surface2); color: var(--muted); }
+.mp-o { margin-top: 6px; font-size: 11px; color: var(--muted); }
+.mp-sp { display: block; width: 100%; height: 26px; margin-top: 6px; }
+.mp-quad { margin: 8px 20px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.mp-q { padding: 10px 12px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); font-size: 12px; line-height: 1.4; color: var(--muted); }
+.mp-q b { display: block; margin-bottom: 2px; font-size: 12.5px; }
 </style>
 </head>
 <body>
@@ -493,6 +540,88 @@ function liquidityOf(c, price, now) {
   return { above: mk(ah, 1), below: mk(bl, -1), sweeps };
 }
 
+// ---------- Mapa: ścieżki od 00:00 UTC, sektory, etykiety cena x OI ----------
+// Tylko opis tego, co dzieje się teraz, nie sygnał. Etykieta = znaki zmiany ceny i OI (w kontraktach) w tym samym oknie 4H.
+// Progi z góry: cena musi zmienić się o więcej niż MAP_P_MIN %, OI o więcej niż OI_MIN %. Poniżej: "Bez wyraźnego ruchu".
+const MAP_P_MIN = 0.2;
+const MAP_LAB = { lb: 'Nowe longi', sb: 'Nowe shorty', sc: 'Zamykanie shortów', lu: 'Zamykanie longów', flat: 'Bez wyraźnego ruchu' };
+function mapLabel(p, oi) {
+  if (p == null || oi == null || !isFinite(p) || !isFinite(oi)) return null;
+  if (Math.abs(p) <= MAP_P_MIN || Math.abs(oi) <= OI_MIN) return 'flat';
+  return p > 0 ? (oi > 0 ? 'lb' : 'sc') : (oi > 0 ? 'sb' : 'lu');
+}
+const utcDayStart = now => { const d = new Date(now); return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()); };
+// Ścieżka % od początku dnia UTC: zamknięte świece 1H + bieżąca cena. W pierwszych 4 godzinach po północy UTC byłoby za mało punktów: wtedy okno 24 godz.
+function mapPath(c1h, last, now) {
+  if (!c1h || !c1h.length || !(last > 0)) return null;
+  const closed = closedOnly(c1h, now), ds = utcDayStart(now);
+  let mode = 'day', ref, from, t0;
+  if (now - ds >= 4 * 3600e3) {
+    from = closed.findIndex(x => x.time * 1000 >= ds); if (from < 0) return null;
+    ref = closed[from].open; t0 = ds;
+  } else {
+    mode = '24h'; t0 = now - 24 * 3600e3;
+    ref = refClose(closed, now, 24 * 3600e3); from = closed.findIndex(x => x.closeTime > t0);
+    if (ref == null || from < 0) return null;
+  }
+  if (!(ref > 0)) return null;
+  const pts = [0], ts = [t0];
+  for (let i = from; i < closed.length; i++) { pts.push((closed[i].close / ref - 1) * 100); ts.push(closed[i].closeTime); }
+  pts.push((last / ref - 1) * 100); ts.push(now);
+  return { pts, ts, mode, t0, chg: pts[pts.length - 1] };
+}
+// Sektory: przypisanie ręczne i przybliżone (bez oficjalnej klasyfikacji). Nieznane coiny = "Inne".
+const MAP_SECT = {};
+[['L1', 'BTC ETH SOL BNB ADA AVAX DOT TRX TON NEAR APT SUI SEI ATOM ICP ALGO EGLD KAS HBAR FTM S ETC TIA INJ XTZ BERA MOVE'],
+ ['L2', 'ARB OP POL MATIC STRK IMX ZK MANTA MNT BLAST METIS TAIKO'],
+ ['DeFi', 'UNI AAVE MKR LDO CRV SNX COMP SUSHI 1INCH DYDX GMX PENDLE JUP RAY ENA ETHFI CAKE JTO MORPHO EIGEN SSV LISTA SYRUP'],
+ ['AI', 'FET RNDR RENDER TAO WLD AGIX OCEAN ARKM VIRTUAL AIXBT GRASS IO NMR AI16Z'],
+ ['Meme', 'DOGE SHIB PEPE FLOKI BONK WIF POPCAT MEW BRETT TURBO NEIRO PNUT GOAT MOODENG FARTCOIN TRUMP PENGU BOME ACT SPX'],
+ ['Gaming', 'AXS SAND MANA GALA ILV APE PIXEL PORTAL BIGTIME YGG'],
+ ['DePIN', 'FIL AR HNT IOTX THETA AKT'],
+ ['Płatności', 'XRP XLM LTC BCH'],
+ ['Privacy', 'XMR ZEC DASH'],
+ ['RWA', 'ONDO POLYX PLUME'],
+ ['Oracle / infra', 'LINK PYTH GRT API3 BAND TRB W']].forEach(([s, l]) => l.split(' ').forEach(t => { MAP_SECT[t] = s; }));
+const mapBase = sym => sym.replace(/USDT$/, '').replace(/^1000000|^1000|^1M/, '');
+const mapSector = sym => MAP_SECT[mapBase(sym)] || 'Inne';
+// list: [{ sym, chg }]; sektor pokazujemy od 2 coinów
+function mapSectors(list) {
+  const g = {};
+  for (const x of list || []) {
+    if (!x || x.chg == null || !isFinite(x.chg)) continue;
+    const s = mapSector(x.sym), o = g[s] || (g[s] = { name: s, n: 0, sum: 0, up: 0, down: 0 });
+    o.n++; o.sum += x.chg; if (x.chg > 0) o.up++; else if (x.chg < 0) o.down++;
+  }
+  return Object.values(g).filter(o => o.n >= 2).map(o => ({ name: o.name, avg: o.sum / o.n, n: o.n, up: o.up, down: o.down })).sort((a, b) => b.avg - a.avg);
+}
+function mapRank(list, n = 4) {
+  const v = (list || []).filter(x => x && x.chg != null && isFinite(x.chg));
+  return { top: v.filter(x => x.chg > 0).sort((a, b) => b.chg - a.chg).slice(0, n), bottom: v.filter(x => x.chg < 0).sort((a, b) => a.chg - b.chg).slice(0, n) };
+}
+// list: [{ chg, oi4 }]; OI liczymy tylko tam, gdzie już jest pobrane
+function mapBreadth(list) {
+  const r = { n: 0, pUp: 0, pDown: 0, oiN: 0, oiUp: 0, oiDown: 0 };
+  for (const x of list || []) {
+    if (x.chg != null) { r.n++; if (x.chg > 0) r.pUp++; else if (x.chg < 0) r.pDown++; }
+    if (x.oi4 != null) { r.oiN++; if (x.oi4 > OI_MIN) r.oiUp++; else if (x.oi4 < -OI_MIN) r.oiDown++; }
+  }
+  return r;
+}
+function mapTicks(lo, hi) {
+  const raw = Math.max(hi - lo, 1) / 6, mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const step = [1, 2, 5, 10].map(m => m * mag).find(s => s >= raw) || 10 * mag, ticks = [];
+  for (let v = Math.ceil(lo / step - 1e-9) * step; v <= hi + 1e-9; v += step) ticks.push(+v.toFixed(6));
+  return { step, ticks };
+}
+// Rozsuwa podpisy (pozycje y rosnąco), żeby nie nachodziły na siebie
+function mapSpread(ys, gap, lo, hi) {
+  const r = ys.slice();
+  for (let i = 1; i < r.length; i++) if (r[i] - r[i - 1] < gap) r[i] = r[i - 1] + gap;
+  for (let i = r.length - 1; i >= 0; i--) { if (r[i] > hi) r[i] = hi; if (i < r.length - 1 && r[i + 1] - r[i] < gap) r[i] = r[i + 1] - gap; }
+  return r.map(v => Math.max(lo, v));
+}
+
 // ---------- Dziennik wyników: zapis sygnałów, rozliczanie, statystyki ----------
 // Reguły ustalone z góry: wejście po cenie z chwili zapisu (bez patrzenia w przyszłość), wynik po 1, 4 i 24 godzinach w kierunku sygnału,
 // minus koszt JR_COST (%, round-trip). Przedział = bootstrap po dniach (dni są jednostką, bo sygnały z jednego dnia nie są niezależne).
@@ -624,7 +753,7 @@ async function getJSON(url, tries = 3) {
   throw new Error('limit zapytań giełdy');
 }
 const mapK = k => k.map(x => ({ time: Math.floor(x[0] / 1000), open: +x[1], high: +x[2], low: +x[3], close: +x[4], volume: +x[5], closeTime: x[6] }));
-const S = { view: 'home', jr: [], jrH: 'h4', jrNoStore: false, demo: false, coins: [], D: {}, filter: 'all', open: null, scanning: false, prog: 0, progTxt: '', ts: 0, err: '', note: '' };
+const S = { view: 'home', jr: [], jrH: 'h4', jrNoStore: false, mapLast: {}, mapOiBusy: false, mapOiN: 0, mapOiTot: 0, mapTs: 0, demo: false, coins: [], D: {}, filter: 'all', open: null, scanning: false, prog: 0, progTxt: '', ts: 0, err: '', note: '' };
 try { const f = localStorage.getItem('busola_filter'); if (f === 'long' || f === 'short' || f === 'all') S.filter = f; } catch (e) { /* tylko w pamięci */ }
 
 // ---------- Dziennik: pamięć przeglądarki, zapis po skanie, rozliczanie ----------
@@ -651,6 +780,43 @@ async function jrSettle() {
 function jrAfterScan() { if (!S.demo && !S.err) jrLog(); jrSettle(); }
 function jrDownload() {
   try { const u = URL.createObjectURL(new Blob([jrCsv(S.jr)], { type: 'text/csv;charset=utf-8' })), a = document.createElement('a'); a.href = u; a.download = 'busola-dziennik.csv'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 4000); } catch (e) { /* brak pobierania */ }
+}
+
+// ---------- Mapa: dane (OI 4H dla wszystkich coinów, bieżące ceny co 15 s przy otwartej Mapie) ----------
+let mapTimer = null;
+async function mapLoadOi(force) {
+  if (S.mapOiBusy) return;
+  const now = Date.now(), rest = [];
+  for (const d of Object.values(S.D)) {
+    if (!force && d.mapOi && now - d.mapOi.ts < 5 * 60e3) continue;
+    if (!force && d.oi4h != null && S.ts && now - S.ts < 5 * 60e3) { d.mapOi = { oi4h: d.oi4h, ts: S.ts }; continue; }   // z etapu 2 skanu
+    rest.push(d);
+  }
+  if (!rest.length) return;
+  S.mapOiBusy = true; S.mapOiN = 0; S.mapOiTot = rest.length;
+  if (S.view === 'map') render();
+  await pool(rest, 4, async d => {
+    try { d.mapOi = { oi4h: oiChanges(await oiHist(d.sym)).oi4h, ts: Date.now() }; } catch (e) { d.mapOi = { oi4h: null, ts: Date.now() }; }
+    S.mapOiN++; if (S.view === 'map' && S.mapOiN % 10 === 0) render();
+  });
+  S.mapOiBusy = false; if (S.view === 'map') render();
+}
+async function mapPrices() {
+  if (S.demo || document.hidden || S.view !== 'map') return;
+  try {
+    const r = await getJSON(`${BASE}/fapi/v1/ticker/price`, 1), m = new Map(r.map(x => [x.symbol, +x.price]));
+    for (const sym of Object.keys(S.D)) { const v = m.get(sym); if (v > 0) S.mapLast[sym] = v; }
+    S.mapTs = Date.now(); if (S.view === 'map') render();
+  } catch (e) { /* następne odświeżenie za 15 s */ }
+}
+function mapStop() { if (mapTimer) { clearInterval(mapTimer); mapTimer = null; } }
+function mapStart() { mapStop(); mapPrices(); mapTimer = setInterval(mapPrices, 15000); }
+function mapItems() {
+  const now = Date.now();
+  return Object.values(S.D).map(d => {
+    const last = S.mapLast[d.sym] || d.last, path = mapPath(d.c1h, last, now), p4 = pct(last, refClose(d.c1h, now, 4 * 3600e3)), oi4 = d.mapOi ? d.mapOi.oi4h : null;
+    return { sym: d.sym, d, path, chg: path ? path.chg : null, p4, oi4, label: mapLabel(p4, oi4) };
+  });
 }
 
 let demoNow = 0;
@@ -751,14 +917,14 @@ async function scan() {
       n++; setProg(n / S.coins.length * 0.7, `Pobieram dane ${n}/${S.coins.length}`);
     });
     if (!Object.keys(D).length) throw new Error('nie udało się pobrać żadnych świec');
-    S.D = D; S.ts = now; render();
+    S.D = D; S.ts = now; S.mapLast = {}; render();
     const cands = Object.values(D).filter(d => d.pending); let m = 0;
     await pool(cands, 4, async d => {
       try { await stage2(d, now); } catch (e) { d.pending = false; d.stageErr = true; }
       m++; setProg(0.7 + m / Math.max(1, cands.length) * 0.3, `Sprawdzam OI i 15M ${m}/${cands.length}`);
     });
   } catch (e) { S.err = (e && e.message) || 'błąd połączenia'; }
-  S.scanning = false; S.prog = 1; render(); jrAfterScan();
+  S.scanning = false; S.prog = 1; render(); jrAfterScan(); if (S.view === 'map') mapLoadOi();
 }
 function setProg(f, txt) {
   S.prog = f; if (txt) S.progTxt = txt;
@@ -776,6 +942,7 @@ const ICO = {
   sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
   moon: '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
   refresh: '<path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 5v6h-6"/>',
+  map: '<rect x="3" y="3" width="8" height="9" rx="1.5"/><rect x="13" y="3" width="8" height="5" rx="1.5"/><rect x="13" y="10" width="8" height="11" rx="1.5"/><rect x="3" y="14" width="8" height="7" rx="1.5"/>',
   journal: '<path d="M5 20V11M12 20V4M19 20v-6"/>', back: '<path d="M15 18l-6-6 6-6"/>', dl: '<path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/>',
   down: '<path d="M6 9l6 6 6-6"/>', check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>', x: '<path d="M6 6l12 12M18 6L6 18"/>', dash: '<path d="M6 12h12"/>'
 };
@@ -934,7 +1101,61 @@ function journalHtml() {
   h += `</div><div class="jnote">Wynik liczony od ceny w chwili zapisu, w kierunku sygnału, minus ${JR_COST.toFixed(1).replace('.', ',')}% kosztów. Przedział to bootstrap po dniach. Sygnały zapisują się tylko przy otwartej aplikacji, więc próbka zależy od tego, kiedy zaglądasz. Dane są w tej przeglądarce na tym urządzeniu. To nie jest rada inwestycyjna.</div>`;
   return h;
 }
+const mapN = (v, d = 0) => (v < 0 ? '−' : v > 0 ? '+' : '') + Math.abs(v).toFixed(d).replace('.', ',') + '%';
+function mapChartHtml(items) {
+  const W = 350, H = 226, X0 = 32, X1 = 294, Y0 = 10, Y1 = 194, wp = items.filter(x => x.path);
+  if (wp.length < 5) return '';
+  const rk = mapRank(wp, 3), lab = rk.top.concat(rk.bottom), labSet = new Set(lab.map(x => x.sym));
+  const all = []; for (const x of wp) for (const v of x.path.pts) all.push(v);
+  all.sort((a, b) => a - b);
+  let lo = Math.min(0, all[Math.floor(all.length * 0.01)], ...lab.map(x => Math.min(...x.path.pts))), hi = Math.max(0, all[Math.ceil(all.length * 0.99) - 1], ...lab.map(x => Math.max(...x.path.pts)));
+  const pad = (hi - lo) * 0.06 || 1; lo -= pad; hi += pad;
+  const t0 = wp[0].path.t0, t1 = wp[0].path.ts[wp[0].path.ts.length - 1], tk = mapTicks(lo, hi);
+  const px = t => X0 + (X1 - X0) * (t - t0) / ((t1 - t0) || 1), py = v => Y0 + (Y1 - Y0) * (hi - v) / (hi - lo);
+  let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Zmiana ceny coinów od początku okresu"><defs><clipPath id="mpclip"><rect x="${X0}" y="${Y0 - 2}" width="${X1 - X0 + 2}" height="${Y1 - Y0 + 4}"/></clipPath></defs>`;
+  for (const v of tk.ticks) s += `<line class="${v === 0 ? 'mp-zero' : 'mp-grid'}" x1="${X0}" x2="${X1}" y1="${py(v).toFixed(1)}" y2="${py(v).toFixed(1)}"/><text class="mp-ax" x="${X0 - 4}" y="${(py(v) + 3).toFixed(1)}" text-anchor="end">${mapN(v, tk.step < 1 ? 1 : 0)}</text>`;
+  const path = x => x.path.pts.map((v, i) => (i ? 'L' : 'M') + px(x.path.ts[i]).toFixed(1) + ' ' + py(v).toFixed(1)).join('');
+  s += '<g clip-path="url(#mpclip)">';
+  for (const x of wp) if (!labSet.has(x.sym)) s += `<path class="mp-pl ${x.chg >= 0 ? 'up' : 'dn'}" d="${path(x)}"/>`;
+  for (const x of lab) s += `<path class="mp-pl hi ${x.chg >= 0 ? 'up' : 'dn'}" d="${path(x)}"/>`;
+  s += '</g>';
+  const ord = lab.slice().sort((a, b) => py(a.chg) - py(b.chg)), ys = mapSpread(ord.map(x => py(x.chg)), 10, Y0 + 4, Y1);
+  ord.forEach((x, i) => { const y0 = py(x.chg), c = x.chg >= 0 ? 'up' : 'dn'; s += `<circle class="mp-dot ${c}" cx="${X1}" cy="${y0.toFixed(1)}" r="2.6"/><text class="mp-tx ${c}" x="${X1 + 7}" y="${(ys[i] + 3).toFixed(1)}">${esc(base(x.sym))}</text>`; });
+  s += `<text class="mp-ax" x="${X0}" y="${H - 8}">${wp[0].path.mode === 'day' ? '00:00 UTC' : '−24 godz.'}</text><text class="mp-ax now" x="${X1}" y="${H - 8}" text-anchor="end">teraz</text></svg>`;
+  return s;
+}
+function mapHtml() {
+  const items = mapItems(), wp = items.filter(x => x.path), mode = wp.length ? wp[0].path.mode : 'day';
+  let h = `<header class="hdr"><div class="brand"><button class="ibtn" id="btnBack" aria-label="Wróć">${svgI(ICO.back, 20, 2.2)}</button><span>Mapa</span></div><div class="hbtns"><button class="ibtn${S.mapOiBusy ? ' spin' : ''}" id="btnMapRef" aria-label="Odśwież mapę"${S.mapOiBusy ? ' disabled' : ''}>${svgI(ICO.refresh, 20, 1.8)}</button></div></header>`;
+  const win = mode === 'day' ? 'zmiana od 00:00 UTC' : 'ostatnie 24 godz. (tuż po północy UTC)';
+  h += `<div class="meta"><span class="dot${S.mapOiBusy ? ' busy' : ''}"></span><span>${items.length ? `${S.demo ? 'DEMO · ' : ''}${items.length} coinów · ${win}${S.demo ? '' : ' · ceny co 15 s'}` : 'Mapa korzysta z danych skanu'}</span></div>`;
+  if (S.demo) h += `<div class="banner demo"><span>Dane DEMO: sztuczne, tylko do oglądania wyglądu. To nie są prawdziwe ceny.</span></div>`;
+  if (!items.length) return h + `<div class="empty">${S.scanning ? 'Skanuję rynek. Mapa pojawi się, gdy skan pobierze świece.' : S.err ? 'Brak danych ze skanu (' + esc(S.err) + '). Wróć i odśwież skan.' : 'Najpierw potrzebny jest skan. Wróć i odśwież.'}</div>`;
+  const br = mapBreadth(items), tot = br.oiUp + br.oiDown, btc = items.find(x => x.sym === 'BTCUSDT');
+  h += `<div class="mp-card"><div class="mp-lab">Szerokość rynku</div>`;
+  h += br.oiN ? `<div class="mp-br"><div><div class="mp-n up">${br.oiUp}</div><div class="mp-t">OI rośnie (4 godz.)</div></div><div style="text-align:right"><div class="mp-n down">${br.oiDown}</div><div class="mp-t">OI spada (4 godz.)</div></div></div>${tot ? `<div class="mp-bar"><i style="width:${(br.oiUp / tot * 100).toFixed(1)}%;background:var(--up)"></i><i style="width:${(br.oiDown / tot * 100).toFixed(1)}%;background:var(--down)"></i></div>` : ''}` : `<div class="mp-t" style="margin-top:8px">${S.mapOiBusy ? 'Pobieram OI…' : 'Brak danych OI (giełda nie odpowiedziała)'}</div>`;
+  const oiNote = S.mapOiBusy ? `OI ${S.mapOiN}/${S.mapOiTot}` : br.oiN < items.length ? `OI dla ${br.oiN} z ${items.length}` : '';
+  h += `<div class="mp-chips">${btc && btc.chg != null ? `<span class="mp-chip">BTC <span class="${cls(btc.chg)}">${fmtPct(btc.chg)}</span></span>` : ''}<span class="mp-chip">Ceny: ${br.pUp} w górę / ${br.pDown} w dół</span>${oiNote ? `<span class="mp-chip g">${oiNote}</span>` : ''}</div></div>`;
+  const chart = mapChartHtml(items);
+  if (chart) h += `<div class="mp-sec">Ścieżki ${mode === 'day' ? 'od początku dnia' : 'z 24 godzin'}</div><div class="mp-card mp-chart">${chart}<div class="mp-sub">Każda linia to jeden coin (zmiana ceny w %). Zielone: powyżej poziomu startu, czerwone: poniżej. Podpisane są trzy najsilniejsze i trzy najsłabsze.</div></div>`;
+  const sec = mapSectors(items);
+  if (sec.length) {
+    const m = Math.max(0.5, ...sec.map(s => Math.abs(s.avg)));
+    h += `<div class="mp-sec">Sektory · średnia zmiana</div><div class="mp-rows">${sec.map(s => { const pos = s.avg >= 0, w = Math.min(Math.abs(s.avg) / m, 1) * 50; return `<div class="mp-srow"><div class="mp-nm">${esc(s.name)}<small>${s.n} coinów · ${s.up}↑ ${s.down}↓</small></div><div class="mp-dv"><i style="${pos ? 'left' : 'right'}:50%;width:${w.toFixed(1)}%;background:var(${pos ? '--up' : '--down'})"></i></div><div class="mp-pc ${pos ? 'up' : 'down'}">${fmtPct(s.avg)}</div></div>`; }).join('')}</div>`;
+  }
+  const tile = x => {
+    const up = x.chg >= 0, tag = x.label ? `<span class="mp-tag ${x.label}">${MAP_LAB[x.label]}</span>` : `<span class="mp-tag na">${S.mapOiBusy ? 'Pobieram OI…' : 'Brak danych OI'}</span>`;
+    return `<a class="mp-tile ${up ? 'u' : 'd'}" href="https://www.tradingview.com/chart/?symbol=BINANCE:${encodeURIComponent(x.sym)}.P" target="_blank" rel="noopener"><div class="mp-h"><span class="mp-tk">${esc(base(x.sym))}</span><span class="mp-p ${up ? 'up' : 'down'}">${fmtPct(x.chg)}</span></div>${tag}<div class="mp-o">Cena 4 godz. ${fmtPct(x.p4)}<br>OI 4 godz. ${x.oi4 == null ? '–' : fmtPct(x.oi4)}</div>${sparkSvg(x.path.pts, 100, 26, 'mp-sp ' + (up ? 'up' : 'down'), 1.6)}</a>`;
+  };
+  const rk = mapRank(wp, 4);
+  h += `<div class="mp-sec">Najsilniejsze</div><div class="mp-grid2">${rk.top.length ? rk.top.map(tile).join('') : '<div class="empty" style="grid-column:1/-1">Żaden coin nie jest teraz na plusie.</div>'}</div>`;
+  h += `<div class="mp-sec">Najsłabsze</div><div class="mp-grid2">${rk.bottom.length ? rk.bottom.map(tile).join('') : '<div class="empty" style="grid-column:1/-1">Żaden coin nie jest teraz na minusie.</div>'}</div>`;
+  h += `<div class="mp-sec">Jak czytać etykiety</div><div class="mp-quad"><div class="mp-q"><b class="up">Nowe longi</b>cena rośnie, OI rośnie</div><div class="mp-q"><b class="down">Nowe shorty</b>cena spada, OI rośnie</div><div class="mp-q"><b style="color:var(--gold)">Zamykanie shortów</b>cena rośnie, OI spada</div><div class="mp-q"><b style="color:var(--warn)">Zamykanie longów</b>cena spada, OI spada</div></div>`;
+  h += `<p class="fine">Mapa opisuje, co dzieje się teraz. To nie jest sygnał i nie ma udowodnionej przewagi. Zmiana na wykresie i w kafelkach liczona jest od ${mode === 'day' ? 'północy UTC' : 'ostatnich 24 godzin'} z zamkniętych świec 1H i bieżącej ceny. Etykieta bierze znak zmiany ceny i OI (w kontraktach) z ostatnich 4 godzin; gdy cena zmieniła się o nie więcej niż ${String(MAP_P_MIN).replace('.', ',')}% albo OI o nie więcej niż ${String(OI_MIN).replace('.', ',')}%, jest "Bez wyraźnego ruchu". Przypisanie do sektorów jest ręczne i przybliżone. Mapa obejmuje te same 100 coinów o największym wolumenie co skaner. Etykiety nie są (jeszcze) zapisywane w Dzienniku.</p>`;
+  return h;
+}
 function render() {
+  if (S.view === 'map') { const sy0 = window.scrollY; $app.innerHTML = mapHtml(); window.scrollTo(0, sy0); return; }
   if (S.view === 'journal') { const sy0 = window.scrollY; $app.innerHTML = journalHtml(); window.scrollTo(0, sy0); return; }
   const car = $app.querySelector('.car'), sl = car ? car.scrollLeft : 0, sy = window.scrollY;
   const vis = visibleCoins(), have = Object.keys(S.D).length > 0;
@@ -946,6 +1167,7 @@ function render() {
   });
   const dark = document.documentElement.classList.contains('dark');
   let h = `<header class="hdr"><div class="brand">${LOGO}<span>Busola</span></div><div class="hbtns">
+    <button class="ibtn" id="btnMap" aria-label="Mapa rynku">${svgI(ICO.map, 20, 1.8)}</button>
     <button class="ibtn" id="btnJr" aria-label="Dziennik wyników">${svgI(ICO.journal, 20, 1.8)}</button>
     <button class="ibtn" id="btnTheme" aria-label="${dark ? 'Przełącz na jasny motyw' : 'Przełącz na ciemny motyw'}">${svgI(dark ? ICO.sun : ICO.moon, 20, 1.8)}</button>
     <button class="ibtn${S.scanning ? ' spin' : ''}" id="btnScan" aria-label="Odśwież skan"${S.scanning ? ' disabled' : ''}>${svgI(ICO.refresh, 20, 1.8)}</button></div></header>`;
@@ -965,7 +1187,7 @@ function render() {
     } else h += `<div class="empty">${S.scanning ? 'Sprawdzam kandydatów…' : 'Żaden coin nie ma teraz zgodnych kierunków na 1D, 4H, 1H i 15M' + (S.filter !== 'all' ? ' w tym kierunku.' : '.')}</div>`;
     h += `<div class="sect"><h2>Pozostałe coiny</h2><span>${rest.length}</span></div>`;
     h += rest.length ? `<div class="list">${rest.map(rowHtml).join('')}</div>` : '<div class="empty">Brak coinów do pokazania przy tym filtrze.</div>';
-    h += `<p class="fine">TRIGGER = 1D, 4H, 1H i 15M w tym samym kierunku oraz OI (w kontraktach) rośnie o więcej niż ${OI_MIN}% razem z ceną (LONG) albo przy spadającej cenie (SHORT) na 1H i 4H. WAIT = kierunki zgodne, OI jeszcze nie potwierdza. To filtr, nie prognoza ani sygnał z udowodnioną przewagą. Strefy OB i FVG (1H i 4H, niewypełnione, z knotami, ważne do zamknięcia świecy za strefą) oraz znacznik reakcji (OB ✓ / CHoCH ⚠) to tylko informacja: nie zmieniają statusu i też nie mają udowodnionej przewagi. Sentyment to średni trend struktury (1D, 4H, 1H) wszystkich skanowanych coinów, a Strach i Chciwość to indeks z alternative.me; oba tylko opisują rynek. Płynność to szacunek ze struktury (niezdjęte szczyty i dołki), nie realne zlecenia. Znacznik Pullback oznacza cofnięcie w trendzie (kierunek zgodny, a ostatnia godzina lub 4 godziny idą przeciw) i też jest tylko informacją. Dziennik (ikona wykresu u góry) zapisuje w tej przeglądarce sygnały ze zgodnymi czterema interwałami i rozlicza je po 1, 4 i 24 godzinach; wnioski pokazuje dopiero po spełnieniu progów ustalonych z góry. Kierunek trendu liczony ze struktury szczytów i dołków (pivot ${N_PIV}) na zamkniętych świecach.</p>`;
+    h += `<p class="fine">TRIGGER = 1D, 4H, 1H i 15M w tym samym kierunku oraz OI (w kontraktach) rośnie o więcej niż ${OI_MIN}% razem z ceną (LONG) albo przy spadającej cenie (SHORT) na 1H i 4H. WAIT = kierunki zgodne, OI jeszcze nie potwierdza. To filtr, nie prognoza ani sygnał z udowodnioną przewagą. Strefy OB i FVG (1H i 4H, niewypełnione, z knotami, ważne do zamknięcia świecy za strefą) oraz znacznik reakcji (OB ✓ / CHoCH ⚠) to tylko informacja: nie zmieniają statusu i też nie mają udowodnionej przewagi. Sentyment to średni trend struktury (1D, 4H, 1H) wszystkich skanowanych coinów, a Strach i Chciwość to indeks z alternative.me; oba tylko opisują rynek. Płynność to szacunek ze struktury (niezdjęte szczyty i dołki), nie realne zlecenia. Znacznik Pullback oznacza cofnięcie w trendzie (kierunek zgodny, a ostatnia godzina lub 4 godziny idą przeciw) i też jest tylko informacją. Mapa (ikona kafelków u góry) pokazuje ścieżki cen od północy UTC, sektory oraz etykiety cena × OI dla 100 coinów; to tylko opis. Dziennik (ikona wykresu u góry) zapisuje w tej przeglądarce sygnały ze zgodnymi czterema interwałami i rozlicza je po 1, 4 i 24 godzinach; wnioski pokazuje dopiero po spełnieniu progów ustalonych z góry. Kierunek trendu liczony ze struktury szczytów i dołków (pivot ${N_PIV}) na zamkniętych świecach.</p>`;
   }
   $app.innerHTML = h;
   const c2 = $app.querySelector('.car'); if (c2) c2.scrollLeft = sl; window.scrollTo(0, sy);
@@ -982,7 +1204,9 @@ $app.addEventListener('click', e => {
     return render();
   }
   if (t.closest('#btnJr')) { S.view = 'journal'; window.scrollTo(0, 0); render(); return jrSettle(); }
-  if (t.closest('#btnBack')) { S.view = 'home'; render(); return window.scrollTo(0, 0); }
+  if (t.closest('#btnMap')) { S.view = 'map'; window.scrollTo(0, 0); mapStart(); const ld = mapLoadOi(); render(); return ld; }
+  if (t.closest('#btnMapRef')) { mapPrices(); return mapLoadOi(true); }
+  if (t.closest('#btnBack')) { mapStop(); S.view = 'home'; render(); return window.scrollTo(0, 0); }
   if (t.closest('#btnCsv')) return jrDownload();
   const jh = t.closest('[data-jh]'); if (jh) { S.jrH = jh.dataset.jh; return render(); }
   if (t.closest('#btnScan')) return scan();
@@ -996,7 +1220,7 @@ $app.addEventListener('click', e => {
     const d = S.D[sym]; if (S.open && d && !d.c15 && !d.pending && !d.stageErr) lazy15(d);
   }
 });
-document.addEventListener('visibilitychange', () => { if (!document.hidden && S.ts && Date.now() - S.ts > 5 * 60e3) scan(); });
+document.addEventListener('visibilitychange', () => { if (document.hidden) return; if (S.view === 'map') mapPrices(); if (S.ts && Date.now() - S.ts > 5 * 60e3) scan(); });
 
 // ---------- ikona i manifest (dodanie do ekranu głównego) ----------
 function drawIcon(size) {
