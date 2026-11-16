@@ -271,6 +271,12 @@ a { color: inherit; }
 .mp-quad { margin: 8px 20px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .mp-q { padding: 10px 12px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); font-size: 12px; line-height: 1.4; color: var(--muted); }
 .mp-q b { display: block; margin-bottom: 2px; font-size: 12.5px; }
+.mp-ctl { display: flex; gap: 8px; padding: 0 8px 6px; }
+.mp-btn { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface2); font-size: 12.5px; font-weight: 600; }
+.mp-btn:first-child { border-color: var(--gold-line); color: var(--gold); }
+.mp-btn.on { background: var(--gold-soft); border-color: var(--gold-line); color: var(--gold); }
+.mp-range { display: block; width: calc(100% - 20px); margin: 4px 10px 6px; accent-color: var(--gold); }
+.mp-cur { stroke: var(--gold); stroke-width: 1; opacity: .6; }
 </style>
 </head>
 <body>
@@ -622,6 +628,30 @@ function mapSpread(ys, gap, lo, hi) {
   return r.map(v => Math.max(lo, v));
 }
 
+// Wartość ścieżki w chwili t (interpolacja liniowa; poza zakresem: wartość skrajna) i ścieżka obcięta do chwili t (do odtwarzania dnia)
+function mapAt(path, t) {
+  const { ts, pts } = path;
+  if (t <= ts[0]) return pts[0];
+  if (t >= ts[ts.length - 1]) return pts[pts.length - 1];
+  let i = 1; while (ts[i] < t) i++;
+  const w = (t - ts[i - 1]) / ((ts[i] - ts[i - 1]) || 1);
+  return pts[i - 1] + (pts[i] - pts[i - 1]) * w;
+}
+function mapCut(path, t) {
+  const { ts, pts } = path, o = { ts: [], pts: [] };
+  for (let i = 0; i < ts.length && ts[i] <= t; i++) { o.ts.push(ts[i]); o.pts.push(pts[i]); }
+  if (o.ts[o.ts.length - 1] < t && o.ts.length < ts.length) { o.ts.push(t); o.pts.push(mapAt(path, t)); }
+  return o;
+}
+// Zakres osi Y: środkowe 98% punktów + zero; bez trim dodatkowo mieszczą się pełne ścieżki podpisanych coinów (labPts), z trim skrajne są ucięte
+function mapAxis(sortedAll, labPts, trim) {
+  const n = sortedAll.length, q = p => sortedAll[Math.min(n - 1, Math.max(0, Math.round(p * (n - 1))))];
+  let lo = Math.min(0, q(0.01)), hi = Math.max(0, q(0.99));
+  if (!trim) for (const v of labPts) { if (v < lo) lo = v; if (v > hi) hi = v; }
+  const pad = (hi - lo) * 0.06 || 1;
+  return { lo: lo - pad, hi: hi + pad };
+}
+
 // ---------- Dziennik wyników: zapis sygnałów, rozliczanie, statystyki ----------
 // Reguły ustalone z góry: wejście po cenie z chwili zapisu (bez patrzenia w przyszłość), wynik po 1, 4 i 24 godzinach w kierunku sygnału,
 // minus koszt JR_COST (%, round-trip). Przedział = bootstrap po dniach (dni są jednostką, bo sygnały z jednego dnia nie są niezależne).
@@ -753,7 +783,7 @@ async function getJSON(url, tries = 3) {
   throw new Error('limit zapytań giełdy');
 }
 const mapK = k => k.map(x => ({ time: Math.floor(x[0] / 1000), open: +x[1], high: +x[2], low: +x[3], close: +x[4], volume: +x[5], closeTime: x[6] }));
-const S = { view: 'home', jr: [], jrH: 'h4', jrNoStore: false, mapLast: {}, mapOiBusy: false, mapOiN: 0, mapOiTot: 0, mapTs: 0, demo: false, coins: [], D: {}, filter: 'all', open: null, scanning: false, prog: 0, progTxt: '', ts: 0, err: '', note: '' };
+const S = { view: 'home', jr: [], jrH: 'h4', jrNoStore: false, mapLast: {}, mapF: 1, mapPlay: false, mapTrim: false, mapCache: null, mapOiBusy: false, mapOiN: 0, mapOiTot: 0, mapTs: 0, demo: false, coins: [], D: {}, filter: 'all', open: null, scanning: false, prog: 0, progTxt: '', ts: 0, err: '', note: '' };
 try { const f = localStorage.getItem('busola_filter'); if (f === 'long' || f === 'short' || f === 'all') S.filter = f; } catch (e) { /* tylko w pamięci */ }
 
 // ---------- Dziennik: pamięć przeglądarki, zapis po skanie, rozliczanie ----------
@@ -806,10 +836,34 @@ async function mapPrices() {
   try {
     const r = await getJSON(`${BASE}/fapi/v1/ticker/price`, 1), m = new Map(r.map(x => [x.symbol, +x.price]));
     for (const sym of Object.keys(S.D)) { const v = m.get(sym); if (v > 0) S.mapLast[sym] = v; }
-    S.mapTs = Date.now(); if (S.view === 'map') render();
+    S.mapTs = Date.now(); if (S.view === 'map' && !S.mapPlay) render();
   } catch (e) { /* następne odświeżenie za 15 s */ }
 }
-function mapStop() { if (mapTimer) { clearInterval(mapTimer); mapTimer = null; } }
+let mapRaf = 0;
+function mapStop() { if (mapTimer) { clearInterval(mapTimer); mapTimer = null; } cancelAnimationFrame(mapRaf); S.mapPlay = false; S.mapCache = null; }
+function mapBtnHtml() { return `${svgI(S.mapPlay ? ICO.pause : ICO.play, 16, 2.2)}<span>${S.mapPlay ? 'Pauza' : S.mapF >= 1 ? 'Odtwórz dzień' : 'Dalej'}</span>`; }
+// Przerysowanie samego wykresu (bez przebudowy strony): klatka animacji, ruch suwaka
+function mapFrame() {
+  const w = document.getElementById('mpPlot'); if (!w) return;
+  w.innerHTML = mapChartHtml(S.mapCache || mapItems(), S.mapF, S.mapTrim);
+  const r = document.getElementById('mpRange'); if (r && document.activeElement !== r) r.value = Math.round(S.mapF * 1000);
+  const b = document.getElementById('mpPlay'); if (b) b.innerHTML = mapBtnHtml();
+}
+// ms = czas przejścia od f0 do końca dnia
+function mapAnimate(ms, f0 = 0) {
+  cancelAnimationFrame(mapRaf);
+  if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) { S.mapPlay = false; S.mapF = 1; S.mapCache = null; return mapFrame(); }
+  S.mapPlay = true; S.mapF = f0; S.mapCache = mapItems();
+  const t0 = performance.now(); let last = 0;
+  const step = now => {
+    if (S.view !== 'map' || !S.mapPlay) return;
+    const f = Math.min(1, f0 + (now - t0) / ms * (1 - f0));
+    if (f >= 1) { S.mapPlay = false; S.mapF = 1; S.mapCache = null; return mapFrame(); }
+    if (now - last >= 33) { last = now; S.mapF = f; mapFrame(); }
+    mapRaf = requestAnimationFrame(step);
+  };
+  mapRaf = requestAnimationFrame(step); mapFrame();
+}
 function mapStart() { mapStop(); mapPrices(); mapTimer = setInterval(mapPrices, 15000); }
 function mapItems() {
   const now = Date.now();
@@ -943,6 +997,7 @@ const ICO = {
   moon: '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
   refresh: '<path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 5v6h-6"/>',
   map: '<rect x="3" y="3" width="8" height="9" rx="1.5"/><rect x="13" y="3" width="8" height="5" rx="1.5"/><rect x="13" y="10" width="8" height="11" rx="1.5"/><rect x="3" y="14" width="8" height="7" rx="1.5"/>',
+  play: '<path d="M7 5l12 7-12 7z"/>', pause: '<path d="M8 5v14M16 5v14"/>',
   journal: '<path d="M5 20V11M12 20V4M19 20v-6"/>', back: '<path d="M15 18l-6-6 6-6"/>', dl: '<path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/>',
   down: '<path d="M6 9l6 6 6-6"/>', check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>', x: '<path d="M6 6l12 12M18 6L6 18"/>', dash: '<path d="M6 12h12"/>'
 };
@@ -1102,26 +1157,33 @@ function journalHtml() {
   return h;
 }
 const mapN = (v, d = 0) => (v < 0 ? '−' : v > 0 ? '+' : '') + Math.abs(v).toFixed(d).replace('.', ',') + '%';
-function mapChartHtml(items) {
-  const W = 350, H = 226, X0 = 32, X1 = 294, Y0 = 10, Y1 = 194, wp = items.filter(x => x.path);
+function mapChartHtml(items, f = 1, trim = false) {
+  const W = 350, H = 226, X0 = 32, X1 = 288, Y0 = 10, Y1 = 194, wp = items.filter(x => x.path);
   if (wp.length < 5) return '';
-  const rk = mapRank(wp, 3), lab = rk.top.concat(rk.bottom), labSet = new Set(lab.map(x => x.sym));
-  const all = []; for (const x of wp) for (const v of x.path.pts) all.push(v);
+  const rk0 = mapRank(wp, 3), all = []; for (const x of wp) for (const v of x.path.pts) all.push(v);
   all.sort((a, b) => a - b);
-  let lo = Math.min(0, all[Math.floor(all.length * 0.01)], ...lab.map(x => Math.min(...x.path.pts))), hi = Math.max(0, all[Math.ceil(all.length * 0.99) - 1], ...lab.map(x => Math.max(...x.path.pts)));
-  const pad = (hi - lo) * 0.06 || 1; lo -= pad; hi += pad;
-  const t0 = wp[0].path.t0, t1 = wp[0].path.ts[wp[0].path.ts.length - 1], tk = mapTicks(lo, hi);
-  const px = t => X0 + (X1 - X0) * (t - t0) / ((t1 - t0) || 1), py = v => Y0 + (Y1 - Y0) * (hi - v) / (hi - lo);
+  const ax = mapAxis(all, [].concat(...rk0.top.concat(rk0.bottom).map(x => x.path.pts)), trim), lo = ax.lo, hi = ax.hi, tk = mapTicks(lo, hi);
+  const t0 = wp[0].path.t0, t1 = wp[0].path.ts[wp[0].path.ts.length - 1], full = f >= 1, tc = t0 + (t1 - t0) * Math.max(0, Math.min(1, f));
+  const cur = wp.map(x => full ? { sym: x.sym, chg: x.chg, c: x.path } : { sym: x.sym, chg: mapAt(x.path, tc), c: mapCut(x.path, tc) });
+  const rk = mapRank(cur, 3), lab = rk.top.concat(rk.bottom), labSet = new Set(lab.map(x => x.sym));
+  const px = t => X0 + (X1 - X0) * (t - t0) / ((t1 - t0) || 1), py = v => Y0 + (Y1 - Y0) * (hi - v) / (hi - lo), cl = (v, a, b) => Math.max(a, Math.min(b, v));
   let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Zmiana ceny coinów od początku okresu"><defs><clipPath id="mpclip"><rect x="${X0}" y="${Y0 - 2}" width="${X1 - X0 + 2}" height="${Y1 - Y0 + 4}"/></clipPath></defs>`;
   for (const v of tk.ticks) s += `<line class="${v === 0 ? 'mp-zero' : 'mp-grid'}" x1="${X0}" x2="${X1}" y1="${py(v).toFixed(1)}" y2="${py(v).toFixed(1)}"/><text class="mp-ax" x="${X0 - 4}" y="${(py(v) + 3).toFixed(1)}" text-anchor="end">${mapN(v, tk.step < 1 ? 1 : 0)}</text>`;
-  const path = x => x.path.pts.map((v, i) => (i ? 'L' : 'M') + px(x.path.ts[i]).toFixed(1) + ' ' + py(v).toFixed(1)).join('');
+  const path = c => c.pts.map((v, i) => (i ? 'L' : 'M') + px(c.ts[i]).toFixed(1) + ' ' + py(v).toFixed(1)).join('');
   s += '<g clip-path="url(#mpclip)">';
-  for (const x of wp) if (!labSet.has(x.sym)) s += `<path class="mp-pl ${x.chg >= 0 ? 'up' : 'dn'}" d="${path(x)}"/>`;
-  for (const x of lab) s += `<path class="mp-pl hi ${x.chg >= 0 ? 'up' : 'dn'}" d="${path(x)}"/>`;
+  for (const x of cur) if (!labSet.has(x.sym)) s += `<path class="mp-pl ${x.chg >= 0 ? 'up' : 'dn'}" d="${path(x.c)}"/>`;
+  for (const x of lab) s += `<path class="mp-pl hi ${x.chg >= 0 ? 'up' : 'dn'}" d="${path(x.c)}"/>`;
   s += '</g>';
-  const ord = lab.slice().sort((a, b) => py(a.chg) - py(b.chg)), ys = mapSpread(ord.map(x => py(x.chg)), 10, Y0 + 4, Y1);
-  ord.forEach((x, i) => { const y0 = py(x.chg), c = x.chg >= 0 ? 'up' : 'dn'; s += `<circle class="mp-dot ${c}" cx="${X1}" cy="${y0.toFixed(1)}" r="2.6"/><text class="mp-tx ${c}" x="${X1 + 7}" y="${(ys[i] + 3).toFixed(1)}">${esc(base(x.sym))}</text>`; });
-  s += `<text class="mp-ax" x="${X0}" y="${H - 8}">${wp[0].path.mode === 'day' ? '00:00 UTC' : '−24 godz.'}</text><text class="mp-ax now" x="${X1}" y="${H - 8}" text-anchor="end">teraz</text></svg>`;
+  if (!full) s += `<line class="mp-cur" x1="${px(tc).toFixed(1)}" x2="${px(tc).toFixed(1)}" y1="${Y0}" y2="${Y1}"/>`;
+  const ord = lab.slice().sort((a, b) => py(a.chg) - py(b.chg)), ys = mapSpread(ord.map(x => cl(py(x.chg), Y0, Y1)), 10, Y0 + 4, Y1);
+  const ex = full ? X1 : px(tc);
+  ord.forEach((x, i) => {
+    const out = x.chg < lo || x.chg > hi, c = x.chg >= 0 ? 'up' : 'dn', y0 = cl(py(x.chg), Y0, Y1);
+    s += `<circle class="mp-dot ${c}" cx="${ex.toFixed(1)}" cy="${y0.toFixed(1)}" r="2.6"/><text class="mp-tx ${c}" x="${X1 + 7}" y="${(ys[i] + 3).toFixed(1)}">${esc(base(x.sym))}${out ? ' ' + mapN(x.chg, 0) : ''}</text>`;
+  });
+  const hh = d => String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0');
+  const endTxt = full ? 'teraz' : wp[0].path.mode === 'day' ? hh(new Date(tc)) + ' UTC' : '−' + Math.max(0, Math.round((t1 - tc) / 3600e3)) + ' godz.';
+  s += `<text class="mp-ax" x="${X0}" y="${H - 8}">${wp[0].path.mode === 'day' ? '00:00 UTC' : '−24 godz.'}</text><text class="mp-ax now" x="${X1}" y="${H - 8}" text-anchor="end">${endTxt}</text></svg>`;
   return s;
 }
 function mapHtml() {
@@ -1136,8 +1198,8 @@ function mapHtml() {
   h += br.oiN ? `<div class="mp-br"><div><div class="mp-n up">${br.oiUp}</div><div class="mp-t">OI rośnie (4 godz.)</div></div><div style="text-align:right"><div class="mp-n down">${br.oiDown}</div><div class="mp-t">OI spada (4 godz.)</div></div></div>${tot ? `<div class="mp-bar"><i style="width:${(br.oiUp / tot * 100).toFixed(1)}%;background:var(--up)"></i><i style="width:${(br.oiDown / tot * 100).toFixed(1)}%;background:var(--down)"></i></div>` : ''}` : `<div class="mp-t" style="margin-top:8px">${S.mapOiBusy ? 'Pobieram OI…' : 'Brak danych OI (giełda nie odpowiedziała)'}</div>`;
   const oiNote = S.mapOiBusy ? `OI ${S.mapOiN}/${S.mapOiTot}` : br.oiN < items.length ? `OI dla ${br.oiN} z ${items.length}` : '';
   h += `<div class="mp-chips">${btc && btc.chg != null ? `<span class="mp-chip">BTC <span class="${cls(btc.chg)}">${fmtPct(btc.chg)}</span></span>` : ''}<span class="mp-chip">Ceny: ${br.pUp} w górę / ${br.pDown} w dół</span>${oiNote ? `<span class="mp-chip g">${oiNote}</span>` : ''}</div></div>`;
-  const chart = mapChartHtml(items);
-  if (chart) h += `<div class="mp-sec">Ścieżki ${mode === 'day' ? 'od początku dnia' : 'z 24 godzin'}</div><div class="mp-card mp-chart">${chart}<div class="mp-sub">Każda linia to jeden coin (zmiana ceny w %). Zielone: powyżej poziomu startu, czerwone: poniżej. Podpisane są trzy najsilniejsze i trzy najsłabsze.</div></div>`;
+  const chart = mapChartHtml(items, S.mapF, S.mapTrim);
+  if (chart) h += `<div class="mp-sec">Ścieżki ${mode === 'day' ? 'od początku dnia' : 'z 24 godzin'}</div><div class="mp-card mp-chart"><div class="mp-ctl"><button class="mp-btn" id="mpPlay" aria-label="Odtwórz dzień">${mapBtnHtml()}</button><button class="mp-btn${S.mapTrim ? ' on' : ''}" id="mpTrim" aria-pressed="${S.mapTrim}">Bez skrajnych</button></div><div id="mpPlot">${chart}</div><input class="mp-range" id="mpRange" type="range" min="0" max="1000" value="${Math.round(S.mapF * 1000)}" aria-label="Moment dnia"><div class="mp-sub">Każda linia to jeden coin (zmiana ceny w %). Zielone: powyżej poziomu startu, czerwone: poniżej. Podpisane są trzy najsilniejsze i trzy najsłabsze w danym momencie. ${S.mapTrim ? 'Oś ucięta do środkowych 98% punktów, skrajne linie wychodzą poza ramkę (ich wynik jest przy podpisie).' : ''}</div></div>`;
   const sec = mapSectors(items);
   if (sec.length) {
     const m = Math.max(0.5, ...sec.map(s => Math.abs(s.avg)));
@@ -1204,7 +1266,15 @@ $app.addEventListener('click', e => {
     return render();
   }
   if (t.closest('#btnJr')) { S.view = 'journal'; window.scrollTo(0, 0); render(); return jrSettle(); }
-  if (t.closest('#btnMap')) { S.view = 'map'; window.scrollTo(0, 0); mapStart(); const ld = mapLoadOi(); render(); return ld; }
+  if (t.closest('#btnMap')) {
+    S.view = 'map'; window.scrollTo(0, 0); mapStart(); const ld = mapLoadOi(), has = Object.keys(S.D).length > 0;
+    S.mapF = has ? 0 : 1; render(); if (has) mapAnimate(1600); return ld;
+  }
+  if (t.closest('#mpPlay')) {
+    if (S.mapPlay) { cancelAnimationFrame(mapRaf); S.mapPlay = false; S.mapCache = null; return mapFrame(); }
+    return S.mapF >= 1 ? mapAnimate(9000, 0) : mapAnimate(9000 * (1 - S.mapF), S.mapF);
+  }
+  if (t.closest('#mpTrim')) { S.mapTrim = !S.mapTrim; return render(); }
   if (t.closest('#btnMapRef')) { mapPrices(); return mapLoadOi(true); }
   if (t.closest('#btnBack')) { mapStop(); S.view = 'home'; render(); return window.scrollTo(0, 0); }
   if (t.closest('#btnCsv')) return jrDownload();
@@ -1219,6 +1289,10 @@ $app.addEventListener('click', e => {
     const sym = s.dataset.sym; S.open = S.open === sym ? null : sym; render();
     const d = S.D[sym]; if (S.open && d && !d.c15 && !d.pending && !d.stageErr) lazy15(d);
   }
+});
+$app.addEventListener('input', e => {
+  if (e.target.id !== 'mpRange') return;
+  cancelAnimationFrame(mapRaf); S.mapPlay = false; S.mapCache = null; S.mapF = (+e.target.value) / 1000; mapFrame();
 });
 document.addEventListener('visibilitychange', () => { if (document.hidden) return; if (S.view === 'map') mapPrices(); if (S.ts && Date.now() - S.ts > 5 * 60e3) scan(); });
 
