@@ -276,6 +276,7 @@ a { color: inherit; }
 .mp-btn:first-child { border-color: var(--gold-line); color: var(--gold); }
 .mp-btn.on { background: var(--gold-soft); border-color: var(--gold-line); color: var(--gold); }
 .mp-range { display: block; width: calc(100% - 20px); margin: 4px 10px 6px; accent-color: var(--gold); }
+.tvset { display: block; width: 100%; margin-top: 8px; padding: 8px 6px; border: 0; background: transparent; color: var(--muted); font-size: 12.5px; text-decoration: underline; text-underline-offset: 3px; }
 .mp-cur { stroke: var(--gold); stroke-width: 1; opacity: .6; }
 </style>
 </head>
@@ -652,6 +653,16 @@ function mapAxis(sortedAll, labPts, trim) {
   return { lo: lo - pad, hi: hi + pad };
 }
 
+// Adres wykresu w TradingView. Bez zapisanego układu: czysty wykres Binance (jak dotąd). Z układem (ID z linku /chart/ID/): ten układ z podmienionym coinem na MEXC
+// (bez prefiksu 1000 / 1M, bo MEXC nazywa te kontrakty inaczej niż Binance). ID układu jest tylko w przeglądarce użytkownika, nigdy w kodzie.
+const tvLayoutId = v => {
+  const s = String(v || '').trim(), m = s.match(/tradingview\.com\/chart\/([A-Za-z0-9]{6,12})/i) || (/^[A-Za-z0-9]{8}$/.test(s) ? [null, s] : null);
+  return m ? m[1] : null;
+};
+const tvUrl = (sym, layoutId) => layoutId
+  ? `https://www.tradingview.com/chart/${layoutId}/?symbol=${encodeURIComponent('MEXC:' + mapBase(sym) + 'USDT.P')}`
+  : `https://www.tradingview.com/chart/?symbol=BINANCE:${encodeURIComponent(sym)}.P`;
+
 // ---------- Dziennik wyników: zapis sygnałów, rozliczanie, statystyki ----------
 // Reguły ustalone z góry: wejście po cenie z chwili zapisu (bez patrzenia w przyszłość), wynik po 1, 4 i 24 godzinach w kierunku sygnału,
 // minus koszt JR_COST (%, round-trip). Przedział = bootstrap po dniach (dni są jednostką, bo sygnały z jednego dnia nie są niezależne).
@@ -783,7 +794,8 @@ async function getJSON(url, tries = 3) {
   throw new Error('limit zapytań giełdy');
 }
 const mapK = k => k.map(x => ({ time: Math.floor(x[0] / 1000), open: +x[1], high: +x[2], low: +x[3], close: +x[4], volume: +x[5], closeTime: x[6] }));
-const S = { view: 'home', jr: [], jrH: 'h4', jrNoStore: false, mapLast: {}, mapF: 1, mapPlay: false, mapTrim: false, mapCache: null, mapOiBusy: false, mapOiN: 0, mapOiTot: 0, mapTs: 0, demo: false, coins: [], D: {}, filter: 'all', open: null, scanning: false, prog: 0, progTxt: '', ts: 0, err: '', note: '' };
+const S = { view: 'home', jr: [], jrH: 'h4', jrNoStore: false, tvLayout: '', mapLast: {}, mapF: 1, mapPlay: false, mapTrim: false, mapCache: null, mapOiBusy: false, mapOiN: 0, mapOiTot: 0, mapTs: 0, demo: false, coins: [], D: {}, filter: 'all', open: null, scanning: false, prog: 0, progTxt: '', ts: 0, err: '', note: '' };
+try { S.tvLayout = tvLayoutId(localStorage.getItem('busola_tv_layout')) || ''; } catch (e) { S.tvLayout = ''; }
 try { const f = localStorage.getItem('busola_filter'); if (f === 'long' || f === 'short' || f === 'all') S.filter = f; } catch (e) { /* tylko w pamięci */ }
 
 // ---------- Dziennik: pamięć przeglądarki, zapis po skanie, rozliczanie ----------
@@ -838,6 +850,16 @@ async function mapPrices() {
     for (const sym of Object.keys(S.D)) { const v = m.get(sym); if (v > 0) S.mapLast[sym] = v; }
     S.mapTs = Date.now(); if (S.view === 'map' && !S.mapPlay) render();
   } catch (e) { /* następne odświeżenie za 15 s */ }
+}
+const tvLink = sym => tvUrl(sym, S.tvLayout);
+const tvBtn = () => `<button class="tvset" id="btnTv">${S.tvLayout ? 'Twój układ TradingView jest zapisany: zmień lub usuń' : 'Dodaj swój układ TradingView (wskaźniki, MEXC)'}</button>`;
+function tvAsk() {
+  const v = window.prompt('Wklej link do swojego układu TradingView (w aplikacji: menu układu → Udostępnij link), np. tradingview.com/chart/XXXXXXXX/\nZapisze się tylko w tej przeglądarce.' + (S.tvLayout ? '\nWpisz - (minus), żeby usunąć zapisany układ.' : ''), '');
+  if (v == null) return;
+  if (v.trim() === '-') S.tvLayout = '';
+  else { const id = tvLayoutId(v); if (!id) { window.alert('To nie wygląda na link do układu (tradingview.com/chart/…). Nic nie zmieniono.'); return; } S.tvLayout = id; }
+  try { localStorage.setItem('busola_tv_layout', S.tvLayout); } catch (e) { /* tylko w pamięci */ }
+  render();
 }
 let mapRaf = 0;
 function mapStop() { if (mapTimer) { clearInterval(mapTimer); mapTimer = null; } cancelAnimationFrame(mapRaf); S.mapPlay = false; S.mapCache = null; }
@@ -1118,7 +1140,7 @@ function detailInner(d) {
   }
   h += zonesHtml(d);
   h += lqHtml(d);
-  h += `<a class="cta" href="https://www.tradingview.com/chart/?symbol=BINANCE:${encodeURIComponent(d.sym)}.P" target="_blank" rel="noopener">Otwórz wykres</a>`;
+  h += `<a class="cta" href="${tvLink(d.sym)}" target="_blank" rel="noopener">Otwórz wykres</a>${tvBtn()}`;
   return h;
 }
 
@@ -1207,13 +1229,13 @@ function mapHtml() {
   }
   const tile = x => {
     const up = x.chg >= 0, tag = x.label ? `<span class="mp-tag ${x.label}">${MAP_LAB[x.label]}</span>` : `<span class="mp-tag na">${S.mapOiBusy ? 'Pobieram OI…' : 'Brak danych OI'}</span>`;
-    return `<a class="mp-tile ${up ? 'u' : 'd'}" href="https://www.tradingview.com/chart/?symbol=BINANCE:${encodeURIComponent(x.sym)}.P" target="_blank" rel="noopener"><div class="mp-h"><span class="mp-tk">${esc(base(x.sym))}</span><span class="mp-p ${up ? 'up' : 'down'}">${fmtPct(x.chg)}</span></div>${tag}<div class="mp-o">Cena 4 godz. ${fmtPct(x.p4)}<br>OI 4 godz. ${x.oi4 == null ? '–' : fmtPct(x.oi4)}</div>${sparkSvg(x.path.pts, 100, 26, 'mp-sp ' + (up ? 'up' : 'down'), 1.6)}</a>`;
+    return `<a class="mp-tile ${up ? 'u' : 'd'}" href="${tvLink(x.sym)}" target="_blank" rel="noopener"><div class="mp-h"><span class="mp-tk">${esc(base(x.sym))}</span><span class="mp-p ${up ? 'up' : 'down'}">${fmtPct(x.chg)}</span></div>${tag}<div class="mp-o">Cena 4 godz. ${fmtPct(x.p4)}<br>OI 4 godz. ${x.oi4 == null ? '–' : fmtPct(x.oi4)}</div>${sparkSvg(x.path.pts, 100, 26, 'mp-sp ' + (up ? 'up' : 'down'), 1.6)}</a>`;
   };
   const rk = mapRank(wp, 4);
   h += `<div class="mp-sec">Najsilniejsze</div><div class="mp-grid2">${rk.top.length ? rk.top.map(tile).join('') : '<div class="empty" style="grid-column:1/-1">Żaden coin nie jest teraz na plusie.</div>'}</div>`;
   h += `<div class="mp-sec">Najsłabsze</div><div class="mp-grid2">${rk.bottom.length ? rk.bottom.map(tile).join('') : '<div class="empty" style="grid-column:1/-1">Żaden coin nie jest teraz na minusie.</div>'}</div>`;
   h += `<div class="mp-sec">Jak czytać etykiety</div><div class="mp-quad"><div class="mp-q"><b class="up">Nowe longi</b>cena rośnie, OI rośnie</div><div class="mp-q"><b class="down">Nowe shorty</b>cena spada, OI rośnie</div><div class="mp-q"><b style="color:var(--gold)">Zamykanie shortów</b>cena rośnie, OI spada</div><div class="mp-q"><b style="color:var(--warn)">Zamykanie longów</b>cena spada, OI spada</div></div>`;
-  h += `<p class="fine">Mapa opisuje, co dzieje się teraz. To nie jest sygnał i nie ma udowodnionej przewagi. Zmiana na wykresie i w kafelkach liczona jest od ${mode === 'day' ? 'północy UTC' : 'ostatnich 24 godzin'} z zamkniętych świec 1H i bieżącej ceny. Etykieta bierze znak zmiany ceny i OI (w kontraktach) z ostatnich 4 godzin; gdy cena zmieniła się o nie więcej niż ${String(MAP_P_MIN).replace('.', ',')}% albo OI o nie więcej niż ${String(OI_MIN).replace('.', ',')}%, jest "Bez wyraźnego ruchu". Przypisanie do sektorów jest ręczne i przybliżone. Mapa obejmuje te same 100 coinów o największym wolumenie co skaner. Etykiety nie są (jeszcze) zapisywane w Dzienniku.</p>`;
+  h += `<p class="fine">Mapa opisuje, co dzieje się teraz. To nie jest sygnał i nie ma udowodnionej przewagi. Zmiana na wykresie i w kafelkach liczona jest od ${mode === 'day' ? 'północy UTC' : 'ostatnich 24 godzin'} z zamkniętych świec 1H i bieżącej ceny. Etykieta bierze znak zmiany ceny i OI (w kontraktach) z ostatnich 4 godzin; gdy cena zmieniła się o nie więcej niż ${String(MAP_P_MIN).replace('.', ',')}% albo OI o nie więcej niż ${String(OI_MIN).replace('.', ',')}%, jest "Bez wyraźnego ruchu". Przypisanie do sektorów jest ręczne i przybliżone. Mapa obejmuje te same 100 coinów o największym wolumenie co skaner. Etykiety nie są (jeszcze) zapisywane w Dzienniku.</p><div style="margin:12px 20px 0">${tvBtn()}</div>`;
   return h;
 }
 function render() {
@@ -1274,6 +1296,7 @@ $app.addEventListener('click', e => {
     if (S.mapPlay) { cancelAnimationFrame(mapRaf); S.mapPlay = false; S.mapCache = null; return mapFrame(); }
     return S.mapF >= 1 ? mapAnimate(9000, 0) : mapAnimate(9000 * (1 - S.mapF), S.mapF);
   }
+  if (t.closest('#btnTv')) return tvAsk();
   if (t.closest('#mpTrim')) { S.mapTrim = !S.mapTrim; return render(); }
   if (t.closest('#btnMapRef')) { mapPrices(); return mapLoadOi(true); }
   if (t.closest('#btnBack')) { mapStop(); S.view = 'home'; render(); return window.scrollTo(0, 0); }
