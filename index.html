@@ -161,8 +161,8 @@ a { color: inherit; }
 .plab { position: absolute; right: 0; transform: translateY(-120%); padding: 1px 7px; border-radius: 999px; font-size: 10.5px; font-weight: 600; line-height: 15px; background: var(--surface2); color: var(--fg); pointer-events: none; }
 @keyframes chReveal { from { clip-path: inset(-6px 100% -6px 0); } to { clip-path: inset(-6px -6px -6px 0); } }
 @keyframes chFade { from { opacity: 0; } to { opacity: 1; } }
-.chartw.anim .chart { animation: chReveal 1.8s cubic-bezier(.35,.6,.25,1) calc(0ms - var(--el, 0ms)) both; }
-.chartw.anim .plab, .chartw.anim .mk { animation: chFade .5s ease-out calc(1700ms - var(--el, 0ms)) both; }
+.chartw.anim .chart { animation: chReveal 2.5s cubic-bezier(.35,.6,.25,1) calc(0ms - var(--el, 0ms)) both; }
+.chartw.anim .plab, .chartw.anim .mk { animation: chFade .5s ease-out calc(2400ms - var(--el, 0ms)) both; }
 @media (prefers-reduced-motion: reduce) { .chartw.anim .chart, .chartw.anim .plab, .chartw.anim .mk { animation: none; } }
 .cl { display: flex; justify-content: space-between; margin-top: 6px; font-size: 11.5px; color: var(--muted); }
 .cond { display: flex; align-items: flex-start; gap: 10px; padding: 7px 0; font-size: 13px; line-height: 1.4; }
@@ -1227,7 +1227,7 @@ function detailInner(d) {
   if (cd) {
     const pts = cd.xy.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' '), c24 = cls(d.ch.d1 || 0);
     let an = '', el = 0;
-    if (S.chAnim === d.sym) { if (!S.chAnimT) S.chAnimT = Date.now(); el = Date.now() - S.chAnimT; if (el < 2400) an = ' anim'; else S.chAnim = null; }
+    if (S.chAnim === d.sym) { if (!S.chAnimT) S.chAnimT = Date.now(); el = Date.now() - S.chAnimT; if (el < 3200) an = ' anim'; else S.chAnim = null; }
     const yN = cd.xy[cd.xy.length - 1][1], pyN = (yN / 110 * 100).toFixed(1);
     h += `<div class="lab">Ostatnie 24 godziny</div><div class="chartw ${c24}${an}" style="--el:${Math.round(el)}ms"><svg class="chart" viewBox="0 0 322 110" preserveAspectRatio="none" fill="none" aria-hidden="true"><defs><linearGradient id="gC" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="currentColor" stop-opacity=".28"/><stop offset="1" stop-color="currentColor" stop-opacity="0"/></linearGradient></defs><path d="M${pts.replace(/ /g, ' L')} L322,110 L0,110 Z" fill="url(#gC)"/><line class="pl" x1="0" x2="322" y1="${yN.toFixed(1)}" y2="${yN.toFixed(1)}"/><polyline points="${pts}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><i class="mk now" style="left:100%;top:${pyN}%"></i><span class="plab" style="top:${pyN}%">${fmtPrice(d.last)}</span><i class="mk lo" style="left:${(cd.xy[cd.iMin][0] / 322 * 100).toFixed(1)}%;top:${(cd.xy[cd.iMin][1] / 110 * 100).toFixed(1)}%"></i><i class="mk hi" style="left:${(cd.xy[cd.iMax][0] / 322 * 100).toFixed(1)}%;top:${(cd.xy[cd.iMax][1] / 110 * 100).toFixed(1)}%"></i></div><div class="cl"><span>min ${fmtPrice(cd.low)}</span><span>max ${fmtPrice(cd.high)}</span></div>`;
   } else if (d.loading) h += '<div class="loading">Pobieram wykres…</div>';
