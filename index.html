@@ -339,20 +339,22 @@ html::after { content: ""; position: fixed; top: 0; left: 0; right: 0; height: e
 .jcard, .mp-card { border-radius: 26px; }
 .mp-tile, .mp-q, .jtbl, .jlist { background: var(--glass); border-color: var(--glass-line); }
 .mp-tile.u { border-color: var(--gold-line); } .mp-tile.d { border-color: var(--down-soft); }
-/* TOP 3 jako nakładający się stos kafli */
-.car { flex-direction: column; gap: 0; overflow: visible; scroll-snap-type: none; padding: 0 20px 2px; }
-.tcard { position: relative; flex: none; width: 100%; padding: 18px; border: 0; border-radius: 30px; box-shadow: none; color: var(--fg); }
+/* TOP 5 jako talia kart: przód widać w całości, reszta wystaje paskami spod spodu; przesunięcie w bok chowa kartę na spód */
+.car { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; overflow: visible; scroll-snap-type: none; padding: 0 20px calc(var(--dn, 0) * 20px + 6px); }
+.tcard { grid-area: 1 / 1; position: relative; width: 100%; padding: 18px 18px 24px; border: 0; border-radius: 30px; box-shadow: none; color: var(--fg); transform-origin: 50% 100%; transition: transform .4s cubic-bezier(.2,.85,.25,1), opacity .25s; touch-action: pan-y; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; will-change: transform; }
+.tcard.drag { transition: none; }
 .light .tcard { box-shadow: none; }
-.tcard + .tcard { margin-top: -26px; padding-top: 42px; }
 .tcard.sel { box-shadow: 0 0 0 2px var(--fg); }
+.tc-peek { position: absolute; left: 22px; right: 22px; bottom: 4px; font-size: 11.5px; line-height: 14px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--fg); opacity: 0; transition: opacity .25s; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none; }
+.tcard:not([data-p="0"]) .tc-peek { opacity: .8; }
+.dk-hint { display: flex; justify-content: center; align-items: center; gap: 10px; padding: 0 20px; font-size: 12.5px; color: var(--muted); }
+.dk-hint b { font-weight: 700; color: var(--fg); }
+@media (prefers-reduced-motion: reduce) { .tcard { transition: none; } }
 .t1 { z-index: 3; background: var(--acc); --fg: #020202; --muted: rgba(2,2,2,.72); --up: #020202; --down: #020202; --gold: #020202; --gold-ink: var(--acc); --surface2: rgba(2,2,2,.12); --gold-line: rgba(2,2,2,.35); --gold-soft: rgba(2,2,2,.1); --line: rgba(2,2,2,.15); }
 .t2 { z-index: 2; background: var(--t2-bg); --fg: var(--t2-fg); --muted: var(--t2-muted); --up: var(--t2-up); --down: var(--t2-dn); --gold: var(--t2-up); --gold-ink: var(--t2-bg); --surface2: var(--t2-s2); --line: var(--t2-s2); }
 .t3 { z-index: 1; background: var(--grey); --fg: #020202; --muted: #3a3e3c; --up: #00553c; --down: #8f1d14; --gold: #00553c; --gold-ink: #ffffff; --surface2: rgba(2,2,2,.09); --line: rgba(2,2,2,.12); }
 .t1 .p-trig { background: #020202; color: var(--acc); }
-.tcard:not(.t1) .tc-spark { display: none; }
-.tcard:not(.t1) .tc-price { margin-top: 10px; }
 .big { font-family: 'Space Grotesk', 'Inter', sans-serif; font-size: 46px; font-weight: 600; letter-spacing: -.035em; line-height: 1; }
-.tcard:not(.t1) .big { font-size: 30px; }
 .tc-spark { height: 46px; }
 /* kafle nastroju */
 .mtile { padding: 14px 16px; border-radius: 28px; background: var(--glass); border-color: var(--glass-line); }
@@ -1144,10 +1146,12 @@ function visibleCoins() {
   const f = S.filter === 'long' ? 1 : S.filter === 'short' ? -1 : 0;
   return f ? all.filter(d => d.dir === f) : all;
 }
-function topCardHtml(d, i) {
+const DK = 20;
+const deckT = p => `translateY(${p * DK}px) scale(${(1 - p * 0.035).toFixed(3)})`;
+function topCardHtml(d, i, p) {
   const dc = d.ch.d1;
   const k = !i ? 1 : i % 2 ? 2 : 3;
-  return `<button class="tcard t${k}${S.open === d.sym ? ' sel' : ''}" style="z-index:${20 - (i || 0)}" data-sym="${d.sym}" aria-expanded="${S.open === d.sym}">
+  return `<button class="tcard t${k}${S.open === d.sym ? ' sel' : ''}" style="transform:${deckT(p)};z-index:${20 - p}" data-p="${p}" data-sym="${d.sym}" aria-expanded="${S.open === d.sym}"><span class="tc-peek">${esc(base(d.sym))} · ${dirTxt(d)} · ${d.status}</span>
     <div class="tc-head">${monoHtml(d.sym)}<div class="tc-name"><div class="sym">${esc(base(d.sym))}<small>/USDT</small></div><div class="dir ${cls(d.dir)}">${dirTxt(d)} · 4/4 interwały${pbChip(d)}${rxChip(d)}</div></div>${pillHtml(d)}</div>
     <div class="tc-price"><span class="big">${fmtPrice(d.last)}</span><span class="chg ${cls(dc)}">${dc == null ? '' : arrow(dc) + ' ' + fmtPct(Math.abs(dc)).replace('+', '')}</span></div>
     ${sparkSvg(d.spark, 260, 48, 'spark tc-spark ' + cls(dc), 2)}
@@ -1377,7 +1381,9 @@ function render() {
   else if (have) {
     h += `<div class="sect"><h2>Top ${TOP_N}</h2><span>najmocniejsze potwierdzenie OI</span></div>`;
     if (top.length) {
-      h += `<div class="car">${top.map(topCardHtml).join('')}</div>`;
+      const n = top.length; let fi = top.findIndex(d => d.sym === S.deckSym); if (fi < 0) fi = 0; S.deckSym = top[fi].sym;
+      h += `<div class="car" style="--dn:${n - 1}">${top.map((d, i) => topCardHtml(d, i, (i - fi + n) % n)).join('')}</div>`;
+      if (n > 1) h += `<div class="dk-hint"><b class="dk-n">${fi + 1} / ${n}</b><span>przesuń kafel w bok, żeby zobaczyć następny</span></div>`;
       const od = top.find(d => d.sym === S.open); if (od) h += `<div class="dcard"><div class="dhead">${monoHtml(od.sym)}<div class="tc-name"><div class="sym">${esc(base(od.sym))}<small>/USDT</small></div><div class="dir ${cls(od.dir)}">${dirTxt(od)} · 4/4 interwały</div></div><div class="dprice">${fmtPrice(od.last)}</div></div>${detailInner(od)}</div>`;
     } else h += `<div class="empty">${S.scanning ? 'Sprawdzam kandydatów…' : 'Żaden coin nie ma teraz zgodnych kierunków na 1D, 4H, 1H i 15M' + (S.filter !== 'all' ? ' w tym kierunku.' : '.')}</div>`;
     h += `<div class="sect"><h2>Pozostałe coiny</h2><span>${rest.length}</span></div>`;
@@ -1387,6 +1393,49 @@ function render() {
   $app.innerHTML = h + navHtml('home');
   const c2 = $app.querySelector('.car'); if (c2) c2.scrollLeft = sl; window.scrollTo(0, sy);
 }
+
+// ---------- talia kart TOP 5: przesunięcie w bok chowa przednią kartę na spód, następna wychodzi na wierzch ----------
+let dkDrag = null, dkSwallow = false, dkBusy = false;
+const deckEls = () => [...$app.querySelectorAll('.tcard')];
+function deckGo(to, dir) {
+  const els = deckEls(), n = els.length; if (n < 2 || dkBusy) return;
+  const cur = els.findIndex(e => e.dataset.p === '0'); if (cur < 0 || cur === to) return;
+  const rm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches, out = els[cur];
+  dkBusy = true; out.classList.remove('drag');
+  out.style.transition = rm ? 'none' : 'transform .24s ease-in, opacity .24s ease-in'; out.style.zIndex = 30;
+  out.style.transform = `translateX(${dir * 118}%) rotate(${dir * 9}deg)`; out.style.opacity = '0';
+  els.forEach((el, i) => { if (el === out) return; const p = (i - to + n) % n; el.dataset.p = p; el.style.transform = deckT(p); el.style.zIndex = 20 - p; });
+  const pOut = (cur - to + n) % n; out.dataset.p = pOut;
+  const hn = $app.querySelector('.dk-n'); if (hn) hn.textContent = (to + 1) + ' / ' + n;
+  S.deckSym = els[to].dataset.sym;
+  setTimeout(() => {
+    out.style.transition = 'none'; out.style.zIndex = 20 - pOut; out.style.transform = deckT(pOut);
+    void out.offsetWidth; out.style.transition = ''; out.style.opacity = ''; dkBusy = false;
+  }, rm ? 0 : 250);
+}
+$app.addEventListener('pointerdown', e => {
+  const c = e.target.closest('.tcard'); if (!c || c.dataset.p !== '0' || dkBusy || (e.pointerType === 'mouse' && e.button !== 0)) return;
+  dkDrag = { el: c, id: e.pointerId, x: e.clientX, y: e.clientY, dx: 0, on: false, t: Date.now() };
+});
+$app.addEventListener('pointermove', e => {
+  const g = dkDrag; if (!g || e.pointerId !== g.id) return;
+  const dx = e.clientX - g.x, dy = e.clientY - g.y;
+  if (!g.on) { if (Math.abs(dx) < 8 || Math.abs(dx) < Math.abs(dy)) return; g.on = true; g.el.classList.add('drag'); try { g.el.setPointerCapture(e.pointerId); } catch (er) { /* bez przechwytu */ } }
+  g.dx = dx; g.el.style.transform = `translateX(${dx}px) rotate(${(dx / 18).toFixed(2)}deg)`;
+});
+function dkEnd(e, cancel) {
+  const g = dkDrag; if (!g || e.pointerId !== g.id) return; dkDrag = null;
+  if (!g.on) return;
+  dkSwallow = true; setTimeout(() => { dkSwallow = false; }, 350);
+  g.el.classList.remove('drag');
+  const fast = Math.abs(g.dx) / Math.max(1, Date.now() - g.t) > 0.5;
+  if (!cancel && (Math.abs(g.dx) > 70 || (fast && Math.abs(g.dx) > 30))) {
+    const els = deckEls(), n = els.length, cur = els.indexOf(g.el), step = g.dx < 0 ? 1 : -1;
+    deckGo((cur + step + n) % n, g.dx < 0 ? -1 : 1);
+  } else g.el.style.transform = deckT(0);
+}
+$app.addEventListener('pointerup', e => dkEnd(e, false));
+$app.addEventListener('pointercancel', e => dkEnd(e, true));
 
 $app.addEventListener('click', e => {
   const t = e.target;
@@ -1419,6 +1468,9 @@ $app.addEventListener('click', e => {
   if (t.closest('#btnLive')) { S.demo = false; S.D = {}; return scan(); }
   const f = t.closest('[data-f]');
   if (f) { S.filter = f.dataset.f; try { localStorage.setItem('busola_filter', S.filter); } catch (er) { /* tylko w pamięci */ } return render(); }
+  const tcd = t.closest('.tcard');
+  if (tcd && dkSwallow) return;
+  if (tcd && tcd.dataset.p !== '0') { const els = deckEls(); return deckGo(els.indexOf(tcd), -1); }
   const s = t.closest('[data-sym]');
   if (s) {
     const sym = s.dataset.sym; S.open = S.open === sym ? null : sym; render();
