@@ -156,6 +156,14 @@ a { color: inherit; }
 .mk { position: absolute; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; border: 2px solid var(--surface); }
 .mk.hi { background: var(--up); }
 .mk.lo { background: var(--down); }
+.mk.now { background: currentColor; }
+.pl { stroke: var(--fg); stroke-opacity: .5; stroke-width: 1; stroke-dasharray: 3 4; vector-effect: non-scaling-stroke; }
+.plab { position: absolute; right: 0; transform: translateY(-120%); padding: 1px 7px; border-radius: 999px; font-size: 10.5px; font-weight: 600; line-height: 15px; background: var(--surface2); color: var(--fg); pointer-events: none; }
+@keyframes chReveal { from { clip-path: inset(-6px 100% -6px 0); } to { clip-path: inset(-6px -6px -6px 0); } }
+@keyframes chFade { from { opacity: 0; } to { opacity: 1; } }
+.chartw.anim .chart { animation: chReveal .9s cubic-bezier(.3,.7,.2,1) calc(0ms - var(--el, 0ms)) both; }
+.chartw.anim .plab, .chartw.anim .mk { animation: chFade .4s ease-out calc(800ms - var(--el, 0ms)) both; }
+@media (prefers-reduced-motion: reduce) { .chartw.anim .chart, .chartw.anim .plab, .chartw.anim .mk { animation: none; } }
 .cl { display: flex; justify-content: space-between; margin-top: 6px; font-size: 11.5px; color: var(--muted); }
 .cond { display: flex; align-items: flex-start; gap: 10px; padding: 7px 0; font-size: 13px; line-height: 1.4; }
 .ck { flex: none; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-top: 1px; }
@@ -887,7 +895,7 @@ async function getJSON(url, tries = 3) {
   throw new Error('limit zapytań giełdy');
 }
 const mapK = k => k.map(x => ({ time: Math.floor(x[0] / 1000), open: +x[1], high: +x[2], low: +x[3], close: +x[4], volume: +x[5], closeTime: x[6] }));
-const S = { view: 'home', jr: [], jrH: 'h4', jrNoStore: false, tvLayout: '', mapFl: true, mapLast: {}, mapF: 1, mapPlay: false, mapTrim: false, mapCache: null, mapOiBusy: false, mapOiN: 0, mapOiTot: 0, mapTs: 0, demo: false, coins: [], D: {}, filter: 'all', open: null, scanning: false, prog: 0, progTxt: '', ts: 0, err: '', note: '' };
+const S = { view: 'home', jr: [], jrH: 'h4', jrNoStore: false, tvLayout: '', mapFl: true, mapLast: {}, mapF: 1, mapPlay: false, mapTrim: false, mapCache: null, mapOiBusy: false, mapOiN: 0, mapOiTot: 0, mapTs: 0, demo: false, coins: [], D: {}, filter: 'all', open: null, chAnim: null, chAnimT: 0, scanning: false, prog: 0, progTxt: '', ts: 0, err: '', note: '' };
 try { S.mapFl = localStorage.getItem('busola_map_fl') !== '0'; } catch (e) { /* tylko w pamięci */ }
 try { S.tvLayout = tvLayoutId(localStorage.getItem('busola_tv_layout')) || ''; } catch (e) { S.tvLayout = ''; }
 try { const f = localStorage.getItem('busola_filter'); if (f === 'long' || f === 'short' || f === 'all') S.filter = f; } catch (e) { /* tylko w pamięci */ }
@@ -1218,7 +1226,10 @@ function detailInner(d) {
   const cd = chartData(d);
   if (cd) {
     const pts = cd.xy.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' '), c24 = cls(d.ch.d1 || 0);
-    h += `<div class="lab">Ostatnie 24 godziny</div><div class="chartw ${c24}"><svg class="chart" viewBox="0 0 322 110" preserveAspectRatio="none" fill="none" aria-hidden="true"><defs><linearGradient id="gC" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="currentColor" stop-opacity=".28"/><stop offset="1" stop-color="currentColor" stop-opacity="0"/></linearGradient></defs><path d="M${pts.replace(/ /g, ' L')} L322,110 L0,110 Z" fill="url(#gC)"/><polyline points="${pts}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><i class="mk lo" style="left:${(cd.xy[cd.iMin][0] / 322 * 100).toFixed(1)}%;top:${(cd.xy[cd.iMin][1] / 110 * 100).toFixed(1)}%"></i><i class="mk hi" style="left:${(cd.xy[cd.iMax][0] / 322 * 100).toFixed(1)}%;top:${(cd.xy[cd.iMax][1] / 110 * 100).toFixed(1)}%"></i></div><div class="cl"><span>min ${fmtPrice(cd.low)}</span><span>max ${fmtPrice(cd.high)}</span></div>`;
+    let an = '', el = 0;
+    if (S.chAnim === d.sym) { if (!S.chAnimT) S.chAnimT = Date.now(); el = Date.now() - S.chAnimT; if (el < 1400) an = ' anim'; else S.chAnim = null; }
+    const yN = cd.xy[cd.xy.length - 1][1], pyN = (yN / 110 * 100).toFixed(1);
+    h += `<div class="lab">Ostatnie 24 godziny</div><div class="chartw ${c24}${an}" style="--el:${Math.round(el)}ms"><svg class="chart" viewBox="0 0 322 110" preserveAspectRatio="none" fill="none" aria-hidden="true"><defs><linearGradient id="gC" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="currentColor" stop-opacity=".28"/><stop offset="1" stop-color="currentColor" stop-opacity="0"/></linearGradient></defs><path d="M${pts.replace(/ /g, ' L')} L322,110 L0,110 Z" fill="url(#gC)"/><line class="pl" x1="0" x2="322" y1="${yN.toFixed(1)}" y2="${yN.toFixed(1)}"/><polyline points="${pts}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><i class="mk now" style="left:100%;top:${pyN}%"></i><span class="plab" style="top:${pyN}%">${fmtPrice(d.last)}</span><i class="mk lo" style="left:${(cd.xy[cd.iMin][0] / 322 * 100).toFixed(1)}%;top:${(cd.xy[cd.iMin][1] / 110 * 100).toFixed(1)}%"></i><i class="mk hi" style="left:${(cd.xy[cd.iMax][0] / 322 * 100).toFixed(1)}%;top:${(cd.xy[cd.iMax][1] / 110 * 100).toFixed(1)}%"></i></div><div class="cl"><span>min ${fmtPrice(cd.low)}</span><span>max ${fmtPrice(cd.high)}</span></div>`;
   } else if (d.loading) h += '<div class="loading">Pobieram wykres…</div>';
   h += `<div class="lab">Kierunki</div><div class="tfs" style="margin-top:0">${tfChips(d)}</div><div class="note">Kierunek to trend struktury rynku na danym interwale (wyższe lub niższe szczyty i dołki), a nie ruch ceny z ostatniej godziny.</div>`;
   if (d.pending) h += '<div class="loading">Sprawdzam OI i interwał 15M…</div>';
@@ -1419,7 +1430,7 @@ $app.addEventListener('click', e => {
   if (f) { S.filter = f.dataset.f; try { localStorage.setItem('busola_filter', S.filter); } catch (er) { /* tylko w pamięci */ } return render(); }
   const s = t.closest('[data-sym]');
   if (s) {
-    const sym = s.dataset.sym; S.open = S.open === sym ? null : sym; render();
+    const sym = s.dataset.sym; S.open = S.open === sym ? null : sym; S.chAnim = S.open; S.chAnimT = 0; render();
     const d = S.D[sym]; if (S.open && d && !d.c15 && !d.pending && !d.stageErr) lazy15(d);
   }
 });
