@@ -516,7 +516,8 @@ function classify(x) {
   return { status: conds[0].ok && conds[1].ok ? 'TRIGGER' : 'WAIT', dir, aligned: true, conds };
 }
 
-// Top 3: najpierw TRIGGER wg zmiany OI na 4H (malejąco), potem WAIT wg liczby spełnionych warunków i zmiany OI na 4H. Remis: wolumen 24h.
+// Top N (w aplikacji 5): najpierw TRIGGER wg zmiany OI na 4H (malejąco), potem WAIT wg liczby spełnionych warunków i zmiany OI na 4H. Remis: wolumen 24h.
+const TOP_N = 5;
 function rankTop(items, n = 3) {
   const okN = i => i.conds.filter(c => c.ok).length, oi4 = i => (i.oi4h == null ? -Infinity : i.oi4h);
   return items.filter(i => i.status !== 'NO TRADE').sort((a, b) => {
@@ -1145,7 +1146,8 @@ function visibleCoins() {
 }
 function topCardHtml(d, i) {
   const dc = d.ch.d1;
-  return `<button class="tcard t${(i || 0) + 1}${S.open === d.sym ? ' sel' : ''}" data-sym="${d.sym}" aria-expanded="${S.open === d.sym}">
+  const k = !i ? 1 : i % 2 ? 2 : 3;
+  return `<button class="tcard t${k}${S.open === d.sym ? ' sel' : ''}" style="z-index:${20 - (i || 0)}" data-sym="${d.sym}" aria-expanded="${S.open === d.sym}">
     <div class="tc-head">${monoHtml(d.sym)}<div class="tc-name"><div class="sym">${esc(base(d.sym))}<small>/USDT</small></div><div class="dir ${cls(d.dir)}">${dirTxt(d)} · 4/4 interwały${pbChip(d)}${rxChip(d)}</div></div>${pillHtml(d)}</div>
     <div class="tc-price"><span class="big">${fmtPrice(d.last)}</span><span class="chg ${cls(dc)}">${dc == null ? '' : arrow(dc) + ' ' + fmtPct(Math.abs(dc)).replace('+', '')}</span></div>
     ${sparkSvg(d.spark, 260, 48, 'spark tc-spark ' + cls(dc), 2)}
@@ -1356,7 +1358,7 @@ function render() {
   const car = $app.querySelector('.car'), sl = car ? car.scrollLeft : 0, sy = window.scrollY;
   const vis = visibleCoins(), have = Object.keys(S.D).length > 0;
   const settled = vis.filter(d => !d.pending);
-  const top = rankTop(settled), topSyms = new Set(top.map(d => d.sym));
+  const top = rankTop(settled, TOP_N), topSyms = new Set(top.map(d => d.sym));
   const rest = vis.filter(d => !topSyms.has(d.sym)).sort((a, b) => {
     const o = d => d.pending ? 1 : d.status === 'NO TRADE' ? 3 : d.status === 'TRIGGER' ? 0 : 2;
     return o(a) - o(b) || b.vol - a.vol;
@@ -1373,7 +1375,7 @@ function render() {
   h += `<div class="seg" role="group" aria-label="Filtr kierunku">${[['all', 'Wszystkie'], ['long', 'LONG'], ['short', 'SHORT']].map(([k, l]) => `<button class="segb${S.filter === k ? ' on' : ''}" data-f="${k}" aria-pressed="${S.filter === k}">${l}</button>`).join('')}</div>`;
   if (!have && S.scanning) h += `<div class="sect"><h2>Skanuję rynek</h2><span></span></div><div class="empty">Pobieram świece 1D, 4H i 1H dla 100 coinów, a potem OI. To trwa kilkanaście sekund.</div>`;
   else if (have) {
-    h += `<div class="sect"><h2>Top 3</h2><span>najmocniejsze potwierdzenie OI</span></div>`;
+    h += `<div class="sect"><h2>Top ${TOP_N}</h2><span>najmocniejsze potwierdzenie OI</span></div>`;
     if (top.length) {
       h += `<div class="car">${top.map(topCardHtml).join('')}</div>`;
       const od = top.find(d => d.sym === S.open); if (od) h += `<div class="dcard"><div class="dhead">${monoHtml(od.sym)}<div class="tc-name"><div class="sym">${esc(base(od.sym))}<small>/USDT</small></div><div class="dir ${cls(od.dir)}">${dirTxt(od)} · 4/4 interwały</div></div><div class="dprice">${fmtPrice(od.last)}</div></div>${detailInner(od)}</div>`;
