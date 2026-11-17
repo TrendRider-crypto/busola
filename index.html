@@ -333,6 +333,9 @@ html::after { content: ""; position: fixed; top: 0; left: 0; right: 0; height: e
 .light .list, .light .dcard { box-shadow: var(--glass-sh); }
 .empty { border-style: solid; }
 .list, .dcard { border-radius: 30px; }
+.dhead { display: flex; align-items: center; gap: 12px; padding: 14px 0 12px; border-bottom: 1px solid var(--line); }
+.dhead .sym { font-family: 'Space Grotesk', 'Inter', sans-serif; font-size: 20px; font-weight: 600; }
+.dprice { font-family: 'Space Grotesk', 'Inter', sans-serif; font-size: 18px; font-weight: 600; letter-spacing: -.02em; }
 .jcard, .mp-card { border-radius: 26px; }
 .mp-tile, .mp-q, .jtbl, .jlist { background: var(--glass); border-color: var(--glass-line); }
 .mp-tile.u { border-color: var(--gold-line); } .mp-tile.d { border-color: var(--down-soft); }
@@ -1373,7 +1376,7 @@ function render() {
     h += `<div class="sect"><h2>Top 3</h2><span>najmocniejsze potwierdzenie OI</span></div>`;
     if (top.length) {
       h += `<div class="car">${top.map(topCardHtml).join('')}</div>`;
-      const od = top.find(d => d.sym === S.open); if (od) h += `<div class="dcard">${detailInner(od)}</div>`;
+      const od = top.find(d => d.sym === S.open); if (od) h += `<div class="dcard"><div class="dhead">${monoHtml(od.sym)}<div class="tc-name"><div class="sym">${esc(base(od.sym))}<small>/USDT</small></div><div class="dir ${cls(od.dir)}">${dirTxt(od)} · 4/4 interwały</div></div><div class="dprice">${fmtPrice(od.last)}</div></div>${detailInner(od)}</div>`;
     } else h += `<div class="empty">${S.scanning ? 'Sprawdzam kandydatów…' : 'Żaden coin nie ma teraz zgodnych kierunków na 1D, 4H, 1H i 15M' + (S.filter !== 'all' ? ' w tym kierunku.' : '.')}</div>`;
     h += `<div class="sect"><h2>Pozostałe coiny</h2><span>${rest.length}</span></div>`;
     h += rest.length ? `<div class="list">${rest.map(rowHtml).join('')}</div>` : '<div class="empty">Brak coinów do pokazania przy tym filtrze.</div>';
