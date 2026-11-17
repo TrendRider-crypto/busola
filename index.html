@@ -311,7 +311,7 @@ body::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-even
   background: radial-gradient(300px 300px at 0% 14%, var(--blob1), transparent 70%), radial-gradient(340px 340px at 100% 46%, var(--blob2), transparent 70%), radial-gradient(300px 300px at 6% 84%, var(--blob3), transparent 70%), var(--bg-grad); }
 /* osłona paska stanu: przewijana treść nie wchodzi pod zegar i baterię (czarny, półprzezroczysty pasek stanu w trybie aplikacji) */
 html::after { content: ""; position: fixed; top: 0; left: 0; right: 0; height: env(safe-area-inset-top, 0px); z-index: 40; pointer-events: none; background: var(--bg); background: color-mix(in srgb, var(--bg) 80%, transparent); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); }
-.app { padding-bottom: calc(124px + env(safe-area-inset-bottom, 0px)); }
+.app { padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
 .hdr { padding-top: calc(env(safe-area-inset-top, 0px) + 24px); }
 .brand { gap: 12px; font-family: 'Space Grotesk', 'Inter', sans-serif; font-weight: 700; font-size: 22px; letter-spacing: .05em; text-transform: uppercase; }
 .logo { width: 48px; height: 48px; color: var(--fg); }
@@ -368,8 +368,8 @@ html::after { content: ""; position: fixed; top: 0; left: 0; right: 0; height: e
 .jbar { height: 18px; padding: 2px; border: 1.5px solid var(--bar-line); border-radius: 999px; background: transparent; }
 .jbar i { border-radius: 999px; background: var(--bar-fill); }
 /* pływająca nawigacja */
-.nav { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); width: min(calc(100% - 40px), 480px); height: 68px; padding: 0 10px; border-radius: 999px; background: var(--nav-bg); display: flex; align-items: center; justify-content: space-around; box-shadow: 0 16px 40px -10px rgba(0,0,0,.55), 0 0 0 1px rgba(128,134,132,.35); z-index: 30; }
-.nb { width: 52px; height: 52px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--nav-ic); display: flex; align-items: center; justify-content: center; }
+.nav { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 12px); width: min(calc(100% - 80px), 330px); height: 52px; padding: 0 6px; border-radius: 999px; background: var(--nav-bg); display: flex; align-items: center; justify-content: space-around; box-shadow: 0 16px 40px -10px rgba(0,0,0,.55), 0 0 0 1px rgba(128,134,132,.35); z-index: 30; }
+.nb { width: 42px; height: 42px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--nav-ic); display: flex; align-items: center; justify-content: center; }
 .nb.on { background: var(--nav-on-bg); color: var(--nav-on-fg); }
 </style>
 </head>
@@ -1135,7 +1135,7 @@ const tfChips = d => ['d1', 'h4', 'h1', 'm15'].map((k, i) => { const v = d.t[k];
 
 function navHtml(a) {
   const dark = document.documentElement.classList.contains('dark');
-  const b = (id, ic, lab, on) => `<button class="nb${on ? ' on' : ''}" id="${id}" aria-label="${lab}"${on ? ' aria-current="page"' : ''}>${svgI(ic, 22, 1.8)}</button>`;
+  const b = (id, ic, lab, on) => `<button class="nb${on ? ' on' : ''}" id="${id}" aria-label="${lab}"${on ? ' aria-current="page"' : ''}>${svgI(ic, 20, 1.8)}</button>`;
   return `<nav class="nav" aria-label="Nawigacja">${b('btnHome', ICO.scan, 'Skaner', a === 'home')}${b('btnMap', ICO.map, 'Mapa rynku', a === 'map')}${b('btnJr', ICO.journal, 'Dziennik wyników', a === 'journal')}${b('btnTheme', dark ? ICO.sun : ICO.moon, dark ? 'Przełącz na jasny motyw' : 'Przełącz na ciemny motyw', false)}</nav>`;
 }
 function visibleCoins() {
