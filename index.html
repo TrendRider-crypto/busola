@@ -989,10 +989,15 @@ function mkStable(j) {
   const ch = p => p > 0 ? (n - p) / p * 100 : null;
   return { total: n, d1: ch(d1), w1: ch(w1), m1: ch(m1), pts: [m1, w1, d1, n], top: rows.sort((p, q) => q.v - p.v).slice(0, 4) };
 }
-// Decyzja Fed z Polymarket: najbliższe niezamknięte wydarzenie "Fed decision in ..."
+// Decyzja Fed z Polymarket: najbliższe niezamknięte wydarzenie "Fed decision in <miesiąc>" (pojedyncze posiedzenie; wydarzenia "Fed decisions ..." ze ścieżką kilku posiedzeń są pomijane)
 function mkFedPick(events, now) {
-  const ev = (Array.isArray(events) ? events : []).filter(e => e && !e.closed && /fed decision/i.test(e.title || '') && Array.isArray(e.markets) && e.markets.length >= 2 && Date.parse(e.endDate) > now - 12 * 3600e3).sort((a, b) => Date.parse(a.endDate) - Date.parse(b.endDate));
+  const ev = (Array.isArray(events) ? events : []).filter(e => e && !e.closed && /\bfed decision in [a-z]+/i.test(e.title || '') && Array.isArray(e.markets) && e.markets.length >= 2 && Date.parse(e.endDate) > now - 12 * 3600e3).sort((a, b) => Date.parse(a.endDate) - Date.parse(b.endDate));
   return ev[0] || null;
+}
+// poprawny zestaw: jest "Bez zmian", co najmniej 3 wyniki i suma prawdopodobieństw bliska 100% (inaczej to nie jest pełny rozkład decyzji)
+function mkFedValid(rows) {
+  if (!Array.isArray(rows) || rows.length < 3 || !rows.some(r => r.bp === 0)) return false;
+  const sum = rows.reduce((a, r) => a + r.p, 0); return sum >= 85 && sum <= 115;
 }
 function mkFedRows(ev) {
   const rows = [];
@@ -1005,7 +1010,7 @@ function mkFedRows(ev) {
     if (/no change/i.test(t)) { bp = 0; lab = 'Bez zmian'; }
     else if (n && /decrease|cut|lower/i.test(t)) { bp = -Number(n); lab = 'Obniżka ' + n + (plus ? '+' : '') + ' pb'; }
     else if (n && /increase|hike|raise/i.test(t)) { bp = Number(n); lab = 'Podwyżka ' + n + (plus ? '+' : '') + ' pb'; }
-    else { bp = 999; lab = t; }
+    else continue;   // nierozpoznane etykiety (np. ścieżki kilku posiedzeń) pomijamy, niczego nie zgadujemy
     rows.push({ lab, p: p * 100, bp });
   }
   return rows.sort((a, b) => a.bp - b.bp);
@@ -1334,7 +1339,7 @@ async function mkFedLoad() {
     try {
       const ev = mkFedPick(await getJSON('https://gamma-api.polymarket.com/events?tag_slug=' + tag + '&closed=false&active=true&limit=50', 2), Date.now());
       const rows = ev ? mkFedRows(ev) : [];
-      if (rows.length >= 2) return { end: ev.endDate, rows };
+      if (mkFedValid(rows)) return { end: ev.endDate, rows };
     } catch (e) { /* następny tag */ }
   }
   throw new Error('fed');
