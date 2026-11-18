@@ -1016,6 +1016,52 @@ function mkFedRows(ev) {
   return rows.sort((a, b) => a.bp - b.bp);
 }
 
+// ---------- Kalendarz makro ----------
+// Daty z oficjalnych harmonogramów (stan na 18.11.2026): Fed https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm (strona z 12.11.2026),
+// BLS https://www.bls.gov/schedule/news_release/cpi.htm oraz /empsit.htm. Daty FOMC są wstępne do potwierdzenia na poprzednim posiedzeniu,
+// a BLS bywa przesuwany. Wpisane ręcznie, więc kalendarz trzeba odświeżać (kończy się w grudniu 2027). Godziny w czasie Nowego Jorku.
+const MK_CAL_ASOF = '18.11.2026';
+const MK_CAL = [
+  // FOMC: dzień decyzji (drugi dzień posiedzenia), 14:00 ET. s = z projekcjami makro (SEP), st = posiedzenie o strategii
+  ['fomc', '2026-12-09', { s: 1 }], ['fomc', '2027-01-27'], ['fomc', '2027-03-17'], ['fomc', '2027-04-28'], ['fomc', '2027-06-09'], ['fomc', '2027-07-28'],
+  ['fomc', '2027-09-15'], ['fomc', '2027-10-27', { st: 1 }], ['fomc', '2027-11-17'],
+  // CPI, 08:30 ET (dane za miesiąc)
+  ['cpi', '2026-12-10', 'listopad 2026'], ['cpi', '2027-01-13', 'grudzień 2026'], ['cpi', '2027-02-11', 'styczeń 2027'], ['cpi', '2027-03-10', 'luty 2027'],
+  ['cpi', '2027-04-13', 'marzec 2027'], ['cpi', '2027-05-12', 'kwiecień 2027'], ['cpi', '2027-06-10', 'maj 2027'], ['cpi', '2027-07-14', 'czerwiec 2027'],
+  ['cpi', '2027-08-11', 'lipiec 2027'], ['cpi', '2027-09-14', 'sierpień 2027'], ['cpi', '2027-10-14', 'wrzesień 2027'], ['cpi', '2027-11-10', 'październik 2027'],
+  ['cpi', '2027-12-10', 'listopad 2027'],
+  // NFP (Employment Situation), 08:30 ET
+  ['nfp', '2026-12-04', 'listopad 2026'], ['nfp', '2027-01-08', 'grudzień 2026'], ['nfp', '2027-02-05', 'styczeń 2027'], ['nfp', '2027-03-05', 'luty 2027'],
+  ['nfp', '2027-04-02', 'marzec 2027'], ['nfp', '2027-05-07', 'kwiecień 2027'], ['nfp', '2027-06-04', 'maj 2027'], ['nfp', '2027-07-02', 'czerwiec 2027'],
+  ['nfp', '2027-08-06', 'lipiec 2027'], ['nfp', '2027-09-03', 'sierpień 2027'], ['nfp', '2027-10-08', 'wrzesień 2027'], ['nfp', '2027-11-05', 'październik 2027'],
+  ['nfp', '2027-12-03', 'listopad 2027']
+];
+const MK_CAL_T = { fomc: { name: 'Decyzja FOMC', h: 14, m: 0 }, cpi: { name: 'Inflacja CPI (USA)', h: 8, m: 30 }, nfp: { name: 'Rynek pracy NFP (USA)', h: 8, m: 30 } };
+const mkPf = {};
+function mkParts(ts, tz) {
+  const f = mkPf[tz] || (mkPf[tz] = new Intl.DateTimeFormat('en-US', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }));
+  const p = {}; f.formatToParts(new Date(ts)).forEach(x => { p[x.type] = +x.value; });
+  return Date.UTC(p.year, p.month - 1, p.day, p.hour % 24, p.minute);
+}
+// godzina ścienna (data + h:m) w strefie tz → chwila UTC w ms (z uwzględnieniem czasu letniego)
+function mkZonedUtc(date, h, mi, tz) {
+  const [y, m, d] = date.split('-').map(Number), wall = Date.UTC(y, m - 1, d, h, mi); let t = wall;
+  for (let i = 0; i < 3; i++) t += wall - mkParts(t, tz);
+  return t;
+}
+// najbliższe wydarzenia po chwili now, rosnąco po czasie; at = chwila UTC
+function mkCalendar(now, n = 6) {
+  return MK_CAL.map(e => { const T = MK_CAL_T[e[0]], x = e[2]; return { type: e[0], name: T.name, date: e[1], at: mkZonedUtc(e[1], T.h, T.m, 'America/New_York'), ref: typeof x === 'string' ? x : '', sep: !!(x && x.s), strat: !!(x && x.st) }; })
+    .filter(e => e.at > now).sort((a, b) => a.at - b.at).slice(0, n);
+}
+// data decyzji FOMC najbliższa dacie zamknięcia rynku Polymarket (do 4 dni różnicy), inaczej null
+function mkFomcNear(endTs) {
+  if (!Number.isFinite(endTs)) return null;
+  let best = null;
+  for (const e of MK_CAL) if (e[0] === 'fomc') { const at = mkZonedUtc(e[1], 14, 0, 'America/New_York'), dd = Math.abs(at - endTs); if (dd <= 4 * 86400e3 && (!best || dd < best.dd)) best = { at, dd }; }
+  return best ? best.at : null;
+}
+
 // ---------- Test pułapki płynności (sweep i reclaim) ----------
 // Wszystkie parametry ustalone z góry (przed pierwszym uruchomieniem testu) i nie są dopasowywane do wyników.
 // Poziom = maksimum (dołek) z ostatnich N świec z co najmniej TOUCH osobnymi dotknięciami w odległości TOL ATR (równe szczyty/dołki).
@@ -1747,10 +1793,16 @@ function macroHtml() {
   const fd = M.fed;
   h += `<div class="mp-sec">Decyzja Fed</div><div class="mp-card">`;
   if (fd) {
-    const dt = new Date(fd.end), ds = isNaN(dt) ? '' : ' · ' + dt.toLocaleDateString('pl-PL', { day: 'numeric', month: 'long' });
+    const fo = mkFomcNear(Date.parse(fd.end)), ds = fo ? ' · ' + new Date(fo).toLocaleDateString('pl-PL', { day: 'numeric', month: 'long' }) : '';
     h += `<div class="mp-lab">Najbliższe posiedzenie${ds}</div>${fd.rows.map(r => `<div class="mk-fr"><span>${esc(r.lab)}</span><div class="mk-fb"><i style="width:${Math.min(100, r.p).toFixed(1)}%"></i></div><b>${Math.round(r.p)}%</b></div>`).join('')}<div class="mp-t">To kursy zakładów z rynku predykcyjnego Polymarket, a nie prognoza Fed.</div>`;
   } else h += `<div class="mp-t">${stat('fed')}</div>`;
   h += `</div>`;
+  // kalendarz
+  const cal = mkCalendar(now, 6), wd = ts => new Date(ts).toLocaleDateString('pl-PL', { weekday: 'short', day: 'numeric', month: 'short' }), hm = ts => new Date(ts).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
+  h += `<div class="mp-sec">Kalendarz makro</div><div class="mp-card mk-ss">`;
+  if (!cal.length) h += `<div class="mp-t">Kalendarz się skończył i wymaga aktualizacji.</div>`;
+  else h += cal.map(e => `<div class="mk-s"><div><b>${e.name}</b><small>${e.type === 'fomc' ? 'decyzja o stopach' + (e.sep ? ', z projekcjami makro' : '') + (e.strat ? ', posiedzenie o strategii' : '') : 'dane za ' + e.ref}</small></div><div class="mk-r"><span class="mk-st on">${wd(e.at)} · ${hm(e.at)}</span><small>za ${mkDur(e.at - now)}</small></div></div>`).join('');
+  h += `<div class="mp-t">Godziny w Twojej strefie czasowej. Źródła: Fed i BLS (stan na ${MK_CAL_ASOF}). Daty FOMC są wstępne do potwierdzenia na poprzednim posiedzeniu, BLS czasem przesuwa publikacje. To tylko terminy: kalendarz nie mówi, jak zareaguje rynek.</div></div>`;
   h += `<p class="fine">Makro opisuje otoczenie rynku. To nie jest sygnał i nie ma udowodnionej przewagi, dlatego nie wchodzi do Dziennika. Dane pochodzą z darmowych źródeł (alternative.me, CoinGecko, DefiLlama, Polymarket); gdy źródło nie odpowiada, blok mówi "brak danych" i niczego nie szacujemy. Sesje to godziny głównych sesji giełd w ich czasie lokalnym, bez świąt i przerw na lunch. Zmiana dominacji liczona jest z zapisów w tej przeglądarce, więc pojawia się po około dobie.</p>`;
   return h;
 }
