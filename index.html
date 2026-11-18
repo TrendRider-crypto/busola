@@ -268,7 +268,7 @@ a { color: inherit; }
 .mp-sec { margin: 22px 20px 0; font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 .mp-chart { padding: 10px 6px 6px; }
 .mp-chart svg { display: block; }
-.mp-grid { stroke: var(--line); stroke-width: .6; }
+.mp-grid { stroke: var(--line); stroke-width: .6; } .mp-grid.v { stroke-dasharray: 1.5 3; opacity: .7; }
 .mp-zero { stroke: var(--gold); stroke-width: 1; stroke-dasharray: 3 3; opacity: .8; }
 .mp-ax { font-size: 8px; fill: var(--muted); } .mp-ax.now { fill: var(--gold); font-weight: 600; }
 .mp-pl { fill: none; stroke-width: .9; stroke-opacity: .42; stroke-linejoin: round; }
@@ -740,7 +740,7 @@ function mapBreadth(list) {
   return r;
 }
 function mapTicks(lo, hi) {
-  const raw = Math.max(hi - lo, 1) / 6, mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const raw = Math.max(hi - lo, 1) / 8, mag = Math.pow(10, Math.floor(Math.log10(raw)));
   const step = [1, 2, 5, 10].map(m => m * mag).find(s => s >= raw) || 10 * mag, ticks = [];
   for (let v = Math.ceil(lo / step - 1e-9) * step; v <= hi + 1e-9; v += step) ticks.push(+v.toFixed(6));
   return { step, ticks };
@@ -1622,7 +1622,7 @@ function journalHtml() {
 }
 const mapN = (v, d = 0) => (v < 0 ? '−' : v > 0 ? '+' : '') + Math.abs(v).toFixed(d).replace('.', ',') + '%';
 function mapChartHtml(items, f = 1, trim = false) {
-  const W = 350, H = 226, X0 = 32, X1 = 288, Y0 = 10, Y1 = 194, wp = items.filter(x => x.path);
+  const W = 350, H = 276, X0 = 32, X1 = 288, Y0 = 10, Y1 = 244, wp = items.filter(x => x.path);
   if (wp.length < 5) return '';
   const rk0 = mapRank(wp, 3), all = []; for (const x of wp) for (const v of x.path.pts) all.push(v);
   all.sort((a, b) => a - b);
@@ -1633,6 +1633,13 @@ function mapChartHtml(items, f = 1, trim = false) {
   const px = t => X0 + (X1 - X0) * (t - t0) / ((t1 - t0) || 1), py = v => Y0 + (Y1 - Y0) * (hi - v) / (hi - lo), cl = (v, a, b) => Math.max(a, Math.min(b, v));
   let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Zmiana ceny coinów od początku okresu"><defs><clipPath id="mpclip"><rect x="${X0}" y="${Y0 - 2}" width="${X1 - X0 + 2}" height="${Y1 - Y0 + 4}"/></clipPath></defs>`;
   for (const v of tk.ticks) s += `<line class="${v === 0 ? 'mp-zero' : 'mp-grid'}" x1="${X0}" x2="${X1}" y1="${py(v).toFixed(1)}" y2="${py(v).toFixed(1)}"/><text class="mp-ax" x="${X0 - 4}" y="${(py(v) + 3).toFixed(1)}" text-anchor="end">${mapN(v, tk.step < 1 ? 1 : 0)}</text>`;
+  // znaczniki czasu co 6 godzin (dzień: pełne godziny UTC, 24 godz.: wstecz od teraz), bez nachodzenia na podpisy początku i końca
+  const hh = d => String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0'), dayMode = wp[0].path.mode === 'day';
+  for (let k = 1; k <= 3; k++) {
+    const t = dayMode ? t0 + k * 6 * 3600e3 : t1 - k * 6 * 3600e3, x = px(t);
+    if (t <= t0 || t >= t1 || x < X0 + 24 || x > X1 - 26) continue;
+    s += `<line class="mp-grid v" x1="${x.toFixed(1)}" x2="${x.toFixed(1)}" y1="${Y0}" y2="${Y1}"/><text class="mp-ax" x="${x.toFixed(1)}" y="${H - 8}" text-anchor="middle">${dayMode ? hh(new Date(t)) : '−' + Math.round((t1 - t) / 3600e3) + ' g'}</text>`;
+  }
   const path = c => c.pts.map((v, i) => (i ? 'L' : 'M') + px(c.ts[i]).toFixed(1) + ' ' + py(v).toFixed(1)).join('');
   s += '<g clip-path="url(#mpclip)">';
   for (const x of cur) if (!labSet.has(x.sym)) s += `<path class="mp-pl ${x.chg >= 0 ? 'up' : 'dn'}" d="${path(x.c)}"/>`;
@@ -1642,7 +1649,7 @@ function mapChartHtml(items, f = 1, trim = false) {
     const others = cur.filter(x => !labSet.has(x.sym)).sort((a, b) => hashStr(a.sym) - hashStr(b.sym)).slice(0, 24), sec = Date.now() / 1000;
     s += '<g clip-path="url(#mpclip)" class="mp-flg">';
     for (const x of lab.concat(others)) {
-      const h = hashStr(x.sym), dur = 2.4 + (h % 21) / 10, delay = -((sec + (h % 97) / 10) % dur), c = x.chg >= 0 ? 'up' : 'dn', d = path(x.c), hi = labSet.has(x.sym);
+      const h = hashStr(x.sym), dur = 1.2 + (h % 11) / 10, delay = -((sec + (h % 97) / 10) % dur), c = x.chg >= 0 ? 'up' : 'dn', d = path(x.c), hi = labSet.has(x.sym);
       s += `<path class="mp-fl glow ${c}" pathLength="100" d="${d}" style="--d:${dur.toFixed(1)}s;animation-delay:${delay.toFixed(2)}s"/><path class="mp-fl core ${c}${hi ? ' hi' : ''}" pathLength="100" d="${d}" style="--d:${dur.toFixed(1)}s;animation-delay:${delay.toFixed(2)}s"/>`;
     }
     s += '</g>';
@@ -1654,7 +1661,6 @@ function mapChartHtml(items, f = 1, trim = false) {
     const out = x.chg < lo || x.chg > hi, c = x.chg >= 0 ? 'up' : 'dn', y0 = cl(py(x.chg), Y0, Y1);
     s += `<circle class="mp-dot ${c}" cx="${ex.toFixed(1)}" cy="${y0.toFixed(1)}" r="2.6"/><text class="mp-tx ${c}" x="${X1 + 7}" y="${(ys[i] + 3).toFixed(1)}">${esc(base(x.sym))}${out ? ' ' + mapN(x.chg, 0) : ''}</text>`;
   });
-  const hh = d => String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0');
   const endTxt = full ? 'teraz' : wp[0].path.mode === 'day' ? hh(new Date(tc)) + ' UTC' : '−' + Math.max(0, Math.round((t1 - tc) / 3600e3)) + ' godz.';
   s += `<text class="mp-ax" x="${X0}" y="${H - 8}">${wp[0].path.mode === 'day' ? '00:00 UTC' : '−24 godz.'}</text><text class="mp-ax now" x="${X1}" y="${H - 8}" text-anchor="end">${endTxt}</text></svg>`;
   return s;
