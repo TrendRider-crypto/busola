@@ -336,6 +336,23 @@ html::after { content: ""; position: fixed; top: 0; left: 0; right: 0; height: e
 .jsb { border-radius: 999px; }
 .segb.on, .jsb.on { background: var(--acc); color: var(--acc-ink); box-shadow: none; }
 .sect h2 { font-family: 'Space Grotesk', 'Inter', sans-serif; font-size: 21px; font-weight: 600; letter-spacing: .01em; color: var(--fg); }
+/* Makro */
+.mk-s { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 11px 0; border-top: 1px solid var(--line); }
+.mk-s:first-child { border-top: 0; padding-top: 0; } .mk-s:last-child { padding-bottom: 0; }
+.mk-s b { font-size: 14px; } .mk-s small { display: block; margin-top: 1px; font-size: 11px; color: var(--muted); }
+.mk-r { text-align: right; } .mk-st { font-size: 12.5px; font-weight: 700; color: var(--muted); } .mk-st.on { color: var(--gold); }
+.mk-pb { grid-column: 1 / -1; height: 4px; margin-top: 6px; border-radius: 4px; background: var(--surface2); overflow: hidden; } .mk-pb i { display: block; height: 100%; background: var(--acc); }
+.mk-big { display: flex; align-items: baseline; gap: 10px; margin-top: 4px; } .mk-big b { font-family: 'Space Grotesk', 'Inter', sans-serif; font-size: 38px; font-weight: 600; letter-spacing: -.02em; } .mk-big span { font-size: 13px; color: var(--muted); }
+.mk-sp { display: block; width: 100%; height: 50px; margin-top: 10px; color: var(--gold); } .mk-sp.up { color: var(--up); } .mk-sp.down { color: var(--down); }
+.mk-dg { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.mk-dm { padding: 10px 12px; border-radius: 14px; background: var(--surface2); } .mk-dm b { display: block; margin-top: 2px; font-size: 21px; font-weight: 700; letter-spacing: -.01em; } .mk-dm small { font-size: 11.5px; color: var(--muted); }
+.mk-dm small.up { color: var(--up); } .mk-dm small.down { color: var(--down); }
+.mk-dl { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--muted); } .mk-dl i { width: 8px; height: 8px; border-radius: 50%; }
+.mk-stack { display: flex; height: 10px; margin-top: 12px; border-radius: 6px; overflow: hidden; background: var(--surface2); } .mk-stack i { display: block; height: 100%; }
+.mk-chs { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 6px; font-size: 12.5px; font-weight: 600; }
+.mk-fr { display: grid; grid-template-columns: 110px 1fr 40px; align-items: center; gap: 10px; padding: 6px 0; font-size: 13px; } .mk-fr b { text-align: right; }
+.mk-fb { height: 8px; border-radius: 6px; background: var(--surface2); overflow: hidden; } .mk-fb i { display: block; height: 100%; background: var(--acc); }
+.mk-note { margin-top: 10px; font-size: 12.5px; line-height: 1.45; }
 .mp-sec, .jh2 { font-family: 'Space Grotesk', 'Inter', sans-serif; font-size: 17px; font-weight: 600; letter-spacing: .01em; text-transform: uppercase; color: var(--fg); }
 .list, .dcard, .jcard, .mp-card, .mp-rows, .empty { background: var(--glass); border-color: var(--glass-line); box-shadow: var(--glass-sh); -webkit-backdrop-filter: blur(24px) saturate(140%); backdrop-filter: blur(24px) saturate(140%); }
 .light .list, .light .dcard { box-shadow: var(--glass-sh); }
@@ -876,6 +893,117 @@ function fmtPct(v) {
 }
 const arrow = d => d > 0 ? '▲' : d < 0 ? '▼' : '–';
 const cls = d => d > 0 ? 'up' : d < 0 ? 'down' : '';
+// ---------- Makro: opis otoczenia rynku (to nie jest sygnał) ----------
+const MK_ROT_MIN = 0.3;   // zmiana udziału w pp (ok. 24 h), poniżej której nie mówimy o rotacji kapitału
+const MK_STABLE = ['usdt', 'usdc', 'dai', 'usde', 'usds', 'fdusd', 'busd', 'tusd', 'usd1', 'pyusd', 'susds', 'usdd', 'usdy'];
+// godziny głównych sesji giełd w czasie lokalnym giełdy (bez świąt i przerw na lunch)
+const MK_SESS = [
+  { id: 'jp', name: 'Azjatycka', city: 'Tokio', tz: 'Asia/Tokyo', o: 9 * 60, c: 15 * 60 + 30 },
+  { id: 'eu', name: 'Europejska', city: 'Londyn', tz: 'Europe/London', o: 8 * 60, c: 16 * 60 + 30 },
+  { id: 'us', name: 'Amerykańska', city: 'Nowy Jork', tz: 'America/New_York', o: 9 * 60 + 30, c: 16 * 60 },
+  { id: 'au', name: 'Australijska', city: 'Sydney', tz: 'Australia/Sydney', o: 10 * 60, c: 16 * 60 }
+];
+const MK_WD = { Mon: 1, Tue: 1, Wed: 1, Thu: 1, Fri: 1 }, mkFmt = {};
+function mkLocal(ts, tz) {
+  const f = mkFmt[tz] || (mkFmt[tz] = new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }));
+  const p = {}; f.formatToParts(new Date(ts)).forEach(x => { p[x.type] = x.value; });
+  return { wd: p.weekday, min: (+p.hour % 24) * 60 + (+p.minute) };
+}
+const mkIsOpen = (s, ts) => { const l = mkLocal(ts, s.tz); return !!MK_WD[l.wd] && l.min >= s.o && l.min < s.c; };
+const mkHM = m => Math.floor(m / 60) + ':' + String(m % 60).padStart(2, '0');
+function mkSessions(ts) {
+  return MK_SESS.map(s => {
+    const l = mkLocal(ts, s.tz), open = !!MK_WD[l.wd] && l.min >= s.o && l.min < s.c, t0 = Math.floor(ts / 900e3) * 900e3;
+    let at = null; for (let k = 1; k <= 8 * 96; k++) { const t = t0 + k * 900e3; if (mkIsOpen(s, t) !== open) { at = t; break; } }
+    return { id: s.id, name: s.name, city: s.city, open, at, prog: open ? (l.min - s.o) / (s.c - s.o) : 0, hours: mkHM(s.o) + '–' + mkHM(s.c) };
+  });
+}
+function mkDur(ms) {
+  const m = Math.max(1, Math.round(ms / 60e3)), d = Math.floor(m / 1440), h = Math.floor((m % 1440) / 60), mm = m % 60;
+  return d > 0 ? d + ' d ' + h + ' g' : h > 0 ? h + ' g ' + mm + ' min' : mm + ' min';
+}
+const fmtMld = v => (v == null || !isFinite(v)) ? '–' : (() => { const [i, f] = (v / 1e9).toFixed(2).split('.'); return '$' + groupInt(i) + ',' + f + ' mld'; })();
+const fmtPp = v => { if (v == null || !isFinite(v)) return '–'; const a = Math.abs(v).toFixed(2).replace('.', ','); return a === '0,00' ? '0,00 pp' : (v > 0 ? '+' : '−') + a + ' pp'; };
+const fmtShare = v => (v == null || !isFinite(v)) ? '–' : v.toFixed(1).replace('.', ',') + '%';
+// Fear & Greed z 30 dni (alternative.me, najnowszy wpis pierwszy)
+function mkFng(j) {
+  const a = j && j.data; if (!Array.isArray(a)) return null;
+  const s = a.map(x => ({ v: Number(x && x.value), t: Number(x && x.timestamp) * 1000 })).filter(x => x.v >= 0 && x.v <= 100 && x.t > 0).sort((p, q) => p.t - q.t);
+  if (s.length < 2) return null;
+  const last = s[s.length - 1], pts = s.map(x => x.v);
+  return { v: Math.round(last.v), band: fgBand(last.v), pts, n: s.length, lo: Math.min(...pts), hi: Math.max(...pts), w1: s.length > 7 ? Math.round(s[s.length - 8].v) : null };
+}
+// Dominacja z CoinGecko /global: udziały top 10 w kapitalizacji; OTHERS.D = reszta poza top 10, stablecoiny = te z top 10
+function mkDominance(j) {
+  const g = j && j.data, pc = g && g.market_cap_percentage;
+  if (!pc || typeof pc !== 'object') return null;
+  const ks = Object.keys(pc).filter(k => Number.isFinite(Number(pc[k])));
+  if (ks.length < 8 || !(Number(pc.btc) > 0) || !(Number(pc.eth) > 0)) return null;
+  const sum = ks.reduce((a, k) => a + Number(pc[k]), 0), st = ks.filter(k => MK_STABLE.includes(k)).reduce((a, k) => a + Number(pc[k]), 0);
+  const cap = g.total_market_cap && Number(g.total_market_cap.usd), ch = Number(g.market_cap_change_percentage_24h_usd);
+  return { btc: Number(pc.btc), eth: Number(pc.eth), st, alt: Math.max(0, sum - Number(pc.btc) - Number(pc.eth) - st), oth: Math.max(0, 100 - sum), cap: cap > 0 ? cap : null, ch: Number.isFinite(ch) ? ch : null, top: ks.length };
+}
+// Zapisy dominacji w przeglądarce (co najmniej co 30 min, 9 dni): z nich liczymy zmianę w pp względem ok. 24 h temu
+function mkSnap(snaps, d, now) {
+  const a = (Array.isArray(snaps) ? snaps : []).filter(x => x && Number.isFinite(x.t) && x.t <= now && now - x.t < 9 * 86400e3);
+  if (!a.length || now - a[a.length - 1].t >= 30 * 60e3) a.push({ t: now, btc: d.btc, eth: d.eth, oth: d.oth, st: d.st });
+  return a;
+}
+function mkDelta(snaps, d, now) {
+  let best = null;
+  for (const x of snaps || []) {
+    const age = now - x.t;
+    if (age >= 20 * 3600e3 && age <= 48 * 3600e3 && (!best || Math.abs(age - 24 * 3600e3) < Math.abs(now - best.t - 24 * 3600e3))) best = x;
+  }
+  return best ? { btc: d.btc - best.btc, eth: d.eth - best.eth, oth: d.oth - best.oth, st: d.st - best.st, h: (now - best.t) / 3600e3 } : null;
+}
+function mkRotation(dl) {
+  if (!dl) return null;
+  const c = [['btc', dl.btc], ['oth', dl.oth], ['st', dl.st]].sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]))[0];
+  if (Math.abs(c[1]) < MK_ROT_MIN) return { flat: true, text: 'Bez wyraźnej rotacji: udziały BTC, OTHERS i stablecoinów stoją w miejscu.' };
+  const up = c[1] > 0, T = {
+    btc: [up, 'BTC.D rośnie: kapitał wraca do bitcoina.', 'BTC.D spada: kapitał rozchodzi się na inne coiny.'],
+    oth: [up, 'OTHERS.D rośnie: kapitał idzie w alty (większe ryzyko).', 'OTHERS.D spada: kapitał wraca do BTC albo do stablecoinów.'],
+    st: [up, 'Udział stablecoinów rośnie: kapitał chowa się w gotówce.', 'Udział stablecoinów spada: kapitał wchodzi w rynek.']
+  }[c[0]];
+  return { flat: false, key: c[0], up, text: up ? T[1] : T[2] };
+}
+// Podaż stablecoinów USD z DefiLlama /stablecoins (suma z pól circulating i circulatingPrev*)
+function mkStable(j) {
+  const a = j && j.peggedAssets; if (!Array.isArray(a)) return null;
+  let n = 0, d1 = 0, w1 = 0, m1 = 0; const rows = [];
+  for (const x of a) {
+    if (!x || x.pegType !== 'peggedUSD') continue;
+    const g = o => { const v = Number(o && o.peggedUSD); return Number.isFinite(v) ? v : null; }, c = g(x.circulating);
+    if (!(c > 0)) continue;
+    n += c; d1 += g(x.circulatingPrevDay) ?? c; w1 += g(x.circulatingPrevWeek) ?? c; m1 += g(x.circulatingPrevMonth) ?? c;
+    rows.push({ sym: String(x.symbol || x.name || '?'), v: c });
+  }
+  if (!(n > 0)) return null;
+  const ch = p => p > 0 ? (n - p) / p * 100 : null;
+  return { total: n, d1: ch(d1), w1: ch(w1), m1: ch(m1), pts: [m1, w1, d1, n], top: rows.sort((p, q) => q.v - p.v).slice(0, 4) };
+}
+// Decyzja Fed z Polymarket: najbliższe niezamknięte wydarzenie "Fed decision in ..."
+function mkFedPick(events, now) {
+  const ev = (Array.isArray(events) ? events : []).filter(e => e && !e.closed && /fed decision/i.test(e.title || '') && Array.isArray(e.markets) && e.markets.length >= 2 && Date.parse(e.endDate) > now - 12 * 3600e3).sort((a, b) => Date.parse(a.endDate) - Date.parse(b.endDate));
+  return ev[0] || null;
+}
+function mkFedRows(ev) {
+  const rows = [];
+  for (const m of (ev && ev.markets) || []) {
+    if (!m || m.closed) continue;
+    let pr; try { pr = JSON.parse(m.outcomePrices); } catch (e) { continue; }
+    const p = Number(pr && pr[0]); if (!(p >= 0 && p <= 1)) continue;
+    const t = String(m.groupItemTitle || m.question || ''), n = (t.match(/(\d+)/) || [])[1], plus = /\+|or more/i.test(t);
+    let bp, lab;
+    if (/no change/i.test(t)) { bp = 0; lab = 'Bez zmian'; }
+    else if (n && /decrease|cut|lower/i.test(t)) { bp = -Number(n); lab = 'Obniżka ' + n + (plus ? '+' : '') + ' pb'; }
+    else if (n && /increase|hike|raise/i.test(t)) { bp = Number(n); lab = 'Podwyżka ' + n + (plus ? '+' : '') + ' pb'; }
+    else { bp = 999; lab = t; }
+    rows.push({ lab, p: p * 100, bp });
+  }
+  return rows.sort((a, b) => a.bp - b.bp);
+}
 // ===================== LOGIC-END =====================
 
 // ---------- sieć ----------
@@ -895,7 +1023,7 @@ async function getJSON(url, tries = 3) {
   throw new Error('limit zapytań giełdy');
 }
 const mapK = k => k.map(x => ({ time: Math.floor(x[0] / 1000), open: +x[1], high: +x[2], low: +x[3], close: +x[4], volume: +x[5], closeTime: x[6] }));
-const S = { view: 'home', jr: [], jrH: 'h4', jrNoStore: false, tvLayout: '', mapFl: true, mapLast: {}, mapF: 1, mapPlay: false, mapTrim: false, mapCache: null, mapOiBusy: false, mapOiN: 0, mapOiTot: 0, mapTs: 0, demo: false, coins: [], D: {}, filter: 'all', open: null, chAnim: null, chAnimT: 0, scanning: false, prog: 0, progTxt: '', ts: 0, err: '', note: '' };
+const S = { view: 'home', jr: [], jrH: 'h4', jrNoStore: false, tvLayout: '', mapFl: true, mapLast: {}, mapF: 1, mapPlay: false, mapTrim: false, mapCache: null, mapOiBusy: false, mapOiN: 0, mapOiTot: 0, mapTs: 0, demo: false, coins: [], D: {}, filter: 'all', mk: { l: {}, err: {}, busy: false, ts: 0, fng: null, dom: null, delta: null, stb: null, fed: null }, open: null, chAnim: null, chAnimT: 0, scanning: false, prog: 0, progTxt: '', ts: 0, err: '', note: '' };
 try { S.mapFl = localStorage.getItem('busola_map_fl') !== '0'; } catch (e) { /* tylko w pamięci */ }
 try { S.tvLayout = tvLayoutId(localStorage.getItem('busola_tv_layout')) || ''; } catch (e) { S.tvLayout = ''; }
 try { const f = localStorage.getItem('busola_filter'); if (f === 'long' || f === 'short' || f === 'all') S.filter = f; } catch (e) { /* tylko w pamięci */ }
@@ -1081,6 +1209,35 @@ async function loadFng() {
     S.fg = { v: Math.round(v) };
   } catch (e) { S.fg = null; }
 }
+// ---------- Makro: pobieranie (każdy blok osobno; brak odpowiedzi = "brak danych", niczego nie szacujemy) ----------
+async function mkFedLoad() {
+  for (const tag of ['fed', 'fed-rates', 'fomc']) {
+    try {
+      const ev = mkFedPick(await getJSON('https://gamma-api.polymarket.com/events?tag_slug=' + tag + '&closed=false&active=true&limit=50', 2), Date.now());
+      const rows = ev ? mkFedRows(ev) : [];
+      if (rows.length >= 2) return { end: ev.endDate, rows };
+    } catch (e) { /* następny tag */ }
+  }
+  throw new Error('fed');
+}
+async function mkLoad(force) {
+  const M = S.mk; if (M.busy) return;
+  if (!force && M.ts && Date.now() - M.ts < 5 * 60e3) return;
+  M.busy = true; M.l = { fng: 1, dom: 1, stb: 1, fed: 1 }; if (S.view === 'macro') render();
+  const run = (k, fn) => fn().then(() => { M.err[k] = false; }).catch(() => { M.err[k] = true; }).then(() => { M.l[k] = 0; if (S.view === 'macro') render(); });
+  await Promise.all([
+    run('fng', async () => { const v = mkFng(await getJSON('https://api.alternative.me/fng/?limit=30', 2)); if (!v) throw new Error('fng'); M.fng = v; }),
+    run('dom', async () => {
+      const d = mkDominance(await getJSON('https://api.coingecko.com/api/v3/global', 2)); if (!d) throw new Error('dom');
+      const now = Date.now(); let sn = []; try { sn = JSON.parse(localStorage.getItem('busola_mk_dom') || '[]'); } catch (e) { sn = []; }
+      sn = mkSnap(sn, d, now); try { localStorage.setItem('busola_mk_dom', JSON.stringify(sn)); } catch (e) { /* tylko w pamięci */ }
+      M.dom = d; M.delta = mkDelta(sn, d, now);
+    }),
+    run('stb', async () => { const v = mkStable(await getJSON('https://stablecoins.llama.fi/stablecoins?includePrices=false', 2)); if (!v) throw new Error('stb'); M.stb = v; }),
+    run('fed', async () => { M.fed = await mkFedLoad(); })
+  ]);
+  M.ts = Date.now(); M.busy = false; if (S.view === 'macro') render();
+}
 async function scan() {
   if (S.scanning) return;
   S.scanning = true; S.err = ''; S.prog = 0; S.progTxt = 'Pobieram listę coinów…'; render();
@@ -1126,6 +1283,7 @@ const ICO = {
   play: '<path d="M7 5l12 7-12 7z"/>', pause: '<path d="M8 5v14M16 5v14"/>',
   journal: '<path d="M5 20V11M12 20V4M19 20v-6"/>', back: '<path d="M15 18l-6-6 6-6"/>', dl: '<path d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/>',
   scan: '<circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/>',
+  globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.7 2.6 15.3 0 18M12 3c-2.6 2.7-2.6 15.3 0 18"/>',
   down: '<path d="M6 9l6 6 6-6"/>', check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>', x: '<path d="M6 6l12 12M18 6L6 18"/>', dash: '<path d="M6 12h12"/>'
 };
 const LOGO = '<svg class="logo" width="32" height="32" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="42" fill="currentColor"/><g transform="rotate(40 50 50)"><path d="M50 20 L60 50 L40 50 Z" fill="var(--gold-ink)"/><path d="M50 80 L60 50 L40 50 Z" fill="var(--gold-ink)" opacity="0.45"/></g><circle cx="50" cy="50" r="4" fill="currentColor"/></svg>';
@@ -1144,7 +1302,7 @@ const tfChips = d => ['d1', 'h4', 'h1', 'm15'].map((k, i) => { const v = d.t[k];
 function navHtml(a) {
   const dark = document.documentElement.classList.contains('dark');
   const b = (id, ic, lab, on) => `<button class="nb${on ? ' on' : ''}" id="${id}" aria-label="${lab}"${on ? ' aria-current="page"' : ''}>${svgI(ic, 19, 1.9)}</button>`;
-  return `<nav class="nav" aria-label="Nawigacja">${b('btnHome', ICO.scan, 'Skaner', a === 'home')}${b('btnMap', ICO.map, 'Mapa rynku', a === 'map')}${b('btnJr', ICO.journal, 'Dziennik wyników', a === 'journal')}${b('btnTheme', dark ? ICO.sun : ICO.moon, dark ? 'Przełącz na jasny motyw' : 'Przełącz na ciemny motyw', false)}</nav>`;
+  return `<nav class="nav" aria-label="Nawigacja">${b('btnHome', ICO.scan, 'Skaner', a === 'home')}${b('btnMap', ICO.map, 'Mapa rynku', a === 'map')}${b('btnMk', ICO.globe, 'Makro', a === 'macro')}${b('btnJr', ICO.journal, 'Dziennik wyników', a === 'journal')}${b('btnTheme', dark ? ICO.sun : ICO.moon, dark ? 'Przełącz na jasny motyw' : 'Przełącz na ciemny motyw', false)}</nav>`;
 }
 function visibleCoins() {
   const all = Object.values(S.D);
@@ -1361,8 +1519,49 @@ function mapHtml() {
   h += `<p class="fine">Mapa opisuje, co dzieje się teraz. To nie jest sygnał i nie ma udowodnionej przewagi. Zmiana na wykresie i w kafelkach liczona jest od ${mode === 'day' ? 'północy UTC' : 'ostatnich 24 godzin'} z zamkniętych świec 1H i bieżącej ceny. Etykieta bierze znak zmiany ceny i OI (w kontraktach) z ostatnich 4 godzin; gdy cena zmieniła się o nie więcej niż ${String(MAP_P_MIN).replace('.', ',')}% albo OI o nie więcej niż ${String(OI_MIN).replace('.', ',')}%, jest "Bez wyraźnego ruchu". Przypisanie do sektorów jest ręczne i przybliżone. Mapa obejmuje te same 100 coinów o największym wolumenie co skaner. Etykiety nie są (jeszcze) zapisywane w Dzienniku.</p><div style="margin:12px 20px 0">${tvBtn()}</div>`;
   return h;
 }
+function macroHtml() {
+  const M = S.mk, now = Date.now(), tm = ts => new Date(ts).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
+  const stat = k => M.l[k] ? 'Pobieram…' : 'Brak danych (źródło nie odpowiedziało).';
+  let h = `<header class="hdr"><div class="brand"><button class="ibtn" id="btnBack" aria-label="Wróć">${svgI(ICO.back, 20, 2.2)}</button><span>Makro</span></div><div class="hbtns"><button class="ibtn${M.busy ? ' spin' : ''}" id="btnMkRef" aria-label="Odśwież makro"${M.busy ? ' disabled' : ''}>${svgI(ICO.refresh, 20, 1.8)}</button></div></header>`;
+  h += `<div class="meta"><span class="dot${M.busy ? ' busy' : ''}"></span><span>${M.ts ? 'dane z ' + tm(M.ts) : 'Pobieram dane…'} · opis rynku, nie sygnał</span></div>`;
+  // sesje
+  h += `<div class="mp-sec">Sesje giełd</div><div class="mp-card mk-ss">${mkSessions(now).map(x => `<div class="mk-s"><div><b>${x.name}</b><small>${x.city} · ${x.hours}</small></div><div class="mk-r"><span class="mk-st${x.open ? ' on' : ''}">${x.open ? 'Otwarta' : 'Zamknięta'}</span><small>${x.at ? (x.open ? 'do zamknięcia ' : 'otwarcie za ') + mkDur(x.at - now) : ''}</small></div><div class="mk-pb"><i style="width:${Math.round(x.prog * 100)}%"></i></div></div>`).join('')}</div>`;
+  // strach i chciwość
+  const fg = M.fng;
+  h += `<div class="mp-sec">Strach i chciwość</div><div class="mp-card">${fg ? `<div class="mk-big"><b>${fg.v}</b><span>${FG_LAB[fg.band]}</span></div>${sparkSvg(fg.pts, 300, 50, 'mk-sp', 1.8)}<div class="mp-t">ostatnie ${fg.n} dni · min ${fg.lo} · max ${fg.hi}${fg.w1 != null ? ' · tydzień temu ' + fg.w1 : ''} · alternative.me</div>` : `<div class="mp-t">${stat('fng')}</div>`}</div>`;
+  // dominacja
+  const d = M.dom, dl = M.delta;
+  h += `<div class="mp-sec">Dominacja i rotacja kapitału</div><div class="mp-card">`;
+  if (d) {
+    const T = [['btc', 'BTC.D', d.btc, '--acc'], ['eth', 'ETH.D', d.eth, '--grey'], ['oth', 'OTHERS.D', d.oth, '--fg'], ['st', 'Stable', d.st, '--warn']], ro = mkRotation(dl);
+    h += `<div class="mk-dg">${T.map(t => `<div class="mk-dm"><span class="mk-dl"><i style="background:var(${t[3]})"></i>${t[1]}</span><b>${fmtShare(t[2])}</b><small class="${cls(dl ? dl[t[0]] : 0)}">${dl ? fmtPp(dl[t[0]]) : '–'}</small></div>`).join('')}</div>`;
+    h += `<div class="mk-stack" role="img" aria-label="Udziały w kapitalizacji rynku">${[[d.btc, '--acc'], [d.eth, '--grey'], [d.alt, '--muted'], [d.oth, '--fg'], [d.st, '--warn']].map(x => `<i style="width:${x[0].toFixed(2)}%;background:var(${x[1]})"></i>`).join('')}</div>`;
+    h += `<div class="mk-note">${ro ? esc(ro.text) : 'Rotację kapitału pokażę, gdy zbiorę zapis sprzed około doby (zapisujemy go w tej przeglądarce przy każdym otwarciu Makro).'}</div>`;
+    h += `<div class="mp-t">${d.cap ? 'Kapitalizacja rynku ' + fmtMld(d.cap) + (d.ch != null ? ' (' + fmtPct(d.ch) + ' w 24 h)' : '') + ' · ' : ''}OTHERS.D to wszystko poza top 10, Stable to stablecoiny w top 10 · CoinGecko</div>`;
+  } else h += `<div class="mp-t">${stat('dom')}</div>`;
+  h += `</div>`;
+  // stablecoiny
+  const sb = M.stb;
+  h += `<div class="mp-sec">Stablecoiny, podaż</div><div class="mp-card">`;
+  if (sb) {
+    h += `<div class="mk-big"><b>${fmtMld(sb.total)}</b></div><div class="mk-chs">${[['24 h', sb.d1], ['7 dni', sb.w1], ['30 dni', sb.m1]].map(x => `<span class="${cls(x[1])}">${x[0]} ${fmtPct(x[1])}</span>`).join('')}</div>${sparkSvg(sb.pts, 300, 44, 'mk-sp ' + (sb.m1 >= 0 ? 'up' : 'down'), 1.8)}`;
+    h += `<div class="mp-t">${sb.top.map(x => esc(x.sym) + ' ' + fmtMld(x.v)).join(' · ')} · DefiLlama</div><div class="mk-note">Rosnąca podaż stablecoinów oznacza, że kapitał wchodzi do krypto (sucha amunicja). Malejąca, że z niego wychodzi.</div>`;
+  } else h += `<div class="mp-t">${stat('stb')}</div>`;
+  h += `</div>`;
+  // Fed
+  const fd = M.fed;
+  h += `<div class="mp-sec">Decyzja Fed</div><div class="mp-card">`;
+  if (fd) {
+    const dt = new Date(fd.end), ds = isNaN(dt) ? '' : ' · ' + dt.toLocaleDateString('pl-PL', { day: 'numeric', month: 'long' });
+    h += `<div class="mp-lab">Najbliższe posiedzenie${ds}</div>${fd.rows.map(r => `<div class="mk-fr"><span>${esc(r.lab)}</span><div class="mk-fb"><i style="width:${Math.min(100, r.p).toFixed(1)}%"></i></div><b>${Math.round(r.p)}%</b></div>`).join('')}<div class="mp-t">To kursy zakładów z rynku predykcyjnego Polymarket, a nie prognoza Fed.</div>`;
+  } else h += `<div class="mp-t">${stat('fed')}</div>`;
+  h += `</div>`;
+  h += `<p class="fine">Makro opisuje otoczenie rynku. To nie jest sygnał i nie ma udowodnionej przewagi, dlatego nie wchodzi do Dziennika. Dane pochodzą z darmowych źródeł (alternative.me, CoinGecko, DefiLlama, Polymarket); gdy źródło nie odpowiada, blok mówi "brak danych" i niczego nie szacujemy. Sesje to godziny głównych sesji giełd w ich czasie lokalnym, bez świąt i przerw na lunch. Zmiana dominacji liczona jest z zapisów w tej przeglądarce, więc pojawia się po około dobie.</p>`;
+  return h;
+}
 function render() {
   if (S.view === 'map') { const sy0 = window.scrollY; $app.innerHTML = mapHtml() + navHtml('map'); window.scrollTo(0, sy0); return; }
+  if (S.view === 'macro') { const sy0 = window.scrollY; $app.innerHTML = macroHtml() + navHtml('macro'); window.scrollTo(0, sy0); return; }
   if (S.view === 'journal') { const sy0 = window.scrollY; $app.innerHTML = journalHtml() + navHtml('journal'); window.scrollTo(0, sy0); return; }
   const car = $app.querySelector('.car'), sl = car ? car.scrollLeft : 0, sy = window.scrollY;
   const vis = visibleCoins(), have = Object.keys(S.D).length > 0;
@@ -1407,6 +1606,8 @@ $app.addEventListener('click', e => {
     const m = document.querySelector('meta[name=theme-color]'); if (m) m.content = nx === 'light' ? '#f2f5f4' : '#020202';
     return render();
   }
+  if (t.closest('#btnMk')) { mapStop(); S.view = 'macro'; window.scrollTo(0, 0); render(); return mkLoad(false); }
+  if (t.closest('#btnMkRef')) return mkLoad(true);
   if (t.closest('#btnJr')) { S.view = 'journal'; window.scrollTo(0, 0); render(); return jrSettle(); }
   if (t.closest('#btnMap')) {
     S.view = 'map'; window.scrollTo(0, 0); mapStart(); const ld = mapLoadOi(), has = Object.keys(S.D).length > 0;
@@ -1438,7 +1639,8 @@ $app.addEventListener('input', e => {
   if (e.target.id !== 'mpRange') return;
   cancelAnimationFrame(mapRaf); S.mapPlay = false; S.mapCache = null; S.mapF = (+e.target.value) / 1000; mapFrame();
 });
-document.addEventListener('visibilitychange', () => { if (document.hidden) return; if (S.view === 'map') mapPrices(); if (S.ts && Date.now() - S.ts > 5 * 60e3) scan(); });
+setInterval(() => { if (S.view === 'macro' && !document.hidden) render(); }, 60000);
+document.addEventListener('visibilitychange', () => { if (document.hidden) return; if (S.view === 'macro') mkLoad(false); if (S.view === 'map') mapPrices(); if (S.ts && Date.now() - S.ts > 5 * 60e3) scan(); });
 
 // ---------- ikona i manifest (dodanie do ekranu głównego) ----------
 function drawIcon(size) {
