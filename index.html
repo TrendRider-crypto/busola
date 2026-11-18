@@ -336,6 +336,12 @@ html::after { content: ""; position: fixed; top: 0; left: 0; right: 0; height: e
 .jsb { border-radius: 999px; }
 .segb.on, .jsb.on { background: var(--acc); color: var(--acc-ink); box-shadow: none; }
 .sect h2 { font-family: 'Space Grotesk', 'Inter', sans-serif; font-size: 21px; font-weight: 600; letter-spacing: .01em; color: var(--fg); }
+/* Test pułapki */
+.lab-b { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: calc(100% - 40px); margin: 14px 20px 0; padding: 14px 16px; border-radius: 20px; border: 1px solid var(--glass-line, var(--line)); background: var(--glass, var(--surface)); color: var(--fg); font: inherit; text-align: left; cursor: pointer; }
+.lab-b b { display: block; font-size: 14px; } .lab-b small { display: block; margin-top: 2px; font-size: 11.5px; color: var(--muted); line-height: 1.4; } .lab-b svg { flex: none; transform: rotate(180deg); color: var(--muted); }
+.lab-run { width: 100%; height: 48px; border: 0; border-radius: 16px; background: var(--acc); color: #04130d; font: inherit; font-size: 15px; font-weight: 700; cursor: pointer; } .lab-run:disabled { opacity: .55; cursor: default; }
+.lab-b + .empty { margin-top: 12px; }
+.jtr.lab-g, .jth.lab-g { grid-template-columns: 1.7fr .45fr .8fr .8fr .8fr; } .jsb:disabled { opacity: .5; }
 /* Makro */
 .mk-s { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 11px 0; border-top: 1px solid var(--line); }
 .mk-s:first-child { border-top: 0; padding-top: 0; } .mk-s:last-child { padding-bottom: 0; }
@@ -1004,6 +1010,105 @@ function mkFedRows(ev) {
   }
   return rows.sort((a, b) => a.bp - b.bp);
 }
+
+// ---------- Test pułapki płynności (sweep i reclaim) ----------
+// Wszystkie parametry ustalone z góry (przed pierwszym uruchomieniem testu) i nie są dopasowywane do wyników.
+// Poziom = maksimum (dołek) z ostatnich N świec z co najmniej TOUCH osobnymi dotknięciami w odległości TOL ATR (równe szczyty/dołki).
+// Sweep = świeca przebija poziom o MIN..MAX ATR, a w ciągu RECL świec (licząc ją samą) zamknięcie wraca za poziom.
+// Wejście = zamknięcie świecy powrotnej, w stronę powrotu. Stop = koniec knota + PAD ATR. Cel = RR razy ryzyko. Czas = HOR świec.
+// Wynik w R po koszcie COST% (od wartości pozycji). Gdy w jednej świecy dotknięty i stop, i cel: liczymy stop. Brak poślizgu.
+const LQ = { N: 48, TOUCH: 2, TOL: 0.15, MIN: 0.1, MAX: 1.5, RECL: 3, PAD: 0.1, RR: 2, HOR: 48, COST: 0.1, TREND: 100, K: 5, NMIN: 100, DMIN: 20 };
+function lqTouches(win, level, tol, up) {
+  let runs = 0, prev = false;
+  for (const x of win) { const t = up ? x.high >= level - tol : x.low <= level + tol; if (t && !prev) runs++; prev = t; }
+  return runs;
+}
+// świece zamknięte; zwraca zdarzenia: { i (indeks świecy wejścia), dir (-1 short po sweepie szczytu, +1 long po sweepie dołka), entry, sl, risk, atr, withTrend }
+function lqEvents(c) {
+  const out = [], atr = atrArr(c), n = c.length, from = Math.max(LQ.N, LQ.TREND);
+  for (const dir of [-1, 1]) {
+    const up = dir === -1;
+    for (let s = from; s < n - 1; s++) {
+      const a = atr[s - 1]; if (!(a > 0)) continue;
+      const win = c.slice(s - LQ.N, s);
+      const lvl = up ? Math.max(...win.map(x => x.high)) : Math.min(...win.map(x => x.low));
+      if (lqTouches(win, lvl, LQ.TOL * a, up) < LQ.TOUCH) continue;
+      const ext = x => up ? x.high - lvl : lvl - x.low;
+      if (!(ext(c[s]) > LQ.MIN * a)) continue;
+      let j = -1, mx = 0;
+      for (let k = s; k <= Math.min(n - 1, s + LQ.RECL); k++) {
+        mx = Math.max(mx, ext(c[k]));
+        if (mx > LQ.MAX * a) break;
+        if (up ? c[k].close < lvl : c[k].close > lvl) { j = k; break; }
+      }
+      if (j < 0) continue;
+      const entry = c[j].close, extreme = up ? lvl + mx : lvl - mx, sl = up ? extreme + LQ.PAD * a : extreme - LQ.PAD * a, risk = Math.abs(sl - entry);
+      if (!(risk > 0)) continue;
+      const m = c.slice(s - LQ.TREND, s).reduce((q, x) => q + x.close, 0) / LQ.TREND, upT = c[s - 1].close > m;
+      out.push({ i: j, dir, entry, sl, risk, atr: a, withTrend: (dir === 1) === upT });
+      s = j;   // bez nakładających się zdarzeń w tym samym kierunku
+    }
+  }
+  return out.sort((p, q) => p.i - q.i);
+}
+// wynik netto w R; null gdy do końca danych brakuje świec (zdarzenie jeszcze nierozstrzygnięte)
+function lqOutcome(c, ev) {
+  const { i, dir, entry, sl, risk } = ev, tp = entry + dir * LQ.RR * risk, cost = LQ.COST / 100 * entry / risk, end = i + LQ.HOR;
+  for (let k = i + 1; k <= Math.min(end, c.length - 1); k++) {
+    const hitSl = dir === -1 ? c[k].high >= sl : c[k].low <= sl, hitTp = dir === -1 ? c[k].low <= tp : c[k].high >= tp;
+    if (hitSl) return { r: -1 - cost, how: 'sl' };
+    if (hitTp) return { r: LQ.RR - cost, how: 'tp' };
+  }
+  if (c.length - 1 < end) return null;
+  return { r: dir * (c[end].close - entry) / risk - cost, how: 'to' };
+}
+// ten sam stop i cel (w % ceny), wejście w losowej świecy tego samego coina i kierunku
+function lqBaseline(c, ev, rnd) {
+  const lo = Math.max(LQ.N, LQ.TREND), hi = c.length - LQ.HOR - 2, out = [];
+  if (hi <= lo) return out;
+  const frac = ev.risk / ev.entry;
+  for (let q = 0; q < LQ.K; q++) {
+    const j = lo + Math.floor(rnd() * (hi - lo)), entry = c[j].close, risk = entry * frac;
+    const m = c.slice(j - LQ.TREND + 1, j + 1).reduce((a, x) => a + x.close, 0) / LQ.TREND, upT = entry > m;
+    const o = lqOutcome(c, { i: j, dir: ev.dir, entry, sl: entry - ev.dir * risk, risk });
+    if (o) out.push({ r: o.r, withTrend: (ev.dir === 1) === upT });
+  }
+  return out;
+}
+// jedna moneta: zdarzenia, ich wyniki i średnia z losowych prób na zdarzenie (para do przedziału różnicy)
+function lqCoin(sym, c) {
+  const h = [...sym].reduce((a, ch) => (Math.imul(a, 31) + ch.charCodeAt(0)) >>> 0, 7), rnd = jrRng(h), rows = [];
+  for (const ev of lqEvents(c)) {
+    const o = lqOutcome(c, ev); if (!o) continue;
+    const b = lqBaseline(c, ev, rnd); if (!b.length) continue;
+    const bw = b.filter(x => x.withTrend === ev.withTrend);
+    rows.push({ sym, t: c[ev.i].closeTime, day: jrDay(c[ev.i].closeTime), dir: ev.dir, withTrend: ev.withTrend, r: o.r, how: o.how, br: b.reduce((a, x) => a + x.r, 0) / b.length, brw: bw.length ? bw.reduce((a, x) => a + x.r, 0) / bw.length : null });
+  }
+  return rows;
+}
+const LQ_GROUPS = [
+  { k: 'all', lab: 'Wszystkie', f: () => true },
+  { k: 'short', lab: 'Sweep szczytu → short', f: r => r.dir === -1 },
+  { k: 'long', lab: 'Sweep dołka → long', f: r => r.dir === 1 },
+  { k: 'with', lab: 'Zgodnie z trendem', f: r => r.withTrend },
+  { k: 'against', lab: 'Pod trend', f: r => !r.withTrend }
+];
+// statystyka grupy: średni wynik zdarzeń, średni wynik losowych wejść, różnica z przedziałem 95% (bootstrap po dniach; zdarzenia z jednego dnia są skorelowane)
+function lqStat(rows, g) {
+  const sel = rows.filter(g.f), n = sel.length, days = new Set(sel.map(r => r.day)).size, mean = a => a.length ? a.reduce((p, q) => p + q, 0) / a.length : null;
+  const base = g.k === 'with' || g.k === 'against' ? sel.map(r => r.brw != null ? r.brw : r.br) : sel.map(r => r.br);
+  const d = sel.map((r, i) => r.r - base[i]);
+  const m = mean(sel.map(r => r.r)), bm = mean(base), ci = n >= 20 && days >= 2 ? jrBoot(d, sel.map(r => r.day)) : null;
+  const cnt = k => sel.filter(r => r.how === k).length;
+  return { k: g.k, n, days, mean: m, base: bm, diff: m != null ? m - bm : null, ci, win: n ? cnt('tp') / n : null, sl: n ? cnt('sl') / n : null, to: n ? cnt('to') / n : null };
+}
+// werdykt tylko dla grupy "Wszystkie" i dopiero po progu: LQ.NMIN zdarzeń z LQ.DMIN dni
+function lqVerdict(st) {
+  if (st.n < LQ.NMIN || st.days < LQ.DMIN || !st.ci) return { state: 'wait', n: st.n, days: st.days };
+  if (st.ci[0] > 0) return { state: 'better', ...st };
+  if (st.ci[1] < 0) return { state: 'worse', ...st };
+  return { state: 'none', ...st };
+}
 // ===================== LOGIC-END =====================
 
 // ---------- sieć ----------
@@ -1023,7 +1128,7 @@ async function getJSON(url, tries = 3) {
   throw new Error('limit zapytań giełdy');
 }
 const mapK = k => k.map(x => ({ time: Math.floor(x[0] / 1000), open: +x[1], high: +x[2], low: +x[3], close: +x[4], volume: +x[5], closeTime: x[6] }));
-const S = { view: 'home', jr: [], jrH: 'h4', jrNoStore: false, tvLayout: '', mapFl: true, mapLast: {}, mapF: 1, mapPlay: false, mapTrim: false, mapCache: null, mapOiBusy: false, mapOiN: 0, mapOiTot: 0, mapTs: 0, demo: false, coins: [], D: {}, filter: 'all', mk: { l: {}, err: {}, busy: false, ts: 0, fng: null, dom: null, delta: null, stb: null, fed: null }, open: null, chAnim: null, chAnimT: 0, scanning: false, prog: 0, progTxt: '', ts: 0, err: '', note: '' };
+const S = { lq: { tf: '1h', busy: false, done: 0, tot: 0, err: '', res: {} }, view: 'home', jr: [], jrH: 'h4', jrNoStore: false, tvLayout: '', mapFl: true, mapLast: {}, mapF: 1, mapPlay: false, mapTrim: false, mapCache: null, mapOiBusy: false, mapOiN: 0, mapOiTot: 0, mapTs: 0, demo: false, coins: [], D: {}, filter: 'all', mk: { l: {}, err: {}, busy: false, ts: 0, fng: null, dom: null, delta: null, stb: null, fed: null }, open: null, chAnim: null, chAnimT: 0, scanning: false, prog: 0, progTxt: '', ts: 0, err: '', note: '' };
 try { S.mapFl = localStorage.getItem('busola_map_fl') !== '0'; } catch (e) { /* tylko w pamięci */ }
 try { S.tvLayout = tvLayoutId(localStorage.getItem('busola_tv_layout')) || ''; } catch (e) { S.tvLayout = ''; }
 try { const f = localStorage.getItem('busola_filter'); if (f === 'long' || f === 'short' || f === 'all') S.filter = f; } catch (e) { /* tylko w pamięci */ }
@@ -1423,7 +1528,7 @@ function journalHtml() {
   let h = `<header class="hdr"><div class="brand"><button class="ibtn" id="btnBack" aria-label="Wróć">${svgI(ICO.back, 20, 2.2)}</button><span>Dziennik</span></div><div class="hbtns"><button class="ibtn" id="btnCsv" aria-label="Eksport do CSV"${all.length ? '' : ' disabled'}>${svgI(ICO.dl, 20, 1.8)}</button></div></header>`;
   h += `<div class="meta"><span id="metaTxt">Zapisano ${all.length} ${all.length === 1 ? 'sygnał' : 'sygnałów'} · ${days} ${days === 1 ? 'dzień' : 'dni'} · rozliczone ${settled}</span></div>`;
   if (S.jrNoStore) h += `<div class="banner"><span>Ta przeglądarka nie pozwala zapisywać danych. Dziennik zniknie po zamknięciu karty. Eksportuj CSV albo otwórz Busolę w zwykłej karcie.</span></div>`;
-  if (!all.length) return h + `<div class="empty">Dziennik jest pusty. Wpis powstaje przy każdym skanie, gdy któryś coin ma zgodne cztery interwały (TRIGGER albo WAIT). Wyniki pojawią się po 1, 4 i 24 godzinach od zapisu.</div>`;
+  if (!all.length) return h + labBtn() + `<div class="empty">Dziennik jest pusty. Wpis powstaje przy każdym skanie, gdy któryś coin ma zgodne cztery interwały (TRIGGER albo WAIT). Wyniki pojawią się po 1, 4 i 24 godzinach od zapisu.</div>`;
   h += `<div class="jcard"><div class="jlab">Werdykt</div>`;
   if (v.state === 'wait') {
     const bar = (lab, a, b) => `<div class="jpg"><div class="jrow"><span>${lab}</span><b>${a} / ${b}</b></div><div class="jbar"><i style="width:${Math.min(100, Math.round(a / b * 100))}%"></i></div></div>`;
@@ -1439,6 +1544,7 @@ function journalHtml() {
     h += `<div class="jtr"><span><b>${g.lab}</b>${g.sub ? `<span class="jsm">${g.sub}</span>` : ''}</span><span class="r jn">${st.n}</span><span class="r jv${sig ? (st.mean > 0 ? ' up' : ' dn') : ''}">${st.mean === null ? '—' : jrF(st.mean) + '%'}</span><span class="r jci">${st.ci ? `${jrF(st.ci[0], 1)}…${jrF(st.ci[1], 1)}` : 'za mało'}</span></div>`;
   }
   h += `</div><div class="jnote">Szare wartości: jeszcze bez wniosku (n poniżej ${JR_GMIN}, przedział obejmuje zero albo werdykt czeka na próg). Kolor pojawia się dopiero po spełnieniu progu z werdyktu.</div>`;
+  h += labBtn();
   h += `<div class="jh2">Ostatnie sygnały</div><div class="jlist">`;
   const now = Date.now();
   for (const e of all.slice().sort((a, b) => b.t - a.t).slice(0, 30)) {
@@ -1519,6 +1625,74 @@ function mapHtml() {
   h += `<p class="fine">Mapa opisuje, co dzieje się teraz. To nie jest sygnał i nie ma udowodnionej przewagi. Zmiana na wykresie i w kafelkach liczona jest od ${mode === 'day' ? 'północy UTC' : 'ostatnich 24 godzin'} z zamkniętych świec 1H i bieżącej ceny. Etykieta bierze znak zmiany ceny i OI (w kontraktach) z ostatnich 4 godzin; gdy cena zmieniła się o nie więcej niż ${String(MAP_P_MIN).replace('.', ',')}% albo OI o nie więcej niż ${String(OI_MIN).replace('.', ',')}%, jest "Bez wyraźnego ruchu". Przypisanie do sektorów jest ręczne i przybliżone. Mapa obejmuje te same 100 coinów o największym wolumenie co skaner. Etykiety nie są (jeszcze) zapisywane w Dzienniku.</p><div style="margin:12px 20px 0">${tvBtn()}</div>`;
   return h;
 }
+
+// ---------- Test pułapki płynności: pobieranie i widok ----------
+const LQ_PAGES = { '15m': 4, '1h': 4, '4h': 3 }, LQ_COINS = 40, LQ_TFL = { '15m': '15 min', '1h': '1 godz.', '4h': '4 godz.' };
+try { const j = JSON.parse(localStorage.getItem('busola_lq_v1') || 'null'); if (j && typeof j === 'object') S.lq.res = j; } catch (e) { /* tylko w pamięci */ }
+async function lqCandles(sym, tf) {
+  if (S.demo) return klines(sym, tf, 3000);
+  let out = [], end = null;
+  for (let p = 0; p < LQ_PAGES[tf]; p++) {
+    const k = mapK(await getJSON(`${BASE}/fapi/v1/klines?symbol=${sym}&interval=${tf}&limit=1500${end ? '&endTime=' + end : ''}`));
+    if (!k.length) break;
+    out = k.concat(out); end = k[0].time * 1000 - 1;
+    if (k.length < 1500) break;
+    await sleep(200);
+  }
+  return out;
+}
+async function lqRun() {
+  const L = S.lq; if (L.busy) return;
+  const tf = L.tf; L.busy = true; L.err = ''; L.done = 0; L.tot = 0; if (S.view === 'lab') render();
+  try {
+    if (!S.coins.length) S.coins = await loadCoins();
+    const coins = S.coins.slice(0, LQ_COINS); L.tot = coins.length; if (!coins.length) throw new Error('pusta lista coinów');
+    const rows = []; let fail = 0, t0 = Infinity, t1 = 0;
+    await pool(coins, 3, async c => {
+      try {
+        const k = closedOnly(await lqCandles(c.sym, tf), Date.now());
+        if (k.length) { t0 = Math.min(t0, k[0].closeTime); t1 = Math.max(t1, k[k.length - 1].closeTime); }
+        for (const r of lqCoin(c.sym, k)) rows.push(r);
+      } catch (e) { fail++; }
+      L.done++; if (S.view === 'lab' && L.done % 3 === 0) render();
+    });
+    if (fail > coins.length / 2) throw new Error('giełda nie odpowiedziała dla ' + fail + ' z ' + coins.length + ' coinów');
+    const stats = LQ_GROUPS.map(g => lqStat(rows, g));
+    L.res[tf] = { ts: Date.now(), coins: coins.length - fail, from: t0, to: t1, stats, v: lqVerdict(stats[0]) };
+    try { localStorage.setItem('busola_lq_v1', JSON.stringify(L.res)); } catch (e) { /* tylko w pamięci */ }
+  } catch (e) { L.err = e && e.message ? e.message : 'nieznany błąd'; }
+  L.busy = false; if (S.view === 'lab') render();
+}
+const fmtR = v => v == null || !isFinite(v) ? '–' : (Math.abs(v) < 0.005 ? '0,00' : (v > 0 ? '+' : '−') + Math.abs(v).toFixed(2).replace('.', ',')) + 'R';
+function labBtn() { return `<button class="lab-b" id="btnLab"><span><b>Test pułapki płynności</b><small>sweep i reclaim: czy coś dodaje do losowego wejścia?</small></span>${svgI(ICO.back, 18, 2.2)}</button>`; }
+function labHtml() {
+  const L = S.lq, r = L.res[L.tf], d = ts => new Date(ts).toLocaleDateString('pl-PL', { day: 'numeric', month: 'short', year: 'numeric' });
+  let h = `<header class="hdr"><div class="brand"><button class="ibtn" id="btnBack" aria-label="Wróć">${svgI(ICO.back, 20, 2.2)}</button><span>Test</span></div></header>`;
+  h += `<div class="meta"><span>Pułapka płynności · opis historii, nie sygnał</span></div>`;
+  h += `<div class="jcard"><div class="jlab">Co sprawdzamy</div><div class="jsub">Cena przebija równe szczyty (albo dołki) z ostatnich ${LQ.N} świec o ${String(LQ.MIN).replace('.', ',')}–${String(LQ.MAX).replace('.', ',')} ATR i w ciągu ${LQ.RECL} świec zamyka się z powrotem w zakresie. Wejście w stronę powrotu, stop za knotem + ${String(LQ.PAD).replace('.', ',')} ATR, cel ${LQ.RR}R, wyjście po ${LQ.HOR} świecach, koszt ${String(LQ.COST).replace('.', ',')}%. Porównujemy z losowymi wejściami na tych samych coinach, z tym samym stopem, celem i kierunkiem. Parametry ustaliłem przed pierwszym uruchomieniem i ich nie zmieniam po wyniku.</div></div>`;
+  h += `<div class="jseg" role="group" aria-label="Interwał">${Object.keys(LQ_TFL).map(k => `<button class="jsb${L.tf === k ? ' on' : ''}" data-lqtf="${k}"${L.busy ? ' disabled' : ''}>${LQ_TFL[k]}${k === '1h' ? ' ★' : ''}</button>`).join('')}</div>`;
+  h += `<div class="jnote">★ = interwał główny, ustalony z góry. Pozostałe są kontrolą: wygrana tylko na jednym z trzech to słabszy dowód, bo każdy interwał to kolejna szansa na przypadkowy wynik.</div>`;
+  h += `<div style="margin:14px 20px 0"><button class="lab-run" id="btnLq"${L.busy ? ' disabled' : ''}>${L.busy ? `Liczę… ${L.done}/${L.tot || LQ_COINS}` : r ? 'Uruchom ponownie' : 'Uruchom test'}</button></div>`;
+  if (L.busy) h += `<div class="jbar" style="margin:12px 20px 0"><i style="width:${L.tot ? Math.round(L.done / L.tot * 100) : 0}%"></i></div>`;
+  if (L.err) h += `<div class="banner"><span>Nie udało się: ${esc(L.err)}. Spróbuj za chwilę.</span></div>`;
+  if (!r) return h + `<p class="fine">Test pobiera z Binance historię ${LQ_COINS} największych coinów (dla ${LQ_TFL[L.tf]} około ${LQ_PAGES[L.tf] * 1500} świec na coin) i liczy wszystko w tej przeglądarce. Zajmuje to około pół minuty.</p>`;
+  const v = r.v, st = r.stats[0];
+  h += `<div class="jcard"><div class="jlab">Werdykt</div>`;
+  if (v.state === 'wait') h += `<div class="jbig">Za mało danych</div><div class="jsub">Wniosek pokażę dopiero od ${LQ.NMIN} zdarzeń z co najmniej ${LQ.DMIN} różnych dni. Jest ${st.n} zdarzeń z ${st.days} dni.</div>`;
+  else {
+    const lab = { better: 'Lepsze od losowego', none: 'Brak dowodu przewagi', worse: 'Gorsze od losowego' }[v.state];
+    h += `<div class="jbig">${lab}</div><div class="jsub">${st.n} zdarzeń z ${st.days} dni. Średnio ${fmtR(st.mean)} na zdarzenie wobec ${fmtR(st.base)} przy losowym wejściu. Różnica ${fmtR(st.diff)}, przedział 95%: ${fmtR(st.ci[0])} do ${fmtR(st.ci[1])}.${v.state === 'better' ? ' To jeszcze nie sygnał: zobacz kontrolne interwały i zaczekaj, aż to samo wyjdzie na nowych danych.' : ''}</div>`;
+  }
+  h += `</div><div class="jh2">Wynik po kosztach, w R</div><div class="jtbl"><div class="jth lab-g"><span>Grupa</span><span class="r">n</span><span class="r">Zdarz.</span><span class="r">Losowo</span><span class="r">Różn.</span></div>`;
+  for (const g of r.stats) {
+    const lg = LQ_GROUPS.find(x => x.k === g.k), sig = g.n >= LQ.NMIN && g.days >= LQ.DMIN && g.ci && (g.ci[0] > 0 || g.ci[1] < 0);
+    h += `<div class="jtr lab-g"><span><b>${lg.lab}</b></span><span class="r jn">${g.n}</span><span class="r jn">${fmtR(g.mean)}</span><span class="r jn">${fmtR(g.base)}</span><span class="r jv${sig ? (g.diff > 0 ? ' up' : ' dn') : ''}">${fmtR(g.diff)}</span></div>`;
+  }
+  h += `</div><div class="jnote">Kolor tylko gdy grupa ma co najmniej ${LQ.NMIN} zdarzeń z ${LQ.DMIN} dni, a przedział 95% (liczony po dniach, bo zdarzenia z jednego dnia są skorelowane) nie obejmuje zera. Podgrupy są opisem: im więcej grup, tym łatwiej o przypadkowy kolor, więc werdykt dotyczy tylko wiersza Wszystkie.</div>`;
+  h += `<div class="jnote">Wszystkie: cel osiągnięty w ${Math.round(st.win * 100)}%, stop w ${Math.round(st.sl * 100)}%, upłynął czas w ${Math.round(st.to * 100)}%. Dane: ${r.coins} coinów, ${d(r.from)} – ${d(r.to)}, policzone ${new Date(r.ts).toLocaleString('pl-PL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}.</div>`;
+  h += `<p class="fine">To test na historii z jednego okresu rynku, a nie sygnał. Gdy w jednej świecy dotknięty jest i stop, i cel, liczymy stop. Nie ma poślizgu ani częściowych wypełnień, a realne zlecenia mogą wypaść gorzej. Test nie wpływa na skaner ani Dziennik.</p>`;
+  return h;
+}
 function macroHtml() {
   const M = S.mk, now = Date.now(), tm = ts => new Date(ts).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
   const stat = k => M.l[k] ? 'Pobieram…' : 'Brak danych (źródło nie odpowiedziało).';
@@ -1561,6 +1735,7 @@ function macroHtml() {
 }
 function render() {
   if (S.view === 'map') { const sy0 = window.scrollY; $app.innerHTML = mapHtml() + navHtml('map'); window.scrollTo(0, sy0); return; }
+  if (S.view === 'lab') { const sy0 = window.scrollY; $app.innerHTML = labHtml() + navHtml('journal'); window.scrollTo(0, sy0); return; }
   if (S.view === 'macro') { const sy0 = window.scrollY; $app.innerHTML = macroHtml() + navHtml('macro'); window.scrollTo(0, sy0); return; }
   if (S.view === 'journal') { const sy0 = window.scrollY; $app.innerHTML = journalHtml() + navHtml('journal'); window.scrollTo(0, sy0); return; }
   const car = $app.querySelector('.car'), sl = car ? car.scrollLeft : 0, sy = window.scrollY;
@@ -1606,6 +1781,9 @@ $app.addEventListener('click', e => {
     const m = document.querySelector('meta[name=theme-color]'); if (m) m.content = nx === 'light' ? '#f2f5f4' : '#020202';
     return render();
   }
+  if (t.closest('#btnLab')) { S.view = 'lab'; window.scrollTo(0, 0); return render(); }
+  if (t.closest('#btnLq')) return lqRun();
+  const lt = t.closest('[data-lqtf]'); if (lt) { if (!S.lq.busy) { S.lq.tf = lt.dataset.lqtf; render(); } return; }
   if (t.closest('#btnMk')) { mapStop(); S.view = 'macro'; window.scrollTo(0, 0); render(); return mkLoad(false); }
   if (t.closest('#btnMkRef')) return mkLoad(true);
   if (t.closest('#btnJr')) { S.view = 'journal'; window.scrollTo(0, 0); render(); return jrSettle(); }
