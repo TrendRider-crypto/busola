@@ -336,6 +336,10 @@ html::after { content: ""; position: fixed; top: 0; left: 0; right: 0; height: e
 .jsb { border-radius: 999px; }
 .segb.on, .jsb.on { background: var(--acc); color: var(--acc-ink); box-shadow: none; }
 .sect h2 { font-family: 'Space Grotesk', 'Inter', sans-serif; font-size: 21px; font-weight: 600; letter-spacing: .01em; color: var(--fg); }
+.bk-b { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; } .bk-b .jsb { flex: 1 1 0; min-width: 0; white-space: nowrap; text-align: center; padding-inline: 12px; }
+.bk-f { display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+.bk-t { display: block; width: 100%; margin-top: 12px; padding: 10px 12px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface2); color: var(--fg); font: 12px/1.4 ui-monospace, Menlo, monospace; resize: vertical; box-sizing: border-box; }
+.bk-m { margin-top: 12px; font-size: 12.5px; line-height: 1.45; color: var(--gold); } .bk-m.err { color: var(--down); }
 /* Test pułapki */
 .lab-b { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: calc(100% - 40px); margin: 14px 20px 0; padding: 14px 16px; border-radius: 20px; border: 1px solid var(--glass-line, var(--line)); background: var(--glass, var(--surface)); color: var(--fg); font: inherit; text-align: left; cursor: pointer; }
 .lab-b b { display: block; font-size: 14px; } .lab-b small { display: block; margin-top: 2px; font-size: 11.5px; color: var(--muted); line-height: 1.4; } .lab-b svg { flex: none; transform: rotate(180deg); color: var(--muted); }
@@ -831,6 +835,39 @@ function jrMerge(list, entry) {
   if (list.length > JR_MAX) { list.sort((a, b) => a.t - b.t); list.splice(0, list.length - JR_MAX); }
   return true;
 }
+
+// ---------- Kopia zapasowa Dziennika (JSON) ----------
+// Kopia to zwykły tekst: można go skopiować, wkleić do Notatek albo zapisać jako plik, a potem wczytać w innej przeglądarce (np. po ponownym dodaniu ikony).
+function jrBackup(list, now = Date.now()) { return JSON.stringify({ app: 'busola', kind: 'journal', v: 1, t: now, n: list.length, e: list }); }
+const JR_KEYS = ['id', 't', 'sym', 'dir', 'status', 'price', 'ob', 'pb', 'zone', 'liq', 'fg', 'mood', 'hurst'];
+// zwraca { entries, bad, err }; wpisy są czyszczone: tylko znane pola i poprawne typy, nic spoza listy nie trafia do Dziennika
+function jrParseBackup(text) {
+  let j; try { j = JSON.parse(String(text || '').trim()); } catch (e) { return { entries: [], bad: 0, err: 'To nie wygląda na kopię Dziennika (nie da się odczytać tekstu).' }; }
+  if (!j || j.app !== 'busola' || j.kind !== 'journal' || !Array.isArray(j.e)) return { entries: [], bad: 0, err: 'To nie jest kopia Dziennika Busoli.' };
+  const out = []; let bad = 0;
+  for (const x of j.e) {
+    const ok = x && typeof x.id === 'string' && x.id.length < 80 && Number.isFinite(x.t) && x.t > 1e12 && x.t < 4e12 && typeof x.sym === 'string' && x.sym.length < 30
+      && (x.dir === 1 || x.dir === -1) && (x.status === 'TRIGGER' || x.status === 'WAIT') && x.price > 0 && x.res && typeof x.res === 'object';
+    if (!ok) { bad++; continue; }
+    const e = {}; for (const k of JR_KEYS) if (x[k] !== undefined && (x[k] === null || ['string', 'number', 'boolean'].includes(typeof x[k]))) e[k] = x[k];
+    e.res = {}; for (const k of Object.keys(JR_H)) if (Number.isFinite(x.res[k])) e.res[k] = x.res[k];
+    out.push(e);
+  }
+  return { entries: out, bad, err: out.length || !j.e.length ? '' : 'W kopii nie ma ani jednego poprawnego wpisu.' };
+}
+// dołącza wpisy; gdy wpis już jest, uzupełnia tylko brakujące wyniki 1/4/24 godz.; zwraca { added, same, filled }
+function jrImport(list, entries) {
+  let added = 0, same = 0, filled = 0;
+  for (const e of entries) {
+    const ex = list.find(q => q.id === e.id);
+    if (!ex) { if (jrMerge(list, e)) added++; continue; }
+    same++; let f = false;
+    for (const k of Object.keys(JR_H)) if (ex.res[k] == null && e.res[k] != null) { ex.res[k] = e.res[k]; f = true; }
+    if (f) filled++;
+  }
+  return { added, same, filled };
+}
+
 // Rozliczenie wpisu ze świec 15M: cena zamknięcia ostatniej świecy zamkniętej do chwili t + h. Zwraca true, jeśli coś rozliczono.
 function jrSettleEntry(e, k15, now) {
   let changed = false;
@@ -1193,7 +1230,7 @@ async function getJSON(url, tries = 3) {
   throw new Error('limit zapytań giełdy');
 }
 const mapK = k => k.map(x => ({ time: Math.floor(x[0] / 1000), open: +x[1], high: +x[2], low: +x[3], close: +x[4], volume: +x[5], closeTime: x[6] }));
-const S = { lq: { tf: '1h', v: 'A', busy: false, done: 0, tot: 0, err: '', res: {} }, view: 'home', jr: [], jrH: 'h4', jrNoStore: false, tvLayout: '', mapFl: true, mapLast: {}, mapF: 1, mapPlay: false, mapTrim: false, mapCache: null, mapOiBusy: false, mapOiN: 0, mapOiTot: 0, mapTs: 0, demo: false, coins: [], D: {}, filter: 'all', mk: { l: {}, err: {}, busy: false, ts: 0, fng: null, dom: null, delta: null, stb: null, fed: null }, open: null, chAnim: null, chAnimT: 0, scanning: false, prog: 0, progTxt: '', ts: 0, err: '', note: '' };
+const S = { lq: { tf: '1h', v: 'A', busy: false, done: 0, tot: 0, err: '', res: {} }, view: 'home', jr: [], jrBk: { open: false, txt: '', msg: '', err: false }, jrH: 'h4', jrNoStore: false, tvLayout: '', mapFl: true, mapLast: {}, mapF: 1, mapPlay: false, mapTrim: false, mapCache: null, mapOiBusy: false, mapOiN: 0, mapOiTot: 0, mapTs: 0, demo: false, coins: [], D: {}, filter: 'all', mk: { l: {}, err: {}, busy: false, ts: 0, fng: null, dom: null, delta: null, stb: null, fed: null }, open: null, chAnim: null, chAnimT: 0, scanning: false, prog: 0, progTxt: '', ts: 0, err: '', note: '' };
 try { S.mapFl = localStorage.getItem('busola_map_fl') !== '0'; } catch (e) { /* tylko w pamięci */ }
 try { S.tvLayout = tvLayoutId(localStorage.getItem('busola_tv_layout')) || ''; } catch (e) { S.tvLayout = ''; }
 try { const f = localStorage.getItem('busola_filter'); if (f === 'long' || f === 'short' || f === 'all') S.filter = f; } catch (e) { /* tylko w pamięci */ }
@@ -1222,6 +1259,31 @@ async function jrSettle() {
 function jrAfterScan() { if (!S.demo && !S.err) jrLog(); jrSettle(); }
 function jrDownload() {
   try { const u = URL.createObjectURL(new Blob([jrCsv(S.jr)], { type: 'text/csv;charset=utf-8' })), a = document.createElement('a'); a.href = u; a.download = 'busola-dziennik.csv'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 4000); } catch (e) { /* brak pobierania */ }
+}
+
+function jrBkMsg(msg, err) { S.jrBk.msg = msg; S.jrBk.err = !!err; render(); }
+async function jrBkCopy() {
+  const txt = jrBackup(S.jr);
+  try { await navigator.clipboard.writeText(txt); return jrBkMsg('Skopiowano kopię ' + S.jr.length + ' wpisów. Wklej ją np. do Notatek i zachowaj.'); }
+  catch (e) { S.jrBk.open = true; S.jrBk.txt = txt; return jrBkMsg('Przeglądarka nie pozwoliła skopiować automatycznie. Kopia jest w polu poniżej: zaznacz ją i skopiuj.', true); }
+}
+async function jrBkFile() {
+  const txt = jrBackup(S.jr), name = 'busola-dziennik-' + new Date().toISOString().slice(0, 10) + '.json';
+  try {
+    const f = new File([txt], name, { type: 'application/json' });
+    if (navigator.canShare && navigator.canShare({ files: [f] })) { await navigator.share({ files: [f], title: 'Kopia Dziennika Busoli' }); return jrBkMsg('Kopia przekazana do udostępniania.'); }
+  } catch (e) { if (e && e.name === 'AbortError') return; }
+  try { const u = URL.createObjectURL(new Blob([txt], { type: 'application/json' })), a = document.createElement('a'); a.href = u; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 4000); jrBkMsg('Plik pobrany.'); }
+  catch (e) { jrBkMsg('Nie udało się zapisać pliku. Użyj przycisku Kopiuj.', true); }
+}
+function jrBkLoad(text) {
+  const r = jrParseBackup(text);
+  if (r.err) return jrBkMsg(r.err, true);
+  const g = jrImport(S.jr, r.entries); jrSave(); S.jrBk.txt = '';
+  const parts = ['Wczytano ' + g.added + ' nowych wpisów'];
+  if (g.same) parts.push(g.same + ' już było' + (g.filled ? ' (uzupełniono wyniki w ' + g.filled + ')' : ''));
+  if (r.bad) parts.push(r.bad + ' pominięto jako uszkodzone');
+  jrBkMsg(parts.join(', ') + '.'); jrSettle();
 }
 
 // ---------- Mapa: dane (OI 4H dla wszystkich coinów, bieżące ceny co 15 s przy otwartej Mapie) ----------
@@ -1587,13 +1649,20 @@ function detailInner(d) {
 
 const jrF = (v, dec = 2) => (v > 0.0049 ? '+' : v < -0.0049 ? '−' : '') + Math.abs(v).toFixed(dec).replace('.', ',');
 const jrWhen = ms => { const d = new Date(ms), t = d.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' }); return jrDay(Date.now()) === jrDay(ms) && d.getDate() === new Date().getDate() ? `dziś ${t}` : `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')} ${t}`; };
+function bkHtml() {
+  const B = S.jrBk;
+  let h = `<div class="jcard"><div class="jlab">Kopia zapasowa</div><div class="jsub">Dziennik żyje tylko w tej przeglądarce. Przed ponownym dodaniem ikony zrób kopię, a potem ją wczytaj. Wpisy, które już są, nie dublują się.</div><div class="bk-b"><button class="jsb" id="bkCopy"${S.jr.length ? '' : ' disabled'}>Kopiuj kopię</button><button class="jsb" id="bkFile"${S.jr.length ? '' : ' disabled'}>Zapisz plik</button><button class="jsb${B.open ? ' on' : ''}" id="bkOpen">Wczytaj</button></div>`;
+  if (B.open) h += `<textarea class="bk-t" id="bkTxt" rows="5" placeholder="Wklej tutaj skopiowaną kopię Dziennika" spellcheck="false" autocapitalize="off" autocorrect="off">${esc(B.txt)}</textarea><div class="bk-b"><button class="jsb on" id="bkGo">Wczytaj wklejone</button><label class="jsb bk-f">Wybierz plik<input type="file" id="bkFileIn" accept=".json,application/json,text/plain" hidden></label></div>`;
+  if (B.msg) h += `<div class="bk-m${B.err ? ' err' : ''}">${esc(B.msg)}</div>`;
+  return h + `</div>`;
+}
 function journalHtml() {
   const hk = S.jrH, all = S.jr, hl = { h1: '1 godz.', h4: '4 godz.', h24: '24 godz.' };
   const v = jrVerdict(all), days = new Set(all.map(e => jrDay(e.t))).size, settled = all.filter(e => e.res.h4 != null).length;
   let h = `<header class="hdr"><div class="brand"><button class="ibtn" id="btnBack" aria-label="Wróć">${svgI(ICO.back, 20, 2.2)}</button><span>Dziennik</span></div><div class="hbtns"><button class="ibtn" id="btnCsv" aria-label="Eksport do CSV"${all.length ? '' : ' disabled'}>${svgI(ICO.dl, 20, 1.8)}</button></div></header>`;
   h += `<div class="meta"><span id="metaTxt">Zapisano ${all.length} ${all.length === 1 ? 'sygnał' : 'sygnałów'} · ${days} ${days === 1 ? 'dzień' : 'dni'} · rozliczone ${settled}</span></div>`;
   if (S.jrNoStore) h += `<div class="banner"><span>Ta przeglądarka nie pozwala zapisywać danych. Dziennik zniknie po zamknięciu karty. Eksportuj CSV albo otwórz Busolę w zwykłej karcie.</span></div>`;
-  if (!all.length) return h + labBtn() + `<div class="empty">Dziennik jest pusty. Wpis powstaje przy każdym skanie, gdy któryś coin ma zgodne cztery interwały (TRIGGER albo WAIT). Wyniki pojawią się po 1, 4 i 24 godzinach od zapisu.</div>`;
+  if (!all.length) return h + bkHtml() + labBtn() + `<div class="empty">Dziennik jest pusty. Wpis powstaje przy każdym skanie, gdy któryś coin ma zgodne cztery interwały (TRIGGER albo WAIT). Wyniki pojawią się po 1, 4 i 24 godzinach od zapisu.</div>`;
   h += `<div class="jcard"><div class="jlab">Werdykt</div>`;
   if (v.state === 'wait') {
     const bar = (lab, a, b) => `<div class="jpg"><div class="jrow"><span>${lab}</span><b>${a} / ${b}</b></div><div class="jbar"><i style="width:${Math.min(100, Math.round(a / b * 100))}%"></i></div></div>`;
@@ -1609,7 +1678,7 @@ function journalHtml() {
     h += `<div class="jtr"><span><b>${g.lab}</b>${g.sub ? `<span class="jsm">${g.sub}</span>` : ''}</span><span class="r jn">${st.n}</span><span class="r jv${sig ? (st.mean > 0 ? ' up' : ' dn') : ''}">${st.mean === null ? '—' : jrF(st.mean) + '%'}</span><span class="r jci">${st.ci ? `${jrF(st.ci[0], 1)}…${jrF(st.ci[1], 1)}` : 'za mało'}</span></div>`;
   }
   h += `</div><div class="jnote">Szare wartości: jeszcze bez wniosku (n poniżej ${JR_GMIN}, przedział obejmuje zero albo werdykt czeka na próg). Kolor pojawia się dopiero po spełnieniu progu z werdyktu.</div>`;
-  h += labBtn();
+  h += bkHtml() + labBtn();
   h += `<div class="jh2">Ostatnie sygnały</div><div class="jlist">`;
   const now = Date.now();
   for (const e of all.slice().sort((a, b) => b.t - a.t).slice(0, 30)) {
@@ -1881,6 +1950,10 @@ $app.addEventListener('click', e => {
   if (t.closest('#btnMapRef')) { mapPrices(); return mapLoadOi(true); }
   if (t.closest('#btnBack') || t.closest('#btnHome')) { mapStop(); S.view = 'home'; render(); return window.scrollTo(0, 0); }
   if (t.closest('#btnCsv')) return jrDownload();
+  if (t.closest('#bkCopy')) return jrBkCopy();
+  if (t.closest('#bkFile')) return jrBkFile();
+  if (t.closest('#bkOpen')) { S.jrBk.open = !S.jrBk.open; S.jrBk.msg = ''; return render(); }
+  if (t.closest('#bkGo')) { const ta = $app.querySelector('#bkTxt'); return jrBkLoad(ta ? ta.value : S.jrBk.txt); }
   const jh = t.closest('[data-jh]'); if (jh) { S.jrH = jh.dataset.jh; return render(); }
   if (t.closest('#btnScan')) return scan();
   if (t.closest('#btnDemo')) { S.demo = true; S.err = ''; return scan(); }
@@ -1893,7 +1966,13 @@ $app.addEventListener('click', e => {
     const d = S.D[sym]; if (S.open && d && !d.c15 && !d.pending && !d.stageErr) lazy15(d);
   }
 });
+$app.addEventListener('change', e => {
+  if (e.target.id !== 'bkFileIn' || !e.target.files || !e.target.files[0]) return;
+  const f = e.target.files[0]; if (f.size > 8e6) return jrBkMsg('Plik jest za duży na kopię Dziennika.', true);
+  const r = new FileReader(); r.onload = () => jrBkLoad(String(r.result || '')); r.onerror = () => jrBkMsg('Nie udało się odczytać pliku.', true); r.readAsText(f);
+});
 $app.addEventListener('input', e => {
+  if (e.target.id === 'bkTxt') { S.jrBk.txt = e.target.value; return; }
   if (e.target.id !== 'mpRange') return;
   cancelAnimationFrame(mapRaf); S.mapPlay = false; S.mapCache = null; S.mapF = (+e.target.value) / 1000; mapFrame();
 });
