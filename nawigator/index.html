@@ -77,7 +77,16 @@ body.fs #chart{min-height:0}
 #scoreCard .sc-h{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px}
 #scoreCard .st{font-size:20px;font-weight:700}
 #scoreCard>div{min-width:0}
-#sbar{border-top:1px solid var(--line);padding:8px 12px;display:flex;flex-direction:column;gap:6px}
+#sbar{border:1px solid var(--line);border-radius:3px;background:var(--panel);padding:12px;display:flex;flex-direction:column;align-items:center;gap:9px;height:100%;overflow:auto}
+#chartCard{flex:1;min-height:0;display:flex;flex-direction:column}
+#minis{display:block;min-height:0;min-width:0;container-type:size}
+.oc-h{align-self:flex-start;font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--mut)}
+.oc-ring{position:relative;width:min(132px,100%);aspect-ratio:1;flex:none}.oc-ring svg{display:block;width:100%;height:100%}.oc-ring .rb{fill:none;stroke:var(--line);stroke-width:12}.oc-ring .rf{fill:none;stroke:var(--acc);stroke-width:12;stroke-linecap:round}
+.oc-n{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}.oc-n b{font-size:34px;line-height:1;font-family:'Space Grotesk',Inter,sans-serif}
+.oc-d{font-size:14px}.oc-w{font-size:12px;text-align:center;line-height:1.35}.oc-bars{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}.oc-s{font-size:11.5px}.oc-b{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:auto}
+@container (max-height:410px){#sbar{gap:6px;padding:10px}.oc-ring{width:min(96px,100%)}.oc-n b{font-size:26px}.oc-w{font-size:11px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}.oc-s{display:none}}
+@container (max-height:320px){.oc-w,.oc-bars,.oc-s{display:none}.oc-ring{width:min(72px,100%)}.oc-n b{font-size:20px}.oc-n .badge{font-size:9px;padding:0 5px}.oc-d{font-size:14px}}
+body.fs #chartCard{border:0}
 .sb1{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center}.sb1 .sp{flex:1}
 .badge{font-weight:800;font-size:12px;padding:3px 9px;border-radius:6px;border:1px solid var(--line);letter-spacing:.4px}
 .badge.up{border-color:var(--up);background:var(--upS)}.badge.dn{border-color:var(--dn);background:var(--dnS)}.badge.acc{border-color:var(--acc);background:var(--upS)}.badge.wr{border-color:var(--warn);background:var(--warnS)}.badge.mu{color:var(--mut)}
@@ -174,11 +183,9 @@ body.ev #side,body.ev #main,body.ev #rside{display:none!important}
 #chartW{position:relative;min-width:0;min-height:0}
 #price{position:absolute;left:8px;top:5px;z-index:2;pointer-events:none;font-size:11.5px;white-space:nowrap;text-shadow:0 0 4px var(--bg),0 0 4px var(--bg)}
 #chartW #chart{position:absolute;inset:0;min-height:0;border:1px solid var(--line);border-radius:3px}
-#minis{display:grid;grid-template-rows:1fr 1fr;gap:8px;min-height:0;min-width:0}
 .mp{display:flex;flex-direction:column;min-height:0;min-width:0;border:1px solid var(--line);border-radius:3px;overflow:hidden;background:var(--panel)}
 .mh{display:flex;gap:8px;align-items:center;padding:5px 10px;border-bottom:1px solid var(--line);font-size:12px;flex:none}.mh b{font-size:13px}
 .mc{flex:1;min-height:0;position:relative;overflow:hidden}.mc canvas{position:absolute;left:0;top:0;display:block;touch-action:none}
-#minis .up{color:var(--up)}#minis .dn{color:var(--dn)}
 body.fs #cgrid{min-height:0}body.fs #minis{display:none}body.fs #cgrid{grid-template-columns:minmax(0,1fr);padding:0;gap:0}body.fs #chartW #chart{border:0;border-radius:0}
 .card{border-radius:3px}.evw iframe{border-radius:3px}
 input,select,button{border-radius:3px}
@@ -214,6 +221,8 @@ body.fs #split{display:none}
 .stg .chips{display:flex;flex-wrap:wrap;gap:4px;align-items:center}.chip2{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);border-radius:3px;padding:1px 4px 1px 8px;font-size:12px;background:var(--inp)}.chip2 button{border:0;background:transparent;padding:0 4px;color:var(--mut)}
 .nlw{display:flex;flex-direction:column;gap:2px;margin-top:6px;font-size:12px}.nl{display:flex;align-items:center;gap:6px}.nl input{margin:0}
 
+@media(max-width:1100px){#cgrid{grid-template-rows:minmax(300px,1fr) auto}}
+@media(max-width:760px){#minis{display:block;margin-top:8px;container-type:normal}#sbar{height:auto}}
 /* ===== Nowy wygląd (body.sk2): ta sama paleta co Busola (mięta #00f6ac, czerń), zaokrąglone karty i pigułki. Przełącznik ✦ w nagłówku wraca do starego ===== */
 body.sk2{background:radial-gradient(900px 520px at 0% -6%,rgba(0,246,172,.15),transparent 62%),var(--bg)}
 html.light body.sk2{background:linear-gradient(160deg,#c6f5e5 0%,#f2f5f4 34%),var(--bg)}
@@ -258,6 +267,22 @@ body.sk2 .toast{border-radius:16px}
 body.sk2 .scanbar{padding:0 14px 6px}
 body.sk2 #sess{padding:0 6px}
 body.sk2 .pc,body.sk2 .stg{border-radius:14px}
+body.sk2 #main.card{background:transparent;border:0;box-shadow:none;gap:12px;overflow:visible}
+body.sk2 #chartCard{background:var(--panel);border:1px solid var(--line);border-radius:22px;box-shadow:0 14px 34px rgba(0,0,0,.38),inset 0 1px 0 rgba(255,255,255,.04);overflow:hidden}
+html.light body.sk2 #chartCard{border-color:#e6ece9;box-shadow:0 10px 28px rgba(20,70,55,.10)}
+body.sk2 #cgrid{gap:12px;padding:6px 12px 12px}
+body.sk2 #sbar{border-radius:20px;background:rgba(255,255,255,.03)}
+html.light body.sk2 #sbar{background:#f6f9f8}
+body.sk2 #under{background:transparent;padding:2px 2px 6px}
+body.sk2 #anat{border-top:0}
+body.sk2 .ag{grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;padding:0 0 8px}
+body.sk2 .ah{padding:2px 4px 8px}
+body.sk2 .ac{border-radius:20px;padding:14px 16px;background:var(--panel);box-shadow:0 14px 34px rgba(0,0,0,.30);border-color:var(--line)}
+html.light body.sk2 .ac{box-shadow:0 10px 26px rgba(20,70,55,.10);border-color:#e6ece9}
+body.sk2 .ac h4{font-size:10.5px;margin-bottom:6px}
+body.sk2 #scoreCard,body.sk2 #info{border:1px solid var(--line);border-radius:20px;margin:0 0 12px;box-shadow:0 14px 34px rgba(0,0,0,.30)}
+html.light body.sk2 #scoreCard,html.light body.sk2 #info{border-color:#e6ece9;box-shadow:0 10px 26px rgba(20,70,55,.10)}
+body.fs.sk2 #chartCard{border:0;border-radius:0;box-shadow:none}
 body.sk2 #evView{background:transparent;border:0;box-shadow:none;border-radius:0}
 </style>
 </head>
@@ -302,6 +327,7 @@ body.sk2 #evView{background:transparent;border:0;box-shadow:none;border-radius:0
     <div id="list"></div>
   </aside>
   <section id="main" class="card">
+    <div id="chartCard">
     <div id="bar">
       <button id="btnFav" class="fav" title="Ulubione: dodaje coina do Twojej listy (ta sama lista co powiadomienia struktury)" aria-label="Ulubione">☆</button><span class="t" id="title">—</span>
       <span class="g" id="tfBtns"></span>
@@ -324,16 +350,13 @@ body.sk2 #evView{background:transparent;border:0;box-shadow:none;border-radius:0
     </div>
     <div id="cgrid">
       <div id="chartW"><span id="price" class="mu"></span><div id="chart"></div></div>
-      <div id="minis">
-        <div class="mp"><div class="mh"><b id="mTD">1D</b><span class="mu" id="mSD"></span></div><div class="mc" id="chartD"></div></div>
-        <div class="mp"><div class="mh"><b id="mTH">1H</b><span class="mu" id="mSH"></span></div><div class="mc" id="chartH"></div></div>
-      </div>
+      <div id="minis"><div id="sbar"></div></div>
+    </div>
     </div>
     <div id="split" role="separator" aria-orientation="horizontal" title="Przeciągnij, żeby zmienić wysokość wykresów. Dwuklik przywraca domyślną."></div>
     <div id="under">
     <div id="anat"><div class="ah"><b>Anatomia coina</b><span class="mu">opis rynku, nie sygnał</span><span style="flex:1"></span><button id="btnAnat">▾ Zwiń</button></div><div class="ag" id="anatG"></div></div>
     <div id="dbar"></div>
-    <div id="sbar"></div>
     <div id="scoreCard"></div>
     <div id="info">
       <div><h3>Trend wg struktury (zamknięte świece)</h3><div id="tfTable"></div><div id="align" style="margin-top:8px"></div></div>
@@ -1924,8 +1947,7 @@ if (typeof document !== 'undefined') (() => {
     new ResizeObserver(resize).observe(wrap); window.addEventListener('resize', resize); resize();
     return api;
   };
-  const Chart = makeChart($('chart')), ChartD = makeChart($('chartD')), ChartH = makeChart($('chartH'));
-  const MINIS = [[ChartD, 'chartD'], [ChartH, 'chartH']];
+  const Chart = makeChart($('chart'));
 
   // ---------- dane ----------
   function mulberry(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
@@ -2171,34 +2193,12 @@ if (typeof document !== 'undefined') (() => {
       S.lastPrice = fmt(all[all.length - 1].close);
       $('price').textContent = S.lastPrice;
       renderEvents(a, closed);
-      drawMinis(sym, live);
     } catch (e) { if (!live) $('evList').innerHTML = `<span class="dn">Błąd: ${e.message}</span>`; }
     if (live) return;
     renderTrends(sym);
     renderSetup(sym);
     renderAnat(sym);
   }
-  // dwa pomocnicze wykresy obok głównego: dwa z trzech interwałów 1D / 4H / 1H, które nie są teraz na głównym (dla 15M: 4H i 1H)
-  const MINI_TF = { '1d': ['4h', '1h'], '4h': ['1d', '1h'], '1h': ['1d', '4h'], '15m': ['4h', '1h'] };
-  const miniKey = {};
-  async function drawMinis(sym, live) {
-    const tfs = MINI_TF[S.tf] || ['1d', '1h'];
-    await Promise.all(MINIS.map(async ([ch, id], i) => {
-      const tf = tfs[i], lab = TFS.find(t => t[0] === tf)[1], key = sym + '|' + tf;
-      try {
-        const all = await klines(sym, tf); if (sym !== S.sel) return;
-        const closed = closedOnly(all), a = Engine.analyze(closed, S.N), price = all[all.length - 1].close;
-        const zs = []; for (const k of ['OB', 'FVG']) zs.push(...pickZones(Engine.zones(closed, S.N), tf, price, [k]).slice(0, 2));
-        const sws = Engine.sweeps(closed, S.N, 250).slice(-3).map(x => ({ t: closed[x.idx].time, tFrom: closed[x.from].time, level: x.level, extreme: x.extreme, dir: x.dir, tf, ret: x.ret, kind: x.kind, touches: x.touches }));
-        ch.set(all, { events: [], pivots: [], showPiv: false, zones: zs, sweeps: sws, vp: null, showZones: true, showVP: false, hurst: null, tf }, miniKey[id] === key);
-        miniKey[id] = key;
-        const sfx = id === 'chartD' ? 'D' : 'H';
-        $('mT' + sfx).textContent = lab; $('mS' + sfx).textContent = a.trend === 1 ? 'trend ↑' : a.trend === -1 ? 'trend ↓' : 'trend bez kierunku';
-        $('mS' + sfx).className = a.trend === 1 ? 'up' : a.trend === -1 ? 'dn' : 'mu';
-      } catch (e) { if (!live) $('mS' + (id === 'chartD' ? 'D' : 'H')).textContent = 'brak danych'; }
-    }));
-  }
-
   // ---------- Anatomia coina: opis rynku z danych, które już mamy (bez nowych reguł wejścia) ----------
   const pc = v => v == null || !isFinite(v) ? '–' : (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(1) + '%';
   // niezdjęte pivoty: najbliższy szczyt nad ceną i dołek pod ceną (poziomy, gdzie leżą stopy)
@@ -2272,7 +2272,6 @@ if (typeof document !== 'undefined') (() => {
     sp.addEventListener('dblclick', () => { apply(DEF); SS_('under_h', String(DEF)); window.dispatchEvent(new Event('resize')); });
     window.addEventListener('resize', () => { const c = un.clientHeight; if (c) apply(c); }); }
   // wspólny kursor: ruch nad jednym wykresem ustawia pionową linię czasu na pozostałych
-  { const ALL = [Chart, ...MINIS.map(m => m[0])]; ALL.forEach(c => { c.onCross = t => ALL.forEach(o => { if (o !== c) o.setCross(t); }); }); }
   // do rysowania: aktywne (niezmitygowane) strefy najbliższe cenie, po 3 na rodzaj (OB / FVG) z każdego interwału
   function pickZones(zs, tf, price, kinds) {
     const gap = z => price > z.top ? price - z.top : price < z.bottom ? z.bottom - price : 0;
@@ -3018,12 +3017,15 @@ if (typeof document !== 'undefined') (() => {
   function renderSbar(sym, cs) {
     const { tr, res } = cs, el = $('sbar'), dir = res.bias > 0 ? 'Long' : res.bias < 0 ? 'Short' : '';
     const why = res.filters.length ? res.filters[0].msg : reasonLine(res, tr);
-    el.innerHTML = `<div class="sb1"><span class="badge ${stCls(res)}">${res.status}</span>
-        ${dir ? `<b class="${res.bias > 0 ? 'up' : 'dn'}">${res.bias > 0 ? '▲' : '▼'} ${dir}</b>` : '<span class="mu">bez kierunku</span>'}
-        <span>wynik <b>${res.score}</b></span><button id="btnWhy" class="${$('info').classList.contains('open') ? 'on' : ''}">Skąd ten wynik?</button>
-        ${ivBars(tr, res.bias)}<span class="sp"></span>
-        ${res.stop != null ? `<span class="mu">Stop (za strefą) <b class="mono" style="color:var(--txt)">${fmt(res.stop)}</b></span>` : ''}</div>
-      <div class="sb1"><button id="btnPlanGo">Planer</button><span class="${res.filters.length ? 'dn' : 'wr'}">${res.filters.length ? '⛔ ' : ''}${why || (res.status === 'TRIGGER' ? 'Wejście potwierdzone na 15M' : '')}</span></div>`;
+    const sc = Math.max(0, Math.min(100, +res.score || 0)), C = 2 * Math.PI * 50;
+    el.innerHTML = `<div class="oc-h">Ocena coina</div>
+      <div class="oc-ring"><svg viewBox="0 0 120 120" aria-hidden="true"><circle class="rb" cx="60" cy="60" r="50"/><circle class="rf" cx="60" cy="60" r="50" stroke-dasharray="${(C * sc / 100).toFixed(1)} 400" transform="rotate(-90 60 60)"/></svg>
+        <div class="oc-n"><b>${res.score}</b><span class="badge ${stCls(res)}">${res.status}</span></div></div>
+      ${dir ? `<b class="oc-d ${res.bias > 0 ? 'up' : 'dn'}">${res.bias > 0 ? '▲' : '▼'} ${dir}</b>` : '<span class="oc-d mu">bez kierunku</span>'}
+      <div class="oc-w ${res.filters.length ? 'dn' : 'mu'}">${res.filters.length ? '⛔ ' : ''}${why || (res.status === 'TRIGGER' ? 'Wejście potwierdzone na 15M' : '')}</div>
+      <div class="oc-bars">${ivBars(tr, res.bias)}</div>
+      ${res.stop != null ? `<div class="oc-s mu">Stop (za strefą) <b class="mono" style="color:var(--txt)">${fmt(res.stop)}</b></div>` : ''}
+      <div class="oc-b"><button id="btnWhy" class="${$('info').classList.contains('open') ? 'on' : ''}">Skąd ten wynik?</button><button id="btnPlanGo">Planer</button></div>`;
     $('btnWhy').onclick = () => { $('info').classList.toggle('open'); $('btnWhy').classList.toggle('on'); window.dispatchEvent(new Event('resize')); };
     $('btnPlanGo').onclick = () => openR('plan', true);
   }
