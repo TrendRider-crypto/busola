@@ -172,6 +172,25 @@ body.ev #side,body.ev #main,body.ev #rside{display:none!important}
 @media(max-width:1180px){#nav button{padding:5px 6px}.applink .alt,#btnDemo .dl{display:none}.applink{padding:0 6px;font-size:16px;line-height:1}}
 @media(min-width:761px) and (max-width:1100px){#app{grid-template-columns:270px minmax(0,1fr)}body.dr #app{grid-template-columns:270px minmax(0,1fr) min(340px,40vw)}}
 @media(max-width:1100px){.sbar{display:none}#clock{display:none}.ss{gap:4px}#sess{gap:4px 14px}}
+
+/* ---- Etap 1: Kokpit (wariant A): główny wykres + dwa pomocnicze, ostrzejsze rogi, akcent na aktywnych elementach ---- */
+#cgrid{flex:1;min-height:260px;display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:8px;padding:8px;min-width:0}
+#chartW{position:relative;min-width:0;min-height:0}
+#price{position:absolute;left:8px;top:5px;z-index:2;pointer-events:none;font-size:11.5px;white-space:nowrap;text-shadow:0 0 4px var(--bg),0 0 4px var(--bg)}
+#chartW #chart{position:absolute;inset:0;min-height:0;border:1px solid var(--line);border-radius:3px}
+#minis{display:grid;grid-template-rows:1fr 1fr;gap:8px;min-height:0;min-width:0}
+.mp{display:flex;flex-direction:column;min-height:0;min-width:0;border:1px solid var(--line);border-radius:3px;overflow:hidden;background:var(--panel)}
+.mh{display:flex;gap:8px;align-items:center;padding:5px 10px;border-bottom:1px solid var(--line);font-size:12px;flex:none}.mh b{font-size:13px}
+.mc{flex:1;min-height:0;position:relative;overflow:hidden}.mc canvas{position:absolute;left:0;top:0;display:block;touch-action:none}
+#minis .up{color:var(--up)}#minis .dn{color:var(--dn)}
+body.fs #minis{display:none}body.fs #cgrid{grid-template-columns:minmax(0,1fr);padding:0;gap:0}body.fs #chartW #chart{border:0;border-radius:0}
+.card{border-radius:3px}.evw iframe{border-radius:3px}
+input,select,button{border-radius:3px}
+#nav button.on{box-shadow:inset 0 -2px 0 var(--acc)}
+.row.sel{box-shadow:inset 3px 0 0 var(--acc)}
+@media(max-width:1300px){#cgrid{grid-template-columns:minmax(0,1fr) 270px}}
+@media(max-width:1100px){#cgrid{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(300px,1fr) 190px}#minis{grid-template-columns:1fr 1fr;grid-template-rows:none}}
+@media(max-width:760px){#cgrid{display:block;padding:6px}#chartW{height:380px}#chartW:has(#chart.hu){height:540px}#chartW #chart{height:auto}#minis{display:grid;grid-template-columns:1fr;grid-template-rows:none;margin-top:8px}.mp{height:210px}}
 </style>
 </head>
 <body>
@@ -205,7 +224,6 @@ body.ev #side,body.ev #main,body.ev #rside{display:none!important}
     <div class="tools" style="flex-wrap:wrap">
       <button id="btnAuto">Auto-skan: wył.</button>
       <button id="btnDV" title="Pokaż tylko coiny z układem Da Vinci v3 (po skanowaniu)">Da Vinci: wszystkie</button>
-      <button id="btn1W" title="Czy tygodniowa struktura ma być filtrem kierunku i punktami">1W: wł.</button>
       <select id="selEx" title="Giełda, z której pochodzą świece i ceny"><option value="binance">Giełda: Binance</option><option value="weex">Giełda: Weex</option><option value="bitunix">Giełda: Bitunix</option></select>
     <button id="btnTF" title="Kontrakty na akcje, ETF-y i surowce z Binance Futures">Akcje/ETF: wył.</button>
       <select id="selVol" title="Minimalny wolumen 24h"><option value="5">wol. ≥ 5 mln</option><option value="20">wol. ≥ 20 mln</option><option value="50">wol. ≥ 50 mln</option><option value="100">wol. ≥ 100 mln</option></select>
@@ -215,7 +233,7 @@ body.ev #side,body.ev #main,body.ev #rside{display:none!important}
   </aside>
   <section id="main" class="card">
     <div id="bar">
-      <span class="t" id="title">—</span><span id="price" class="mu"></span>
+      <span class="t" id="title">—</span>
       <span class="g" id="tfBtns"></span>
       <span class="g"><button id="zOut">−</button><button id="zIn">+</button><button id="zEnd">⇥</button></span>
       <button id="btnFS" title="Wykres na cały ekran (klawisz F, wyjście Esc; strzałki ↑↓ zmieniają coin)">⛶ Pełny ekran</button>
@@ -227,7 +245,13 @@ body.ev #side,body.ev #main,body.ev #rside{display:none!important}
       <label class="mu"><input id="chkVP" type="checkbox" checked> Profil</label>
       <label class="mu"><input id="chkHU" type="checkbox"> Hurst</label>
     </div>
-    <div id="chart"></div>
+    <div id="cgrid">
+      <div id="chartW"><span id="price" class="mu"></span><div id="chart"></div></div>
+      <div id="minis">
+        <div class="mp"><div class="mh"><b id="mTD">1D</b><span class="mu" id="mSD"></span></div><div class="mc" id="chartD"></div></div>
+        <div class="mp"><div class="mh"><b id="mTH">1H</b><span class="mu" id="mSH"></span></div><div class="mc" id="chartH"></div></div>
+      </div>
+    </div>
     <div id="dbar"></div>
     <div id="sbar"></div>
     <div id="scoreCard"></div>
@@ -1461,7 +1485,7 @@ const Engine = (() => {
 // ===================== ENGINE-END =====================
 
 if (typeof document !== 'undefined') (() => {
-  const TFS = [['1w', '1W'], ['1d', '1D'], ['4h', '4H'], ['1h', '1H'], ['15m', '15M']];
+  const TFS = [['1d', '1D'], ['4h', '4H'], ['1h', '1H'], ['15m', '15M']];
   const STEP = { '15m': 900, '1h': 3600, '4h': 14400, '1d': 86400, '1w': 604800 };
   const DEMO_SYMS = 'BTC ETH SOL XRP BNB DOGE ADA AVAX LINK TRX HYPE SUI LTC DOT BCH NEAR APT ARB OP INJ ATOM FIL TON AAVE UNI ETC XLM HBAR ICP RUNE SEI'.split(' ');
   const S = { coins: [], sel: 'BTCUSDT', tf: '4h', N: 3, demo: false, cache: {}, trends: {}, scores: {}, scanning: false, lastPrice: '' };
@@ -1471,8 +1495,8 @@ if (typeof document !== 'undefined') (() => {
   const fdate = t => new Date(t * 1000).toLocaleString('pl-PL', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 
   // ---------- wykres własny (canvas, bez zewnętrznych bibliotek) ----------
-  const Chart = (() => {
-    const wrap = $('chart'), cv = document.createElement('canvas'), ctx = cv.getContext('2d');
+  const makeChart = wrap => {
+    const cv = document.createElement('canvas'), ctx = cv.getContext('2d');
     wrap.appendChild(cv);
     // motyw jasny: kolory zapisane w kodzie rysowania tłumaczymy w locie (ctx.fillStyle / strokeStyle)
     const IS_LIGHT = () => document.documentElement.classList.contains('light');
@@ -1486,7 +1510,8 @@ if (typeof document !== 'undefined') (() => {
     const PR = 62, PB = 22;
     let data = [], ann = { events: [], pivots: [], showPiv: true, tf: '4h' };
     let view = { from: 0, count: 120 }, W = 0, H = 0, dpr = 1, hover = -1, raf = 0;
-    const api = { onHover: null };
+    const api = { onHover: null, onCross: null };
+    api.setCross = t => { if (t == null || !data.length) hover = -1; else { let lo = 0, hi = data.length - 1, r = -1; while (lo <= hi) { const m = (lo + hi) >> 1; if (data[m].time <= t) { r = m; lo = m + 1; } else hi = m - 1; } hover = r >= 0 && t < data[r].time + (STEP[ann.tf] || 3600) ? r : -1; } sched(); };
 
     const clampView = () => {
       view.count = Math.max(15, Math.min(400, view.count));
@@ -1754,11 +1779,12 @@ if (typeof document !== 'undefined') (() => {
       hover = Math.round(view.from + (e.offsetX - barW() / 2) / barW());
       if (hover < 0 || hover >= data.length) hover = -1;
       if (api.onHover) api.onHover(hover >= 0 ? data[hover] : null);
+      if (api.onCross) api.onCross(hover >= 0 ? data[hover].time : null);
       sched();
     });
     const up = e => { if (downAt && downAt.id === e.pointerId) { const mv = Math.hypot(e.offsetX - downAt.x, e.offsetY - downAt.y); downAt = null; if (mv < 8) clickTool(e.offsetX, e.offsetY); return; } pts.delete(e.pointerId); if (pts.size < 2) pinch = null; if (pts.size === 1) { const p = [...pts.values()][0]; p.sx = p.x; p.sfrom = view.from; } };
     cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
-    cv.addEventListener('pointerleave', () => { mouse = null; if (!pts.size) { hover = -1; if (api.onHover) api.onHover(null); sched(); } });
+    cv.addEventListener('pointerleave', () => { mouse = null; if (!pts.size) { hover = -1; if (api.onHover) api.onHover(null); if (api.onCross) api.onCross(null); sched(); } });
     cv.addEventListener('wheel', e => {
       e.preventDefault();
       const under = view.from + e.offsetX / barW();
@@ -1768,7 +1794,9 @@ if (typeof document !== 'undefined') (() => {
 
     new ResizeObserver(resize).observe(wrap); window.addEventListener('resize', resize); resize();
     return api;
-  })();
+  };
+  const Chart = makeChart($('chart')), ChartD = makeChart($('chartD')), ChartH = makeChart($('chartH'));
+  const MINIS = [[ChartD, 'chartD'], [ChartH, 'chartH']];
 
   // ---------- dane ----------
   function mulberry(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
@@ -1841,7 +1869,7 @@ if (typeof document !== 'undefined') (() => {
   // rozpoznajemy po underlyingType z exchangeInfo (inny niż COIN) oraz po liście znanych tickerów (zapas).
   const LS_ = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } };
   const SS_ = (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* tylko w pamięci strony */ } };
-  const U = { ex: LS_('exch', 'binance'), use1w: LS_('use1w', '1') === '1', tradfi: LS_('incTradfi', '0') === '1', minVol: +LS_('minVolM', '20') };
+  const U = { ex: LS_('exch', 'binance'), use1w: false, tradfi: LS_('incTradfi', '0') === '1', minVol: +LS_('minVolM', '20') };
   const TRADFI_RE = /^(SPY|QQQ|SQQQ|TQQQ|IWM|DIA|META|AMD|NVDA|TSLA|AAPL|MSFT|AMZN|GOOGL?|NFLX|COIN|MSTR|HOOD|PLTR|INTC|ORCL|BABA|XAU|XAG|XPT|XPD|CL|BZ|NATGAS|EURUSD|GBPUSD|USDJPY)USDT$/;
   let TFSYM = null;
   async function tradfiSet() {
@@ -1989,11 +2017,34 @@ if (typeof document !== 'undefined') (() => {
       S.lastPrice = fmt(all[all.length - 1].close);
       $('price').textContent = S.lastPrice;
       renderEvents(a, closed);
+      drawMinis(sym, live);
     } catch (e) { if (!live) $('evList').innerHTML = `<span class="dn">Błąd: ${e.message}</span>`; }
     if (live) return;
     renderTrends(sym);
     renderSetup(sym);
   }
+  // dwa pomocnicze wykresy obok głównego: dwa z trzech interwałów 1D / 4H / 1H, które nie są teraz na głównym (dla 15M: 4H i 1H)
+  const MINI_TF = { '1d': ['4h', '1h'], '4h': ['1d', '1h'], '1h': ['1d', '4h'], '15m': ['4h', '1h'] };
+  const miniKey = {};
+  async function drawMinis(sym, live) {
+    const tfs = MINI_TF[S.tf] || ['1d', '1h'];
+    await Promise.all(MINIS.map(async ([ch, id], i) => {
+      const tf = tfs[i], lab = TFS.find(t => t[0] === tf)[1], key = sym + '|' + tf;
+      try {
+        const all = await klines(sym, tf); if (sym !== S.sel) return;
+        const closed = closedOnly(all), a = Engine.analyze(closed, S.N), price = all[all.length - 1].close;
+        const zs = []; for (const k of ['OB', 'FVG']) zs.push(...pickZones(Engine.zones(closed, S.N), tf, price, [k]).slice(0, 2));
+        const sws = Engine.sweeps(closed, S.N, 250).slice(-3).map(x => ({ t: closed[x.idx].time, tFrom: closed[x.from].time, level: x.level, extreme: x.extreme, dir: x.dir, tf, ret: x.ret, kind: x.kind, touches: x.touches }));
+        ch.set(all, { events: [], pivots: [], showPiv: false, zones: zs, sweeps: sws, vp: null, showZones: true, showVP: false, hurst: null, tf }, miniKey[id] === key);
+        miniKey[id] = key;
+        const sfx = id === 'chartD' ? 'D' : 'H';
+        $('mT' + sfx).textContent = lab; $('mS' + sfx).textContent = a.trend === 1 ? 'trend ↑' : a.trend === -1 ? 'trend ↓' : 'trend bez kierunku';
+        $('mS' + sfx).className = a.trend === 1 ? 'up' : a.trend === -1 ? 'dn' : 'mu';
+      } catch (e) { if (!live) $('mS' + (id === 'chartD' ? 'D' : 'H')).textContent = 'brak danych'; }
+    }));
+  }
+  // wspólny kursor: ruch nad jednym wykresem ustawia pionową linię czasu na pozostałych
+  { const ALL = [Chart, ...MINIS.map(m => m[0])]; ALL.forEach(c => { c.onCross = t => ALL.forEach(o => { if (o !== c) o.setCross(t); }); }); }
   // do rysowania: aktywne (niezmitygowane) strefy najbliższe cenie, po 3 na rodzaj (OB / FVG) z każdego interwału
   function pickZones(zs, tf, price, kinds) {
     const gap = z => price > z.top ? price - z.top : price < z.bottom ? z.bottom - price : 0;
@@ -2460,9 +2511,6 @@ if (typeof document !== 'undefined') (() => {
   $('dirF').onclick = e => { const b = e.target.closest('button'); if (!b) return; DIRF = +b.dataset.d; [...$('dirF').children].forEach(x => x.classList.toggle('on', x === b)); renderList(); renderTop3(); };
   $('btnTF').textContent = 'Akcje/ETF: ' + (U.tradfi ? 'wł.' : 'wył.'); $('selVol').value = String(U.minVol);
   const reloadUniverse = async () => { await loadCoins(); renderList(); renderTop3(); draw(); };
-  const set1w = () => { $('btn1W').textContent = '1W: ' + (U.use1w ? 'wł.' : 'wył.'); $('btn1W').classList.toggle('on', U.use1w); };
-  set1w();
-  $('btn1W').onclick = () => { U.use1w = !U.use1w; SS_('use1w', U.use1w ? '1' : '0'); set1w(); S.scores = {}; renderList(); renderTop3(); renderSetup(S.sel); };
   const setFS = on => { document.body.classList.toggle('fs', on); $('btnFS').textContent = on ? '✕ Zamknij pełny ekran' : '⛶ Pełny ekran'; setTimeout(() => window.dispatchEvent(new Event('resize')), 30); };
   $('btnDV').onclick = () => { DVF = !DVF; $('btnDV').textContent = 'Da Vinci: ' + (DVF ? 'tylko sygnały' : 'wszystkie'); $('btnDV').classList.toggle('on', DVF); renderList(); };
   $('btnFS').onclick = () => setFS(!document.body.classList.contains('fs'));
