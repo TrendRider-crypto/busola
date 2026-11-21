@@ -1677,7 +1677,7 @@ function lqHtml(d) {
     const tail = sw ? (g.forming ? ' Cena jest z powrotem ' + (low ? 'nad' : 'pod') + ' poziomem; zamknięcie dnia (00:00 UTC) potwierdzi albo nie.' : ' Świeca zamknęła się z powrotem ' + (low ? 'nad' : 'pod') + ' poziomem.') : ' Zamknięcie za poziomem: to przebicie, nie sweep z powrotem.';
     swh += `<div class="react ${sw ? 'pb' : ''}"><span class="ic">${sw ? '⚡' : '↯'}</span><div><b>${title}</b><span class="t">${lvls} zdjęt${n === 1 ? 'y' : 'e'} ${when}. ${wick}${tail}</span></div></div>`;
   }
-  if (swh) swh = '<div class="lab">Zbieranie płynności 1D · ostatnie 3 świece</div>' + swh + '<div class="note">Opis, nie sygnał. Nasze testy sweep i reclaim na 1H i 4H nie wykazały przewagi nad losowym wejściem, a interwał 1D nie był jeszcze testowany.</div>';
+  if (swh) swh = '<div class="lab">Zbieranie płynności 1D · ostatnie 3 świece</div>' + swh + '<div class="note">Opis, nie sygnał. Nasze testy sweep i reclaim na 1H, 4H i 1D (21.11.2026) nie wykazały przewagi nad losowym wejściem: na 1D wynik był lepszy od losowego w obu wariantach, ale przedział 99% obejmował zero.</div>';
   let h = swh + '<div class="lab">Płynność · szacunek ze struktury</div><div class="zones">', msgs = '';
   for (const tf of ['1D', '1H', '4H']) {
     const x = L[tf]; if (!x) continue;
