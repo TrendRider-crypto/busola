@@ -726,7 +726,8 @@ function sweepRecent(c, price, now, K) {
     if (j < 0 || j < n - K) continue;
     const back = p.type === 'H' ? all[j].close <= p.price : all[j].close >= p.price;
     let ext = p.price; for (let k = j; k < n; k++) ext = p.type === 'H' ? Math.max(ext, all[k].high) : Math.min(ext, all[k].low);
-    out.push({ side: p.type, level: p.price, since: closed[p.idx].time, ago: n - 1 - j, forming: !!forming && j === n - 1, kind: back ? 'sweep' : 'break', depth: Math.abs(ext / p.price - 1) * 100 });
+    const wx = p.type === 'H' ? all[j].high : all[j].low;
+    out.push({ side: p.type, level: p.price, since: closed[p.idx].time, ago: n - 1 - j, forming: !!forming && j === n - 1, kind: back ? 'sweep' : 'break', depth: Math.abs(ext / p.price - 1) * 100, wick: Math.abs(wx / p.price - 1) * 100, wickX: wx, sinceX: ext });
   }
   return out.sort((x, y) => x.ago - y.ago || Math.abs(y.depth) - Math.abs(x.depth));
 }
@@ -1661,11 +1662,20 @@ function lqHtml(d) {
   const L = d.lq; if (!L || (!L['1D'] && !L['1H'] && !L['4H'])) return '';
   const row = (lab, sub, x, eq) => x ? `<div class="zone"><span class="zdot lq"></span><div class="zmain"><div class="ztype">${lab} <small>${sub}</small>${x.equal ? `<span class="eqt">${eq} (${x.n})</span>` : ''}</div><div class="zrange">${fmtPrice(x.price)}</div></div><div class="zdist">${fmtPct(x.dist)}</div></div>` : `<div class="zone zempty">brak niezdjętych ${eq === 'równe szczyty' ? 'szczytów' : 'dołków'}</div>`;
 
-  const SW = (d.sw1d || []).slice(0, 4), dm = t => new Date(t * 1000).toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit' });
+  const dm = t => new Date(t * 1000).toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit' });
+  const G = [];
+  for (const w of d.sw1d || []) { const g = G.find(x => x.side === w.side && x.ago === w.ago && x.kind === w.kind); g ? g.items.push(w) : G.push({ side: w.side, ago: w.ago, kind: w.kind, forming: w.forming, items: [w] }); }
   let swh = '';
-  for (const w of SW) {
-    const low = w.side === 'L', when = w.ago === 0 ? (w.forming ? 'dziś (świeca 1D trwa)' : 'na ostatniej zamkniętej świecy') : w.ago === 1 ? 'wczoraj' : w.ago + ' dni temu';
-    swh += `<div class="react ${w.kind === 'sweep' ? 'pb' : ''}"><span class="ic">${w.kind === 'sweep' ? '⚡' : '↯'}</span><div><b>${w.kind === 'sweep' ? 'Sweep 1D' : 'Przebicie 1D'}: ${low ? 'dołek' : 'szczyt'} ${fmtPrice(w.level)}</b><span class="t">Poziom z ${dm(w.since)} (${low ? 'stopy longów' : 'stopy shortów'}) zdjęty ${when}, knot o ${fmtPct(w.depth).replace('+', '')} ${low ? 'pod' : 'nad'} poziomem. ${w.kind === 'sweep' ? (w.forming ? 'Cena jest z powrotem ' + (low ? 'nad' : 'pod') + ' poziomem; zamknięcie dnia (00:00 UTC) potwierdzi albo nie.' : 'Świeca zamknęła się z powrotem ' + (low ? 'nad' : 'pod') + ' poziomem.') : 'Zamknięcie za poziomem: to przebicie, nie sweep z powrotem.'}</span></div></div>`;
+  for (const g of G.slice(0, 4)) {
+    const low = g.side === 'L', it = g.items.slice().sort((x, y) => (low ? y.level - x.level : x.level - y.level)), top = it[0], n = it.length, sw = g.kind === 'sweep';
+    const when = g.ago === 0 ? (g.forming ? 'dziś (świeca 1D trwa)' : 'na ostatniej zamkniętej świecy') : g.ago === 1 ? 'wczoraj' : g.ago + ' dni temu';
+    const lv = low ? 'dołek' : 'szczyt';
+    const title = (sw ? 'Sweep 1D' : 'Przebicie 1D') + ': ' + (n === 1 ? lv + ' ' + fmtPrice(top.level) : 'zdjęto ' + n + ' ' + (low ? 'dołki' : 'szczyty') + ', skrajny ' + fmtPrice(top.level));
+    const lvls = n === 1 ? 'Poziom z ' + dm(top.since) + ' (' + (low ? 'stopy longów' : 'stopy shortów') + ')' : 'Poziomy: ' + it.map(x => fmtPrice(x.level) + ' (' + dm(x.since) + ')').join(', ') + ' (' + (low ? 'stopy longów' : 'stopy shortów') + ')';
+    const sinceMore = Math.abs(top.sinceX / top.wickX - 1) > 0.001 ? ' Od tego czasu ' + (low ? 'najniżej ' : 'najwyżej ') + fmtPrice(top.sinceX) + '.' : '';
+    const wick = (sw ? 'Knot świecy sięgnął ' : 'Świeca sięgnęła ') + fmtPrice(top.wickX) + ' (' + fmtPct(top.wick).replace('+', '') + ' ' + (low ? 'pod' : 'nad') + ' poziomem ' + fmtPrice(top.level) + ').' + sinceMore;
+    const tail = sw ? (g.forming ? ' Cena jest z powrotem ' + (low ? 'nad' : 'pod') + ' poziomem; zamknięcie dnia (00:00 UTC) potwierdzi albo nie.' : ' Świeca zamknęła się z powrotem ' + (low ? 'nad' : 'pod') + ' poziomem.') : ' Zamknięcie za poziomem: to przebicie, nie sweep z powrotem.';
+    swh += `<div class="react ${sw ? 'pb' : ''}"><span class="ic">${sw ? '⚡' : '↯'}</span><div><b>${title}</b><span class="t">${lvls} zdjęt${n === 1 ? 'y' : 'e'} ${when}. ${wick}${tail}</span></div></div>`;
   }
   if (swh) swh = '<div class="lab">Zbieranie płynności 1D · ostatnie 3 świece</div>' + swh + '<div class="note">Opis, nie sygnał. Nasze testy sweep i reclaim na 1H i 4H nie wykazały przewagi nad losowym wejściem, a interwał 1D nie był jeszcze testowany.</div>';
   let h = swh + '<div class="lab">Płynność · szacunek ze struktury</div><div class="zones">', msgs = '';
