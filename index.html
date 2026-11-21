@@ -492,6 +492,11 @@ html.skin-nav .app { max-width: none; padding: 0; height: 100%; }
 .nv-go { display: flex; flex-direction: column; gap: 6px; } .nv-go .mp-btn { justify-content: center; height: 34px; border-radius: 3px; text-decoration: none; }
 .nv-go .mp-btn.go { background: transparent; border: 1px solid var(--acc); color: var(--gold); }
 .skin-nav .empty { margin: 10px; padding: 14px; border-radius: 3px; font-size: 12px; }
+
+.nv-zc { border: 1px solid var(--line); border-radius: 3px; background: var(--bg); overflow: hidden; } .nv-zsv { display: block; } .nv-zl { font-size: 9px; font-weight: 600; }
+.nv-zs { display: flex; flex-direction: column; gap: 2px; } .nv-z { white-space: nowrap; display: grid; grid-template-columns: 8px auto 1fr auto auto; align-items: baseline; gap: 6px; font-size: 11px; } .nv-z small { color: var(--muted); font-size: 10px; } .nv-zr { color: var(--fg); } .nv-zp { color: var(--muted); font-size: 10.5px; min-width: 44px; text-align: right; } .nv-zp.up { color: var(--up); } .nv-zp.down { color: var(--down); }
+.nv-zd { width: 8px; height: 8px; border-radius: 1px; background: var(--up); align-self: center; } .nv-zd.d { background: var(--down); } .nv-zd.f { background: transparent; border: 1px dashed var(--up); } .nv-zd.f.d { border-color: var(--down); }
+.skin-nav .mpd-sp.nv-sp2 { height: 60px; }
 </style>
 </head>
 <body>
@@ -1886,6 +1891,39 @@ function mapDetail(x) {
 // Mapa w skórce Kokpit (Busola Nawigator, ?embed=map&skin=nav, od 1100 px): cztery kolumny. Te same dane, te same etykiety i ta sama logika co w aplikacji, inny układ.
 const mapNavOn = () => SKIN && window.innerWidth >= 1100;
 function mapDims() { return { W: Math.max(420, window.innerWidth - 856), H: Math.max(300, window.innerHeight - 164) }; }
+// Świece 4H z najbliższymi strefami OB i FVG (1H i 4H) z tych samych danych co w aplikacji (d.zn). Opis, nie sygnał.
+function mapZoneChart(d, price) {
+  const c0 = d.c4h; if (!c0 || c0.length < 20) return '';
+  const cs = c0.slice(-56).map(k => ({ ...k })), lastC = cs[cs.length - 1]; if (price > 0 && lastC.closeTime > Date.now()) { lastC.close = price; lastC.high = Math.max(lastC.high, price); lastC.low = Math.min(lastC.low, price); }
+  const z = d.zn, zs = z ? z.above.concat(z.inside, z.below) : [];
+  let lo = Math.min(...cs.map(k => k.low)), hi = Math.max(...cs.map(k => k.high)); const r0 = hi - lo || 1;
+  const vis = zs.filter(q => q.top >= lo - 0.3 * r0 && q.bottom <= hi + 0.3 * r0);
+  for (const q of vis) { lo = Math.min(lo, q.bottom); hi = Math.max(hi, q.top); }
+  const pad = (hi - lo) * 0.04; lo -= pad; hi += pad;
+  const W = 300, H = 190, X0 = 2, X1 = 258, n = cs.length, cw = (X1 - X0) / n, py = v => 4 + (H - 8) * (hi - v) / (hi - lo);
+  let o = `<svg class="nv-zsv" viewBox="0 0 ${W} ${H}" width="100%" height="${H}" role="img" aria-label="Świece 4H i strefy OB oraz FVG">`;
+  const lbs = [];
+  for (const q of vis) {
+    const col = q.dir > 0 ? 'var(--up)' : 'var(--down)', y1 = py(q.top), y2 = py(q.bottom), hh = Math.max(2, y2 - y1);
+    o += `<rect x="${X0}" y="${y1.toFixed(1)}" width="${W - X0}" height="${hh.toFixed(1)}" fill="${col}" fill-opacity=".16" stroke="${col}" stroke-width="1"${q.kind === 'FVG' ? ' stroke-dasharray="3 2"' : ''} stroke-opacity=".8"/>`;
+    lbs.push({ y: y1 + Math.min(hh, 11) - 2, t: q.kind + ' ' + q.tf, col });
+  }
+  if (price > 0) lbs.push({ y: py(price) + 3, t: 'cena', col: 'var(--fg)' });
+  lbs.sort((a, b) => a.y - b.y); for (let i = 1; i < lbs.length; i++) if (lbs[i].y - lbs[i - 1].y < 10) lbs[i].y = lbs[i - 1].y + 10;
+  cs.forEach((k, i) => {
+    const x = X0 + cw * (i + 0.5), up = k.close >= k.open, col = up ? 'var(--up)' : 'var(--down)', yb = py(Math.max(k.open, k.close)), ye = py(Math.min(k.open, k.close));
+    o += `<line x1="${x.toFixed(1)}" x2="${x.toFixed(1)}" y1="${py(k.high).toFixed(1)}" y2="${py(k.low).toFixed(1)}" stroke="${col}" stroke-width="1"/><rect x="${(x - cw * 0.34).toFixed(1)}" y="${yb.toFixed(1)}" width="${(cw * 0.68).toFixed(1)}" height="${Math.max(1, ye - yb).toFixed(1)}" fill="${col}"/>`;
+  });
+  if (price > 0) o += `<line x1="${X0}" x2="${X1}" y1="${py(price).toFixed(1)}" y2="${py(price).toFixed(1)}" stroke="var(--fg)" stroke-width="1" stroke-dasharray="2 3" opacity=".75"/>`;
+  for (const l of lbs) o += `<text class="nv-zl" x="${X1 + 4}" y="${Math.min(H - 2, l.y).toFixed(1)}" fill="${l.col}">${l.t}</text>`;
+  return o + '</svg>';
+}
+function mapZoneList(d, price) {
+  const z = d.zn; if (!z) return '<div class="mp-t">Brak danych o strefach dla tego coina.</div>';
+  const all = z.above.concat(z.inside, z.below).map(q => ({ ...q, dd: price > 0 ? (q.bottom > price ? (q.bottom / price - 1) * 100 : q.top < price ? (q.top / price - 1) * 100 : 0) : q.dist })).sort((a, b) => b.top - a.top);
+  if (!all.length) return '<div class="mp-t">Brak niewypełnionych stref OB i FVG na 1H i 4H.</div>';
+  return all.map(q => `<div class="nv-z"><span class="nv-zd ${q.dir > 0 ? 'u' : 'd'}${q.kind === 'FVG' ? ' f' : ''}"></span><b>${q.kind} ${q.tf}</b><small>${q.dir > 0 ? 'popyt' : 'podaż'}${q.tested ? ' · test.' : ''}</small><span class="nvm nv-zr">${fmtPrice(q.bottom)}–${fmtPrice(q.top)}</span><span class="nvm nv-zp ${q.dd > 0 ? 'up' : q.dd < 0 ? 'down' : ''}">${q.dd === 0 ? 'w strefie' : fmtPct(q.dd)}</span></div>`).join('');
+}
 function mapDetailNav(x) {
   if (!x) return '<div class="nv-pad"><div class="mp-t">Wybierz coina z listy.</div></div>';
   const d = x.d, up = x.chg >= 0, lab = x.label, canOpen = window.parent && window.parent !== window;
@@ -1896,7 +1934,8 @@ function mapDetailNav(x) {
     + `<div class="mp-t nv-ex">${lab ? MAP_EXP[lab] + ' To opis, nie sygnał.' : 'Brak danych OI dla tego coina.'}</div>`
     + `<div class="nv-kv"><div><small>Cena</small><b class="nvm">${fmtPrice(S.mapLast[x.sym] || d.last)}</b></div><div><small>Cena 4 godz.</small><b class="nvm ${cls(x.p4)}">${fmtPct(x.p4)}</b></div><div><small>OI 4 godz.</small><b class="nvm ${cls(x.oi4)}">${x.oi4 == null ? '–' : fmtPct(x.oi4)}</b></div></div>`
     + `<div class="nv-sm">Trend wg struktury</div><div class="nv-bd">${bd('1D', d.t.d1)}${bd('4H', d.t.h4)}${bd('1H', d.t.h1)}${bd('15M', d.t.m15)}</div>`
-    + `<div class="nv-sm">Ścieżka ${x.path.mode === 'day' ? 'od 00:00 UTC' : 'z 24 godzin'}</div>` + sparkSvg(x.path.pts, 300, 110, 'mp-sp mpd-sp ' + (up ? 'up' : 'down'), 2)
+    + `<div class="nv-sm">Świece 4H · strefy OB i FVG (1H, 4H)</div><div class="nv-zc">${mapZoneChart(d, S.mapLast[x.sym] || d.last)}</div><div class="nv-zs">${mapZoneList(d, S.mapLast[x.sym] || d.last)}</div><div class="mp-t">Strefy: niewypełnione OB i FVG z reguł Busoli. Ciągła ramka OB, przerywana FVG. Zielone: popyt, czerwone: podaż. „test.”: cena już dotknęła strefy.</div>`
+    + `<div class="nv-sm">Ścieżka ${x.path.mode === 'day' ? 'od 00:00 UTC' : 'z 24 godzin'}</div>` + sparkSvg(x.path.pts, 300, 60, 'mp-sp mpd-sp nv-sp2 ' + (up ? 'up' : 'down'), 2)
     + (swChip(d) ? `<div class="mpd-lab">${swChip(d)} <span class="mp-t">zdjęta płynność na 1D w ostatnich dniach</span></div>` : '')
     + (st ? `<div class="mp-t">${esc(st)}. To opis, nie sygnał.</div>` : '')
     + `<div class="nv-go">${canOpen ? `<button type="button" class="mp-btn go" data-open="${x.sym}">Otwórz ${esc(base(x.sym))} w widoku Główny →</button>` : ''}<a class="mp-btn" href="${tvLink(x.sym)}" target="_blank" rel="noopener">TradingView</a></div>`
