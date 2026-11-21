@@ -2753,7 +2753,7 @@ if (typeof document !== 'undefined') (() => {
 
   // ---------- Mapa i Makro z Busoli: ten sam kod co w aplikacji, w ramce (te same dane i ten sam motyw) ----------
   const EVSRC = location.protocol === 'file:' ? 'https://trendrider-crypto.github.io/busola/' : '../';
-  const EV = { map: ['evMap', 'btnMapV', EVSRC + '?embed=map'], mk: ['evMk', 'btnMkV', EVSRC + '?embed=macro'] };
+  const EV = { map: ['evMap', 'btnMapV', EVSRC + '?embed=map&skin=nav'], mk: ['evMk', 'btnMkV', EVSRC + '?embed=macro'] };
   let VCUR = null;
   function leaveV() {
     VCUR = null; document.body.classList.remove('ev'); $('evView').hidden = true;
