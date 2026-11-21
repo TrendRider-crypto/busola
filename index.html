@@ -1903,7 +1903,7 @@ async function lqRun() {
   L.busy = false; if (S.view === 'lab') render();
 }
 const fmtR = v => v == null || !isFinite(v) ? '–' : (Math.abs(v) < 0.005 ? '0,00' : (v > 0 ? '+' : '−') + Math.abs(v).toFixed(2).replace('.', ',')) + 'R';
-function labBtn() { return `<button class="lab-b" id="btnLab"><span><b>Test pułapki płynności</b><small>sweep i reclaim: czy coś dodaje do losowego wejścia?</small></span>${svgI(ICO.back, 18, 2.2)}</button><a class="lab-b" id="lnkNav" href="nawigator/" target="_blank" rel="noopener"><span><b>Busola Nawigator</b><small>wersja na komputer i rozłożony ekran: skaner, wykres, Mapa i Makro w jednym oknie</small></span>${svgI(ICO.back, 18, 2.2)}</a>`; }
+function labBtn() { return `<button class="lab-b" id="btnLab"><span><b>Test pułapki płynności</b><small>sweep i reclaim: czy coś dodaje do losowego wejścia?</small></span>${svgI(ICO.back, 18, 2.2)}</button><a class="lab-b" id="lnkNav" href="nawigator/"><span><b>Busola Nawigator</b><small>wersja na komputer i rozłożony ekran: skaner, wykres, Mapa i Makro w jednym oknie</small></span>${svgI(ICO.back, 18, 2.2)}</a>`; }
 function labHtml() {
   const L = S.lq, B = L.v === 'B', F = L.tf === '1d' && L.fwd, r = L.res[lqKey(L.tf, L.v, F)], d = ts => new Date(ts).toLocaleDateString('pl-PL', { day: 'numeric', month: 'short', year: 'numeric' });
   let h = `<header class="hdr"><div class="brand"><button class="ibtn" id="btnBack" aria-label="Wróć">${svgI(ICO.back, 20, 2.2)}</button><span>Test</span></div></header>`;
