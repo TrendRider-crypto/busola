@@ -1932,7 +1932,7 @@ function labHtml() {
     h += `<div class="jtr lab-g"><span><b>${lg.lab}</b></span><span class="r jn">${g.n}</span><span class="r jn">${fmtR(g.mean)}</span><span class="r jn">${fmtR(g.base)}</span><span class="r jv${sig ? (g.diff > 0 ? ' up' : ' dn') : ''}">${fmtR(g.diff)}</span></div>`;
   }
   h += `</div><div class="jnote">Kolor tylko gdy grupa ma co najmniej ${LQ.NMIN} zdarzeń z ${LQ.DMIN} dni, a przedział ${cl}% (liczony po dniach, bo zdarzenia z jednego dnia są skorelowane) nie obejmuje zera. Podgrupy są opisem: im więcej grup, tym łatwiej o przypadkowy kolor, więc werdykt dotyczy tylko wiersza Wszystkie.</div>`;
-  h += `<div class="jnote">Wszystkie: cel osiągnięty w ${Math.round(st.win * 100)}%, stop w ${Math.round(st.sl * 100)}%, upłynął czas w ${Math.round(st.to * 100)}%. Dane: ${r.coins} coinów, ${d(r.from)} – ${d(r.to)}, policzone ${new Date(r.ts).toLocaleString('pl-PL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}.</div>`;
+  h += `<div class="jnote">${st.n ? `Wszystkie: cel osiągnięty w ${Math.round(st.win * 100)}%, stop w ${Math.round(st.sl * 100)}%, upłynął czas w ${Math.round(st.to * 100)}%. ` : 'Brak rozstrzygniętych zdarzeń. '}Dane: ${r.coins} coinów, ${d(r.from)} – ${d(r.to)}, policzone ${new Date(r.ts).toLocaleString('pl-PL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}.</div>`;
   h += `<p class="fine">To test na historii z jednego okresu rynku, a nie sygnał. Gdy w jednej świecy dotknięty jest i stop, i cel, liczymy stop. Nie ma poślizgu ani częściowych wypełnień, a realne zlecenia mogą wypaść gorzej. Test nie wpływa na skaner ani Dziennik.</p>`;
   return h;
 }
