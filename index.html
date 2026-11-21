@@ -497,6 +497,36 @@ html.skin-nav .app { max-width: none; padding: 0; height: 100%; }
 .nv-zs { display: flex; flex-direction: column; gap: 2px; } .nv-z { white-space: nowrap; display: grid; grid-template-columns: 8px auto 1fr auto auto; align-items: baseline; gap: 6px; font-size: 11px; } .nv-z small { color: var(--muted); font-size: 10px; } .nv-zr { color: var(--fg); } .nv-zp { color: var(--muted); font-size: 10.5px; min-width: 44px; text-align: right; } .nv-zp.up { color: var(--up); } .nv-zp.down { color: var(--down); }
 .nv-zd { width: 8px; height: 8px; border-radius: 1px; background: var(--up); align-self: center; } .nv-zd.d { background: var(--down); } .nv-zd.f { background: transparent; border: 1px dashed var(--up); } .nv-zd.f.d { border-color: var(--down); }
 .skin-nav .mpd-sp.nv-sp2 { height: 60px; }
+
+/* Nowy wygląd Nawigatora: html.skin-nav.sk2 (ta sama paleta, zaokrąglone karty i pigułki) */
+html.skin-nav.sk2.dark body { background: radial-gradient(900px 520px at 0% -6%, rgba(0,246,172,.15), transparent 62%), var(--bg); }
+html.skin-nav.sk2.light body { background: linear-gradient(160deg, #c6f5e5 0%, #f2f5f4 34%), var(--bg); }
+html.skin-nav.sk2 .nvw { gap: 12px; padding: 4px 14px 14px; }
+html.skin-nav.sk2 .nv-p { border-radius: 22px; box-shadow: 0 14px 34px rgba(0,0,0,.38), inset 0 1px 0 rgba(255,255,255,.04); }
+html.skin-nav.sk2.light .nv-p { border-color: #e6ece9; box-shadow: 0 10px 28px rgba(20,70,55,.10); }
+html.skin-nav.sk2 .nv-top { height: 88px; padding: 0 20px; }
+html.skin-nav.sk2 .nv-t { font-family: 'Space Grotesk', Inter, sans-serif; font-size: 20px; }
+html.skin-nav.sk2 .nv-br b { font-family: 'Space Grotesk', Inter, sans-serif; font-size: 34px; }
+html.skin-nav.sk2 .nv-hist i { border-radius: 3px; }
+html.skin-nav.sk2 .nvm { font-family: 'Space Grotesk', Inter, sans-serif; font-variant-numeric: tabular-nums; }
+html.skin-nav.sk2 .nv-chips .mp-chip, html.skin-nav.sk2 .mp-tag, html.skin-nav.sk2 .nv-bd span { border-radius: 999px; }
+html.skin-nav.sk2 .nv-chips .mp-chip { padding: 4px 12px; }
+html.skin-nav.sk2 .nv-ctl .mp-btn, html.skin-nav.sk2 .nv-go .mp-btn { border-radius: 999px; height: 38px; padding: 0 16px; }
+html.skin-nav.sk2 .nv-ctl .mp-btn:first-child { background: var(--acc); color: var(--bg); border-color: var(--acc); font-weight: 700; box-shadow: 0 6px 18px rgba(0,246,172,.28); }
+html.skin-nav.sk2.light .nv-ctl .mp-btn:first-child { color: #fff; }
+html.skin-nav.sk2 .nv-go .mp-btn.go { background: var(--acc); color: var(--bg); border-color: var(--acc); font-weight: 700; }
+html.skin-nav.sk2.light .nv-go .mp-btn.go { color: #fff; }
+html.skin-nav.sk2 .nv-cols { gap: 12px; }
+html.skin-nav.sk2 .nv-lh { border-bottom-color: transparent; padding: 12px 16px 6px; }
+html.skin-nav.sk2 .nv-sec { border-bottom: 0; border-radius: 14px; margin: 1px 8px; width: calc(100% - 16px); padding: 8px 10px; }
+html.skin-nav.sk2 .nv-sec.on { box-shadow: inset 0 0 0 1px var(--acc); }
+html.skin-nav.sk2 .nv-bar { height: 5px; border-radius: 99px; } html.skin-nav.sk2 .nv-bar i { border-radius: 99px; }
+html.skin-nav.sk2 .mp-tile { border-radius: 16px; padding: 9px 11px; }
+html.skin-nav.sk2 .mp-tile.sel { box-shadow: inset 0 0 0 1px var(--sel); }
+html.skin-nav.sk2 .nv-zc, html.skin-nav.sk2 .skin-nav .mpd-sp, html.skin-nav.sk2 .mpd-sp { border-radius: 14px; }
+html.skin-nav.sk2 .nv-pad { padding: 14px 16px; }
+html.skin-nav.sk2 .nv-fn { border-top-color: transparent; }
+html.skin-nav.sk2 .skin-nav .empty, html.skin-nav.sk2 .empty { border-radius: 14px; }
 </style>
 </head>
 <body>
@@ -2284,6 +2314,7 @@ const EMB = (location.search.match(/[?&]embed=(map|macro)\b/) || [])[1] || null;
 const SKIN = EMB === 'map' && /[?&]skin=nav\b/.test(location.search);
 if (EMB) { document.documentElement.classList.add('embed'); S.view = EMB; }
 if (SKIN) document.documentElement.classList.add('skin-nav');
+if (SKIN && /[?&]sk2=1\b/.test(location.search)) document.documentElement.classList.add('sk2');   // nowy wygląd Nawigatora (paleta Busoli, zaokrąglone karty)
 // zmiana motywu w innym oknie lub ramce tej samej przeglądarki (np. w Nawigatorze) przełącza motyw tutaj
 window.addEventListener('storage', e => {
   if (e.key !== 'busola_theme' || (e.newValue !== 'light' && e.newValue !== 'dark')) return;
