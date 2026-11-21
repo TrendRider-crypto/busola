@@ -191,6 +191,19 @@ input,select,button{border-radius:3px}
 @media(max-width:1300px){#cgrid{grid-template-columns:minmax(0,1fr) 270px}}
 @media(max-width:1100px){#cgrid{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(300px,1fr) 190px}#minis{grid-template-columns:1fr 1fr;grid-template-rows:none}}
 @media(max-width:760px){#cgrid{display:block;padding:6px}#chartW{height:380px}#chartW:has(#chart.hu){height:540px}#chartW #chart{height:auto}#minis{display:grid;grid-template-columns:1fr;grid-template-rows:none;margin-top:8px}.mp{height:210px}}
+#anat{border-top:1px solid var(--line);flex:none}
+.ah{display:flex;align-items:center;gap:10px;padding:5px 10px;font-size:12px}.ah b{font-size:11px;letter-spacing:1.3px;text-transform:uppercase}.ah button{padding:2px 8px;font-size:11px}
+.ag{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding:0 8px 8px}
+.ac{border:1px solid var(--line);border-radius:3px;padding:7px 10px;font-size:12px;display:flex;flex-direction:column;gap:3px;min-height:112px;max-height:178px;overflow:auto;background:var(--panel)}
+.ac h4{margin:0 0 2px;font-size:10px;letter-spacing:1.3px;text-transform:uppercase;color:var(--acc);font-weight:600}
+.ac .kv{display:flex;justify-content:space-between;gap:8px}.ac .up{color:var(--up)}.ac .dn{color:var(--dn)}.ac .mu{color:var(--mut)}
+.ac .bd2{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:2px}
+#anat.shut .ag{display:none}#dbar{display:none}
+body.fs #anat{display:none}
+@media(max-width:1100px){.ag{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){.ag{grid-template-columns:1fr}.ac{max-height:none}}
+#under{flex:0 1 auto;min-height:0;max-height:44%;overflow:auto}
+@media(max-width:760px){#under{max-height:none;overflow:visible}}
 </style>
 </head>
 <body>
@@ -252,6 +265,8 @@ input,select,button{border-radius:3px}
         <div class="mp"><div class="mh"><b id="mTH">1H</b><span class="mu" id="mSH"></span></div><div class="mc" id="chartH"></div></div>
       </div>
     </div>
+    <div id="under">
+    <div id="anat"><div class="ah"><b>Anatomia coina</b><span class="mu">opis rynku, nie sygnał</span><span style="flex:1"></span><button id="btnAnat">▾ Zwiń</button></div><div class="ag" id="anatG"></div></div>
     <div id="dbar"></div>
     <div id="sbar"></div>
     <div id="scoreCard"></div>
@@ -259,6 +274,7 @@ input,select,button{border-radius:3px}
       <div><h3>Trend wg struktury (zamknięte świece)</h3><div id="tfTable"></div><div id="align" style="margin-top:8px"></div></div>
       <div><h3>Ostatnie zdarzenia (<span id="evTf"></span>)</h3><div id="evList"></div></div>
       <div><h3>Strefy 4H/1H i wejście 15M</h3><div id="setup"></div></div>
+    </div>
     </div>
   </section>
   <section id="evView" class="card" hidden><div class="evw"><iframe id="evMap" title="Mapa rynku (Busola)" hidden></iframe><iframe id="evMk" title="Makro (Busola)" hidden></iframe></div></section>
@@ -2023,6 +2039,7 @@ if (typeof document !== 'undefined') (() => {
     if (live) return;
     renderTrends(sym);
     renderSetup(sym);
+    renderAnat(sym);
   }
   // dwa pomocnicze wykresy obok głównego: dwa z trzech interwałów 1D / 4H / 1H, które nie są teraz na głównym (dla 15M: 4H i 1H)
   const MINI_TF = { '1d': ['4h', '1h'], '4h': ['1d', '1h'], '1h': ['1d', '4h'], '15m': ['4h', '1h'] };
@@ -2044,6 +2061,67 @@ if (typeof document !== 'undefined') (() => {
       } catch (e) { if (!live) $('mS' + (id === 'chartD' ? 'D' : 'H')).textContent = 'brak danych'; }
     }));
   }
+
+  // ---------- Anatomia coina: opis rynku z danych, które już mamy (bez nowych reguł wejścia) ----------
+  const pc = v => v == null || !isFinite(v) ? '–' : (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(1) + '%';
+  // niezdjęte pivoty: najbliższy szczyt nad ceną i dołek pod ceną (poziomy, gdzie leżą stopy)
+  function anatUnswept(c, price) {
+    if (!c || c.length < 40) return null;
+    const pv = Engine.analyze(c, S.N).pivots, open = p => !c.slice(p.idx + 1).some(k => p.type === 'H' ? k.high > p.price : k.low < p.price);
+    const up = pv.filter(p => p.type === 'H' && p.price > price && open(p)).sort((a, b) => a.price - b.price)[0] || null;
+    const dn = pv.filter(p => p.type === 'L' && p.price < price && open(p)).sort((a, b) => b.price - a.price)[0] || null;
+    return { up: up && { price: up.price, d: (up.price / price - 1) * 100 }, dn: dn && { price: dn.price, d: (dn.price / price - 1) * 100 } };
+  }
+  // zdjęcia niezdjętych pivotów w ostatnich K świecach (świeca trwająca liczy się wstępnie): sweep = zamknięcie z powrotem po właściwej stronie, przebicie = zamknięcie za poziomem
+  function anatSweeps(all, price, K) {
+    const closed = closedOnly(all); if (closed.length < 40) return [];
+    const forming = all.length > closed.length ? all[all.length - 1] : null;
+    const cc = forming ? closed.concat([{ time: forming.time, open: forming.open, high: Math.max(forming.high, price), low: Math.min(forming.low, price), close: price }]) : closed, n = cc.length, out = [];
+    for (const p of Engine.analyze(closed, S.N).pivots) {
+      let j = -1; for (let k = p.idx + 1; k < n; k++) if (p.type === 'H' ? cc[k].high > p.price : cc[k].low < p.price) { j = k; break; }
+      if (j < 0 || j < n - K) continue;
+      out.push({ side: p.type, level: p.price, ago: n - 1 - j, forming: !!forming && j === n - 1, kind: (p.type === 'H' ? cc[j].close <= p.price : cc[j].close >= p.price) ? 'sweep' : 'break' });
+    }
+    return out.sort((a, b) => a.ago - b.ago);
+  }
+  async function renderAnat(sym) {
+    const box = $('anatG'); if (!box || $('anat').classList.contains('shut')) return;
+    try {
+      const tr = await trendsFor(sym); if (sym !== S.sel) return;
+      const c15 = tr['15m'].c, c1 = tr['1h'].c, c4 = tr['4h'].c, price = c15[c15.length - 1].close;
+      const ar = t => t === 1 ? 'up' : t === -1 ? 'dn' : 'mu';
+      // 1. trend
+      const b = tr['1d'].trend, ag = b ? ['4h', '1h', '15m'].filter(k => tr[k].trend === b).length + 1 : 0, ev = tr['1d'].last;
+      const k1 = `<h4>Trend · struktura</h4><div class="bd2">${['1d', '4h', '1h', '15m'].map(k => badge(tr, k, TFS.find(t => t[0] === k)[1])).join('')}</div>
+        <div class="kv"><span class="mu">Kierunek 1D</span><b class="${ar(b)}">${b > 0 ? 'LONG' : b < 0 ? 'SHORT' : 'brak'}${b ? ', ' + ag + ' z 4' : ''}</b></div>
+        <div class="kv"><span class="mu">Ostatnie zdarzenie 1D</span><span>${ev ? `<b class="${ev.dir === 1 ? 'up' : 'dn'}">${ev.kind} ${ev.dir === 1 ? '↑' : '↓'}</b> ${fmt(ev.price)}` : '–'}</span></div>`;
+      // 2. płynność
+      const d1 = await klines(sym, '1d'); if (sym !== S.sel) return;
+      const u1 = anatUnswept(closedOnly(d1), price), u4 = anatUnswept(c4, price), sw = anatSweeps(d1, price, 3);
+      const row = (lab, x, up) => `<div class="kv"><span class="mu">${lab}</span><span class="mono">${x ? `${fmt(x.price)} <b class="${up ? 'up' : 'dn'}">${pc(x.d)}</b>` : '–'}</span></div>`;
+      const G = []; for (const w of sw) { const g = G.find(x => x.side === w.side && x.ago === w.ago && x.kind === w.kind); g ? g.n++ : G.push({ ...w, n: 1 }); }
+      const when = w => w.ago === 0 ? (w.forming ? 'dziś (świeca trwa)' : 'ostatnia świeca') : w.ago === 1 ? 'wczoraj' : w.ago + ' dni temu';
+      const c2 = `<h4>Płynność · niezdjęte poziomy</h4>${row('1D szczyt nad ceną', u1 && u1.up, true)}${row('1D dołek pod ceną', u1 && u1.dn, false)}${row('4H szczyt nad ceną', u4 && u4.up, true)}${row('4H dołek pod ceną', u4 && u4.dn, false)}
+        ${G.slice(0, 2).map(w => `<div class="kv"><span style="color:var(--warn)">${w.kind === 'sweep' ? '⚡ Sweep 1D' : '↯ Przebicie 1D'} ${w.side === 'L' ? 'dołka' : 'szczytu'}${w.n > 1 ? ' ×' + w.n : ''}</span><span class="mu">${when(w)}</span></div>`).join('') || '<div class="mu">Brak zdjęcia poziomu 1D w ostatnich 3 świecach</div>'}`;
+      // 3. pozycjonowanie
+      const pxChg = c1.length > 25 ? (c1[c1.length - 1].close / c1[c1.length - 25].close - 1) * 100 : null;
+      let pos = null; try { pos = await derivFor(sym, pxChg); } catch (e) { pos = null; }
+      if (sym !== S.sel) return;
+      let c3 = '<h4>Pozycjonowanie · funding i OI</h4>';
+      if (!pos) c3 += '<div class="mu">Brak danych z giełd (blokada CORS lub brak połączenia).</div>';
+      else { const oi = pos.ex.reduce((p, e) => p + (e.oi || 0), 0), f = Engine.aggFunding(pos.ex);
+        c3 += `<div class="kv"><span class="mu">Open interest</span><b class="mono">${fUsd(oi)}</b></div><div class="kv"><span class="mu">OI 24h</span><b class="${pos.oiChg == null ? 'mu' : pos.oiChg >= 0 ? 'up' : 'dn'}">${pc(pos.oiChg)}</b></div><div class="kv"><span class="mu">Funding śr. (%/8h)</span><b class="mono">${f >= 0 ? '+' : ''}${f.toFixed(4)}%</b></div><div class="kv"><span class="mu">Cena 24h</span><span>${pc(pxChg)}</span></div><div class="mu">${((Engine.derivReading(pxChg, pos.oiChg) || {}).txt || 'Brak historii OI')}</div>`; }
+      // 4. kontekst
+      const hu = Engine.hurst(c4), ho = hu.osc[hu.osc.length - 1], vp = Engine.volumeProfile(c4, 120, 48), nx = $('nextEv').textContent.replace(/\s+/g, ' ').trim();
+      const c4h = `<h4>Kontekst · cykl i wolumen</h4>${ho == null ? '' : `<div class="kv"><span class="mu">Hurst 4H (pozycja w kanale)</span><b class="mono">${ho.toFixed(0)}%</b></div><div class="mu">${ho > 100 ? 'cena nad górną wstęgą cyklu' : ho < 0 ? 'cena pod dolną wstęgą cyklu' : ho > 70 ? 'blisko górnej wstęgi' : ho < 30 ? 'blisko dolnej wstęgi' : 'środek kanału cyklu'}</div>`}
+        ${vp ? `<div class="kv"><span class="mu">POC 4H</span><span class="mono">${fmt(vp.poc)} <b>${pc((price / vp.poc - 1) * 100)}</b></span></div><div class="kv"><span class="mu">Obszar wartości</span><span>${price > vp.vah ? 'cena nad VAH' : price < vp.val ? 'cena pod VAL' : 'cena w środku'}</span></div>` : ''}
+        <div class="kv"><span class="mu">Makro</span><span>${macroActive() ? '<b class="dn">⚠ okno zdarzenia</b>' : esc(nx || 'brak')}</span></div>`;
+      box.innerHTML = [k1, c2, c3, c4h].map(h => `<div class="ac">${h}</div>`).join('');
+    } catch (e) { box.innerHTML = `<div class="ac"><div class="dn">Błąd: ${esc(e.message)}</div></div>`; }
+  }
+  $('btnAnat').onclick = () => { const a = $('anat'), sh = a.classList.toggle('shut'); $('btnAnat').textContent = sh ? '▸ Rozwiń' : '▾ Zwiń'; SS_('anat_shut', sh ? '1' : '0'); if (!sh) renderAnat(S.sel); window.dispatchEvent(new Event('resize')); };
+  if (LS_('anat_shut', '0') === '1') { $('anat').classList.add('shut'); $('btnAnat').textContent = '▸ Rozwiń'; }
+
   // wspólny kursor: ruch nad jednym wykresem ustawia pionową linię czasu na pozostałych
   { const ALL = [Chart, ...MINIS.map(m => m[0])]; ALL.forEach(c => { c.onCross = t => ALL.forEach(o => { if (o !== c) o.setCross(t); }); }); }
   // do rysowania: aktywne (niezmitygowane) strefy najbliższe cenie, po 3 na rodzaj (OB / FVG) z każdego interwału
