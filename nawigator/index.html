@@ -214,6 +214,9 @@ body.fs #split{display:none}
 .ac .lad{display:flex;gap:4px;align-items:center;margin:1px 0}.lad span{font-size:10px;padding:0 6px;border:1px solid var(--line);border-radius:2px;color:var(--mut)}.lad span.on.up{color:var(--up);border-color:var(--up);background:var(--upS)}.lad span.on.dn{color:var(--dn);border-color:var(--dn);background:var(--dnS)}.lad span.mu{border:0;padding:0}
 .ac .stfl{font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .stg b{display:block;margin-bottom:1px}.stg{border:1px solid var(--line);border-radius:3px;padding:8px 10px;margin-top:8px}.stg .kv2{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;margin:4px 0;font-size:12px}.stg .kv2 b{text-align:right}
+
+.stg .chips{display:flex;flex-wrap:wrap;gap:4px;align-items:center}.chip2{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);border-radius:3px;padding:1px 4px 1px 8px;font-size:12px;background:var(--inp)}.chip2 button{border:0;background:transparent;padding:0 4px;color:var(--mut)}
+.nlw{display:flex;flex-direction:column;gap:2px;margin-top:6px;font-size:12px}.nl{display:flex;align-items:center;gap:6px}.nl input{margin:0}
 </style>
 </head>
 <body>
@@ -326,6 +329,7 @@ body.fs #split{display:none}
       <h4 style="margin:12px 0 4px">Dziennik alertów</h4><div id="alLog"></div>
     </div>
     <div id="stBox" hidden>
+      <div id="stNotif"></div>
       <div class="mu" style="font-size:11.5px;line-height:1.45">Zapisujemy każdą zmianę kierunku struktury 1H (gdy 4H jest jeszcze przeciwne) i 4H (gdy 1D jest jeszcze przeciwne) na coinach ze skanu, bez wybierania przypadków. Z tego samego skanu bierzemy do 3 coinów kontrolnych w tym samym stanie, ale bez zmiany. Wynik rozlicza się po fakcie. To opis struktury i test częstości, nie sygnał.</div>
       <div class="mu" style="font-size:11.5px;line-height:1.45;margin:8px 0"><b>Kryteria ustalone przed wynikami.</b> Test A: po zmianie 1H, czy po 3 dniach 4H ma kierunek zmiany. Test B: po zmianie 4H, czy po 10 dniach 1D ma kierunek zmiany. Wniosek dopiero od 100 rozliczonych zdarzeń z co najmniej 20 różnych dni. „Wskazuje różnicę”: częstość u coinów po zmianie wyższa od kontrolnej o co najmniej 10 pkt proc., a dolna granica 95% przedziału (bootstrap po dniach) powyżej zera. Inaczej: „Brak dowodu różnicy”. Czas zapisu zdarzenia to czas skanu, który ją wykrył, a porównujemy tylko ze skanem nie starszym niż 6 h (1H) lub 24 h (4H).</div>
       <div id="stStats"></div>
@@ -2433,7 +2437,14 @@ if (typeof document !== 'undefined') (() => {
     try {
       const tr = cs.tr, t = k => (tr[k] ? tr[k].trend : 0); let sw = '';
       try { const w = anatSweeps(tr['1d'].c, cs.price, 2).find(x => x.kind === 'sweep'); if (w) sw = w.side; } catch (e) { /* bez flagi */ }
-      (S.sobs = S.sobs || {})[sym] = { h1: t('1h'), h4: t('4h'), d1: t('1d'), sw, at: Date.now() };
+      let ob = [];
+      if (stN().coins.includes(sym)) {
+        try {
+          const pv = stM().st[sym], since = pv ? pv[3] : null;
+          if (since && Date.now() - since <= STC().W1) ob = Engine.zones(tr['1h'].c, S.N).filter(z => z.kind === 'OB' && z.t1 && (z.t1 + 3600) * 1000 > since).map(z => ({ dir: z.dir, top: z.top, bottom: z.bottom, t0: z.t0, t1: z.t1 }));
+        } catch (e) { ob = []; }
+      }
+      (S.sobs = S.sobs || {})[sym] = { h1: t('1h'), h4: t('4h'), d1: t('1d'), sw, ob, at: Date.now() };
     } catch (e) { /* pomijamy coin */ }
   }
   function structAfterScan() {
@@ -2454,7 +2465,8 @@ if (typeof document !== 'undefined') (() => {
         const ctl = pool.map(k => [stHash(k + id), k]).sort((a, b) => a[0] - b[0]).slice(0, C.CTL).map(x => x[1]);
         M.ev.push({ id, sym: e.sym, tf: e.tf, dir: e.dir, t: now, sw: e.sw || '', ctl, done: false, ok: null, cok: [] });
       }
-      for (const sym of syms) { const o = obs[sym]; M.st[sym] = [o.h1, o.h4, o.d1, now]; }
+      structNotifyScan(syms, obs, M, evs, now);
+      for (const sym of syms) { const o = obs[sym]; M.st[sym] = [o.h1, o.h4, o.d1, now, o.sw || '']; }
       if (M.ev.length > C.KEEP) M.ev = M.ev.filter(e => !e.done).concat(M.ev.filter(e => e.done).slice(-(C.KEEP - 1000)));
       stSave(); if (RCUR === 'st') renderStruct();
       structSettle().catch(() => { /* następnym razem */ });
@@ -2501,6 +2513,7 @@ if (typeof document !== 'undefined') (() => {
     return { all, n, pe, pcn, nc, r, verdict, vcl };
   }
   function renderStruct() {
+    renderNotif();
     const C = STC(), pct = v => v == null ? '–' : Math.round(v * 100) + '%', pp = v => v == null ? '–' : (v >= 0 ? '+' : '−') + Math.abs(v * 100).toFixed(0) + ' pkt';
     const row = (lab, g) => `<div class="stg"><b>${lab}</b><span class="mu">zapisane ${g.all.length}, rozliczone ${g.n}</span>
       <div class="kv2"><span>Po zmianie</span><b>${pct(g.pe)}</b><span>Kontrola</span><b>${pct(g.pcn)}</b><span>Różnica</span><b>${pp(g.r.diff)}${g.r.lo != null ? ` <small class="mu">(95%: ${pp(g.r.lo)} do ${pp(g.r.hi)})</small>` : ''}</b></div>
@@ -2518,6 +2531,58 @@ if (typeof document !== 'undefined') (() => {
     catch (e) { $('stTa').hidden = false; $('stTa').value = csv; $('stTa').select(); }
   };
 
+
+  // ---------- Powiadomienia o zmianach struktury dla listy coinów użytkownika (opis, nie sygnał) ----------
+  const stNd = { coins: ['BTCUSDT'], ev: { h1: true, h4: true, sw: true, ob: true }, cool: {}, log: [] };
+  try { const o = JSON.parse(localStorage.getItem('struct_notif_v1') || 'null'); if (o) { if (Array.isArray(o.coins)) stNd.coins = o.coins.filter(x => /^[A-Z0-9]{2,24}$/.test(x)); Object.assign(stNd.ev, o.ev || {}); stNd.cool = o.cool || {}; stNd.log = Array.isArray(o.log) ? o.log : []; } } catch (e) { /* domyślne */ }
+  const stN = () => stNd;
+  const stNSave = () => { try { localStorage.setItem('struct_notif_v1', JSON.stringify({ coins: stNd.coins, ev: stNd.ev, cool: stNd.cool, log: stNd.log })); } catch (e) { /* tylko w pamięci strony */ } };
+  const stBase = sym => sym.replace(/USDT$/, '');
+  function structNotify(sym, type, text) {
+    const now = Date.now(), pre = S.demo ? 'demo|' : '', key = pre + sym + '|' + type;
+    if (stNd.cool[key] && now - stNd.cool[key] < 4 * 3600e3) return;
+    stNd.cool[key] = now; stNd.log.unshift({ t: now, sym, type, text, demo: !!S.demo }); stNd.log = stNd.log.slice(0, 80);
+    for (const k of Object.keys(stNd.cool)) if (now - stNd.cool[k] > 24 * 3600e3) delete stNd.cool[k];
+    stNSave(); (stNd.pend = stNd.pend || []).push({ sym, text });
+  }
+  function structFlush() {
+    const P = stNd.pend || []; stNd.pend = []; if (!P.length) return;
+    try {
+      for (const x of P.slice(0, 4)) DRW.toast(`<b>${esc(stBase(x.sym))}: zmiana struktury${S.demo ? ' (DEMO)' : ''}</b><br>${esc(x.text)}<br><span class="mu">Opis, nie sygnał.</span>`, 25000, () => { S.sel = x.sym; renderList(); draw(); });
+      if (P.length > 4) DRW.toast(`<b>Struktura: jeszcze ${P.length - 4} zmian</b><br>Pełna lista w zakładce Struktura.`, 25000, () => openR('st'));
+      DRW.beep();
+    } catch (e) { /* bez dymka */ }
+    if (RCUR === 'st') renderStruct();
+  }
+  function structNotifyScan(syms, obs, M, evs, now) {
+    const N = stNd; if (!N.coins.length) return;
+    for (const e of evs) {
+      if (!N.coins.includes(e.sym)) continue;
+      if (e.tf === '1h' && N.ev.h1) structNotify(e.sym, 'h1', `1H zmieniło kierunek na ${e.dir > 0 ? '↑' : '↓'}, 4H nadal ${e.dir > 0 ? '↓' : '↑'}`);
+      if (e.tf === '4h' && N.ev.h4) structNotify(e.sym, 'h4', `4H zmieniło kierunek na ${e.dir > 0 ? '↑' : '↓'}, 1D nadal ${e.dir > 0 ? '↓' : '↑'}`);
+    }
+    for (const sym of N.coins) {
+      const o = obs[sym], pv = M.st[sym]; if (!o || !pv) continue;
+      if (N.ev.sw && pv.length >= 5 && o.sw && o.sw !== (pv[4] || '')) structNotify(sym, 'sw', `sweep 1D ${o.sw === 'L' ? 'dołka, cena wróciła powyżej poziomu' : 'szczytu, cena wróciła poniżej poziomu'}`);
+      if (N.ev.ob && o.ob && o.ob.length) { const z = o.ob.sort((a, b) => b.t1 - a.t1)[0]; structNotify(sym, 'ob', `zamknięcie 1H ${z.dir < 0 ? 'powyżej' : 'poniżej'} OB ${z.dir < 0 ? 'podaży' : 'popytu'} ${fmt(z.bottom)}–${fmt(z.top)}${o.ob.length > 1 ? ` (i ${o.ob.length - 1} inne)` : ''}`); }
+    }
+    structFlush();
+  }
+  function renderNotif() {
+    const N = stNd, chk = (k, lab) => `<label class="nl"><input type="checkbox" data-nev="${k}"${N.ev[k] ? ' checked' : ''}> ${lab}</label>`;
+    const log = N.log.filter(x => !!x.demo === !!S.demo).slice(0, 12);
+    $('stNotif').innerHTML = `<div class="stg"><b>Powiadomienia o zmianach struktury</b>
+      <div class="mu" style="font-size:11.5px;line-height:1.45;margin:2px 0 6px">Dymek i dźwięk przy otwartym Nawigatorze, sprawdzane przy każdym skanie (auto-skan co 15 min). Dla coina to samo zdarzenie nie powtarza się przez 4 godziny. Opis, nie sygnał.</div>
+      <div class="chips">${N.coins.map(c => `<span class="chip2">${esc(stBase(c))}<button data-ncx="${c}" title="Usuń z listy" aria-label="Usuń ${esc(stBase(c))}">✕</button></span>`).join('') || '<span class="mu">Lista pusta: brak powiadomień.</span>'}
+        <button id="nAddCur" title="Dodaj coin otwarty na wykresie">+ ${esc(stBase(S.sel))}</button></div>
+      <div class="nlw">${chk('h1', '1H zmienia kierunek (4H jeszcze przeciwne)')}${chk('h4', '4H zmienia kierunek (1D jeszcze przeciwne)')}${chk('sw', 'sweep 1D dołka lub szczytu')}${chk('ob', 'zamknięcie 1H za OB (wybicie strefy)')}</div>
+      ${log.length ? '<div style="margin-top:6px">' + log.map(x => `<div class="jrow"><span><b>${esc(stBase(x.sym))}</b> <small>${esc(x.text)}</small></span><span class="mu">${esc(fdate(x.t / 1000))}</span></div>`).join('') + '</div>' : '<div class="mu" style="font-size:11.5px">Brak powiadomień.</div>'}</div>`;
+  }
+  $('stNotif').onclick = e => {
+    const x = e.target.closest('[data-ncx]'); if (x) { stNd.coins = stNd.coins.filter(c => c !== x.dataset.ncx); stNSave(); renderNotif(); return; }
+    if (e.target.id === 'nAddCur') { if (!stNd.coins.includes(S.sel)) { stNd.coins.push(S.sel); stNSave(); } renderNotif(); }
+  };
+  $('stNotif').onchange = e => { const k = e.target.dataset && e.target.dataset.nev; if (k) { stNd.ev[k] = e.target.checked; stNSave(); } };
   // ---------- backtest: pobranie historii i raport ----------
   const BT = { running: false, stop: false, trades: [], base: [], skipped: [] };
   const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -3025,7 +3090,7 @@ if (typeof document !== 'undefined') (() => {
     document.addEventListener('keydown', e => { if (e.key === 'Escape' && curTool) setT(null); });
     setInterval(poll, 30000); setTimeout(poll, 4000);
     document.addEventListener('visibilitychange', () => { if (!document.hidden) poll(); });
-    return { sync, render, poll, add };
+    return { sync, render, poll, add, toast, beep };
   })();
 
   // planer pozycji
