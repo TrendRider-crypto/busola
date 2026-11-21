@@ -406,6 +406,41 @@ html::after { content: ""; position: fixed; top: 0; left: 0; right: 0; height: e
 .nav { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 12px); width: min(calc(100% - 104px), 280px); height: 46px; padding: 0 5px; border-radius: 999px; background: var(--nav-bg); background: color-mix(in srgb, var(--nav-bg) 84%, transparent); -webkit-backdrop-filter: blur(22px) saturate(160%); backdrop-filter: blur(22px) saturate(160%); display: flex; align-items: center; justify-content: space-around; box-shadow: 0 12px 32px -12px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.28), 0 0 0 1px rgba(128,134,132,.3); z-index: 30; }
 .nb { width: 38px; height: 38px; transition: background .2s, color .2s; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--nav-ic); display: flex; align-items: center; justify-content: center; }
 .nb.on { background: var(--acc); color: #020202; }
+.embed .nav, .embed #btnBack { display: none !important; }
+.embed .app { max-width: none; padding-bottom: 20px; }
+
+/* tryb osadzony, szeroki układ (Nawigator): trzy kolumny na mapie, sekcje w kolumnach na makro */
+button.mp-tile { text-align: left; font: inherit; color: inherit; width: 100%; cursor: pointer; }
+.mp-tile.sel { outline: 2px solid var(--gold); outline-offset: -1px; }
+@media (min-width: 760px) {
+  .embed .hdr, .embed .meta, .embed .banner { margin-left: 20px; margin-right: 20px; }
+  .embed .mpw { display: grid; grid-template-columns: minmax(0, 1fr) 330px; grid-template-areas: 'c r' 'l r'; gap: 8px 16px; align-items: start; padding: 0 20px; }
+  .embed .mpw-l { grid-area: l; } .embed .mpw-c { grid-area: c; } .embed .mpw-r { grid-area: r; }
+  .embed .mpw-c .mp-quad { grid-template-columns: 1fr 1fr; }
+  .embed .mkw { column-width: 330px; }
+  .embed .mpw .mp-card, .embed .mpw .mp-sec, .embed .mpw .mp-rows, .embed .mpw .mp-grid2, .embed .mpw .mp-quad { margin-left: 0; margin-right: 0; }
+  .embed .mpw .mp-grid2 { grid-template-columns: 1fr 1fr; }
+  .embed .mpw .mp-sec { margin-top: 14px; }
+  .embed .mpw > div > :first-child { margin-top: 14px; }
+  .embed .mpd-h { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .embed .mpd-tk { font-family: 'Space Grotesk', 'Inter', sans-serif; font-size: 26px; font-weight: 700; } .embed .mpd-tk small { font-size: 13px; color: var(--muted); font-weight: 500; }
+  .embed .mpd-sec { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .embed .mpd-chg { font-size: 26px; font-weight: 700; }
+  .embed .mpd-lab { margin: 10px 0 4px; }
+  .embed .mpd-kv { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 12px 0 6px; } .embed .mpd-kv small { display: block; font-size: 11px; color: var(--muted); } .embed .mpd-kv b { font-size: 15px; }
+  .embed .mpd-sp { width: 100%; height: 80px; margin: 8px 0; }
+  .embed .mpd-b { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; } .embed .mpd-b .mp-btn { text-decoration: none; }
+  .embed .mkw { column-gap: 18px; padding: 0 20px; }
+  .embed .mkc { break-inside: avoid; padding-top: 14px; }
+  .embed .mkc .mp-card, .embed .mkc .mp-sec { margin-left: 0; margin-right: 0; }
+  .embed .mkc .mp-sec { margin-top: 0; }
+  .embed .fine { margin-left: 20px; margin-right: 20px; }
+}
+@media (min-width: 1100px) {
+  .embed .mpw { grid-template-columns: 290px minmax(0, 1fr) minmax(400px, 34%); grid-template-areas: 'l c r'; gap: 8px 18px; }
+  .embed .mpw-c .mp-quad { grid-template-columns: repeat(4, 1fr); }
+  .embed .mkw { column-width: 400px; }
+}
 </style>
 </head>
 <body>
@@ -673,6 +708,27 @@ function liquidityOf(c, price, now) {
   const ah = hs.filter(v => v > hiNow).sort((x, y) => x - y), bl = ls.filter(v => v < loNow).sort((x, y) => y - x);
   const mk = (arr, sgn) => arr.length ? { price: arr[0], dist: (arr[0] / price - 1) * 100, n: arr.filter(v => Math.abs(v - arr[0]) <= tol).length, equal: arr.filter(v => Math.abs(v - arr[0]) <= tol).length >= 2, near: sgn * (arr[0] - price) <= 0.25 * atr } : null;
   return { above: mk(ah, 1), below: mk(bl, -1), sweeps };
+}
+
+// Zbieranie płynności na 1D (opis, nie sygnał): niezdjęty wcześniej dołek/szczyt pivotu, który został zdjęty knotem w ostatnich K świecach (razem z trwającą).
+// 'sweep' = świeca, która pierwsza przebiła poziom, zamknęła się z powrotem po właściwej stronie (dla trwającej świecy: cena teraz); 'break' = zamknęła się za poziomem.
+// Po zamknięciu świecy poziom znika z listy "niezdjętych" w liquidityOf, więc ta funkcja trzyma go jeszcze przez K świec.
+function sweepRecent(c, price, now, K) {
+  if (!c || !(price > 0)) return null;
+  const closed = closedOnly(c, now);
+  if (closed.length < 40) return null;
+  const forming = c.length > closed.length ? c[c.length - 1] : null;
+  const all = forming ? closed.concat([{ time: forming.time, open: forming.open, high: Math.max(forming.high, price), low: Math.min(forming.low, price), close: price }]) : closed;
+  const n = all.length, a = analyze(closed, N_PIV), out = [];
+  for (const p of a.pivots) {
+    let j = -1;
+    for (let k = p.idx + 1; k < n; k++) if (p.type === 'H' ? all[k].high > p.price : all[k].low < p.price) { j = k; break; }
+    if (j < 0 || j < n - K) continue;
+    const back = p.type === 'H' ? all[j].close <= p.price : all[j].close >= p.price;
+    let ext = p.price; for (let k = j; k < n; k++) ext = p.type === 'H' ? Math.max(ext, all[k].high) : Math.min(ext, all[k].low);
+    out.push({ side: p.type, level: p.price, since: closed[p.idx].time, ago: n - 1 - j, forming: !!forming && j === n - 1, kind: back ? 'sweep' : 'break', depth: Math.abs(ext / p.price - 1) * 100 });
+  }
+  return out.sort((x, y) => x.ago - y.ago || Math.abs(y.depth) - Math.abs(x.depth));
 }
 
 // ---------- Mapa: ścieżki od 00:00 UTC, sektory, etykiety cena x OI ----------
@@ -1417,7 +1473,8 @@ async function stage1(c, now) {
   d.pending = d.t.d1 !== 0 && d.t.d1 === d.t.h4 && d.t.d1 === d.t.h1;
   applyChanges(d, now); d.status = 'NO TRADE'; d.dir = 0; d.aligned = false; d.conds = [];
   try { d.zn = zonesOf(k1, k4, c.last, now); } catch (e) { d.zn = null; }
-  try { d.lq = { '1H': liquidityOf(k1, c.last, now), '4H': liquidityOf(k4, c.last, now) }; } catch (e) { d.lq = null; }
+  try { d.lq = { '1D': liquidityOf(kd, c.last, now), '1H': liquidityOf(k1, c.last, now), '4H': liquidityOf(k4, c.last, now) }; } catch (e) { d.lq = null; }
+  try { d.sw1d = sweepRecent(kd, c.last, now, 3); } catch (e) { d.sw1d = null; }
   return d;
 }
 async function stage2(d, now) {
@@ -1527,6 +1584,8 @@ function sparkSvg(v, w, h, cl, sw) {
 }
 const pillHtml = (d, small) => d.pending ? `<span class="pill ${small ? 's ' : ''}p-no">…</span>` : `<span class="pill ${small ? 's ' : ''}${d.status === 'TRIGGER' ? 'p-trig' : d.status === 'WAIT' ? 'p-wait' : 'p-no'}">${d.status}</span>`;
 const dirTxt = d => d.dir > 0 ? 'LONG' : d.dir < 0 ? 'SHORT' : '';
+const sw1dFresh = d => (d.sw1d || []).filter(w => w.kind === 'sweep' && w.ago <= 2);
+const swChip = d => { const w = sw1dFresh(d); return w.length ? `<span class="chip pb">Sweep 1D ${w.some(x => x.side === 'L') && w.some(x => x.side === 'H') ? 'dołka i szczytu' : (w[0].side === 'L' ? 'dołka' : 'szczytu')}</span>` : ''; };
 const pbChip = d => { const p = pullbackOf(d); return p ? `<span class="chip pb">Pullback ${p.tf}</span>` : ''; };
 const rxChip = d => { const f = rxFlag(d.rx); return f ? `<span class="chip ${f}">${f === 'ok' ? 'OB ✓' : 'CHoCH ⚠'}</span>` : ''; };
 const tfChips = d => ['d1', 'h4', 'h1', 'm15'].map((k, i) => { const v = d.t[k]; return `<span class="tf ${cls(v)}">${['1D', '4H', '1H', '15M'][i]} <b>${arrow(v)}</b></span>`; }).join('');
@@ -1544,7 +1603,7 @@ function visibleCoins() {
 function topCardHtml(d, i) {
   const dc = d.ch.d1;
   return `<button class="tcard t${(i || 0) + 1}${S.open === d.sym ? ' sel' : ''}" data-sym="${d.sym}" aria-expanded="${S.open === d.sym}">
-    <div class="tc-head">${monoHtml(d.sym)}<div class="tc-name"><div class="sym">${esc(base(d.sym))}<small>/USDT</small></div><div class="dir ${cls(d.dir)}">${dirTxt(d)} · 4/4 interwały${pbChip(d)}${rxChip(d)}</div></div>${pillHtml(d)}</div>
+    <div class="tc-head">${monoHtml(d.sym)}<div class="tc-name"><div class="sym">${esc(base(d.sym))}<small>/USDT</small></div><div class="dir ${cls(d.dir)}">${dirTxt(d)} · 4/4 interwały${pbChip(d)}${swChip(d)}${rxChip(d)}</div></div>${pillHtml(d)}</div>
     <div class="tc-price"><span class="big">${fmtPrice(d.last)}</span><span class="chg ${cls(dc)}">${dc == null ? '' : arrow(dc) + ' ' + fmtPct(Math.abs(dc)).replace('+', '')}</span></div>
     ${sparkSvg(d.spark, 260, 48, 'spark tc-spark ' + cls(dc), 2)}
     <div class="tfs">${tfChips(d)}</div>
@@ -1555,7 +1614,7 @@ function rowHtml(d) {
   const open = S.open === d.sym, dc = d.ch.d1;
   return `<div class="item${open ? ' open' : ''}"><button class="row" data-sym="${d.sym}" aria-expanded="${open}">
     ${monoHtml(d.sym)}
-    <div class="rname"><div class="rsym">${esc(base(d.sym))}</div><div class="rsub">${pillHtml(d, true)}${d.dir ? `<span class="${cls(d.dir)}">${dirTxt(d)}</span>` : ''}${pbChip(d)}${rxChip(d)}</div></div>
+    <div class="rname"><div class="rsym">${esc(base(d.sym))}</div><div class="rsub">${pillHtml(d, true)}${d.dir ? `<span class="${cls(d.dir)}">${dirTxt(d)}</span>` : ''}${pbChip(d)}${swChip(d)}${rxChip(d)}</div></div>
     ${sparkSvg(d.spark, 64, 24, 'spark rspark ' + cls(dc), 1.6)}
     <div class="rprice"><div class="rp">${fmtPrice(d.last)}</div><div class="rc ${cls(dc)}">${dc == null ? '' : arrow(dc) + ' ' + fmtPct(Math.abs(dc)).replace('+', '')}</div></div>
     </button>${open ? `<div class="panel">${detailInner(d)}</div>` : ''}</div>`;
@@ -1599,13 +1658,21 @@ function moodHtml() {
   return h + '</div>';
 }
 function lqHtml(d) {
-  const L = d.lq; if (!L || (!L['1H'] && !L['4H'])) return '';
+  const L = d.lq; if (!L || (!L['1D'] && !L['1H'] && !L['4H'])) return '';
   const row = (lab, sub, x, eq) => x ? `<div class="zone"><span class="zdot lq"></span><div class="zmain"><div class="ztype">${lab} <small>${sub}</small>${x.equal ? `<span class="eqt">${eq} (${x.n})</span>` : ''}</div><div class="zrange">${fmtPrice(x.price)}</div></div><div class="zdist">${fmtPct(x.dist)}</div></div>` : `<div class="zone zempty">brak niezdjętych ${eq === 'równe szczyty' ? 'szczytów' : 'dołków'}</div>`;
-  let h = '<div class="lab">Płynność · szacunek ze struktury</div><div class="zones">', msgs = '';
-  for (const tf of ['1H', '4H']) {
+
+  const SW = (d.sw1d || []).slice(0, 4), dm = t => new Date(t * 1000).toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit' });
+  let swh = '';
+  for (const w of SW) {
+    const low = w.side === 'L', when = w.ago === 0 ? (w.forming ? 'dziś (świeca 1D trwa)' : 'na ostatniej zamkniętej świecy') : w.ago === 1 ? 'wczoraj' : w.ago + ' dni temu';
+    swh += `<div class="react ${w.kind === 'sweep' ? 'pb' : ''}"><span class="ic">${w.kind === 'sweep' ? '⚡' : '↯'}</span><div><b>${w.kind === 'sweep' ? 'Sweep 1D' : 'Przebicie 1D'}: ${low ? 'dołek' : 'szczyt'} ${fmtPrice(w.level)}</b><span class="t">Poziom z ${dm(w.since)} (${low ? 'stopy longów' : 'stopy shortów'}) zdjęty ${when}, knot o ${fmtPct(w.depth).replace('+', '')} ${low ? 'pod' : 'nad'} poziomem. ${w.kind === 'sweep' ? (w.forming ? 'Cena jest z powrotem ' + (low ? 'nad' : 'pod') + ' poziomem; zamknięcie dnia (00:00 UTC) potwierdzi albo nie.' : 'Świeca zamknęła się z powrotem ' + (low ? 'nad' : 'pod') + ' poziomem.') : 'Zamknięcie za poziomem: to przebicie, nie sweep z powrotem.'}</span></div></div>`;
+  }
+  if (swh) swh = '<div class="lab">Zbieranie płynności 1D · ostatnie 3 świece</div>' + swh + '<div class="note">Opis, nie sygnał. Nasze testy sweep i reclaim na 1H i 4H nie wykazały przewagi nad losowym wejściem, a interwał 1D nie był jeszcze testowany.</div>';
+  let h = swh + '<div class="lab">Płynność · szacunek ze struktury</div><div class="zones">', msgs = '';
+  for (const tf of ['1D', '1H', '4H']) {
     const x = L[tf]; if (!x) continue;
     h += `<div class="zside">${tf}</div>${row('Szczyt nad ceną', 'stopy shortów', x.above, 'równe szczyty')}${row('Dołek pod ceną', 'stopy longów', x.below, 'równe dołki')}`;
-    for (const sw of x.sweeps) msgs += `<div class="react pb"><span class="ic">⚡</span><div><b>Zbieranie płynności ${tf}</b><span class="t">Cena weszła ${sw.side === 'H' ? 'ponad niezdjęty szczyt' : 'pod niezdjęty dołek'} ${fmtPrice(sw.price)} (${sw.side === 'H' ? 'stopy shortów' : 'stopy longów'}).</span></div></div>`;
+    if (tf !== '1D') for (const sw of x.sweeps) msgs += `<div class="react pb"><span class="ic">⚡</span><div><b>Zbieranie płynności ${tf}</b><span class="t">Cena weszła ${sw.side === 'H' ? 'ponad niezdjęty szczyt' : 'pod niezdjęty dołek'} ${fmtPrice(sw.price)} (${sw.side === 'H' ? 'stopy shortów' : 'stopy longów'}).</span></div></div>`;
     for (const [k, nm] of [['above', 'szczytu'], ['below', 'dołka']]) if (x[k] && x[k].near && !x.sweeps.length) msgs += `<div class="react pb"><span class="ic">≈</span><div><b>Cena blisko płynności ${tf}</b><span class="t">Zbliża się do niezdjętego ${nm} ${fmtPrice(x[k].price)} (${fmtPct(x[k].dist)}).</span></div></div>`;
   }
   return h + '</div>' + msgs + '<div class="note">Szacunek ze struktury (niezdjęte szczyty i dołki pivotów), nie realne zlecenia ani mapa likwidacji.</div>';
@@ -1734,6 +1801,22 @@ function mapChartHtml(items, f = 1, trim = false) {
   s += `<text class="mp-ax" x="${X0}" y="${H - 8}">${wp[0].path.mode === 'day' ? '00:00 UTC' : '−24 godz.'}</text><text class="mp-ax now" x="${X1}" y="${H - 8}" text-anchor="end">${endTxt}</text></svg>`;
   return s;
 }
+// Układ szeroki (tylko w trybie osadzonym i od 1100 px): trzy kolumny jak na pulpicie, ta sama logika co w aplikacji
+const mapWide = () => !!EMB && window.matchMedia('(min-width: 760px)').matches;
+const mapXL = () => window.matchMedia('(min-width: 1100px)').matches;
+const MAP_EXP = { lb: 'Cena rośnie i OI rośnie: ruch wspierają nowe pozycje long.', sb: 'Cena spada i OI rośnie: ruch wspierają nowe pozycje short.', sc: 'Cena rośnie, a OI spada: ruch napędza zamykanie shortów.', lu: 'Cena spada, a OI spada: ruch napędza zamykanie longów.', flat: 'Cena i OI prawie bez zmian w ostatnich 4 godzinach.' };
+function mapDetail(x) {
+  if (!x) return '';
+  const d = x.d, up = x.chg >= 0, lab = x.label, canOpen = window.parent && window.parent !== window;
+  const st = d && !d.pending ? (d.status === 'NO TRADE' ? 'Skaner Busoli: kierunki interwałów niezgodne (NO TRADE)' : `Skaner Busoli: ${d.status} ${dirTxt(d)}`) : '';
+  return `<div class="mp-card mpd"><div class="mpd-h"><div><div class="mpd-tk">${esc(base(x.sym))}<small>/USDT</small></div><div class="mpd-sec">${esc(mapSector(x.sym))}</div></div><div class="mpd-chg ${up ? 'up' : 'down'}">${arrow(x.chg)} ${fmtPct(Math.abs(x.chg)).replace('+', '')}</div></div>`
+    + (lab ? `<div class="mpd-lab"><span class="mp-tag ${lab}">${MAP_LAB[lab]}</span></div><div class="mp-t">${MAP_EXP[lab]}</div>` : '<div class="mp-t">Brak danych OI dla tego coina.</div>')
+    + `<div class="mpd-kv"><div><small>Cena</small><b>${fmtPrice(S.mapLast[x.sym] || d.last)}</b></div><div><small>Cena 4 godz.</small><b class="${cls(x.p4)}">${fmtPct(x.p4)}</b></div><div><small>OI 4 godz.</small><b class="${cls(x.oi4)}">${x.oi4 == null ? '–' : fmtPct(x.oi4)}</b></div></div>`
+    + sparkSvg(x.path.pts, 300, 80, 'mp-sp mpd-sp ' + (up ? 'up' : 'down'), 2)
+    + (swChip(d) ? `<div class="mpd-lab">${swChip(d)} <span class="mp-t">zdjęta płynność na 1D w ostatnich dniach</span></div>` : '')
+    + (st ? `<div class="mp-t">${esc(st)}. To opis, nie sygnał.</div>` : '')
+    + `<div class="mpd-b"><a class="mp-btn" href="${tvLink(x.sym)}" target="_blank" rel="noopener">Wykres TradingView</a>${canOpen ? `<button type="button" class="mp-btn" data-open="${x.sym}">Otwórz w Nawigatorze</button>` : ''}</div></div>`;
+}
 function mapHtml() {
   const items = mapItems(), wp = items.filter(x => x.path), mode = wp.length ? wp[0].path.mode : 'day';
   let h = `<header class="hdr"><div class="brand"><button class="ibtn" id="btnBack" aria-label="Wróć">${svgI(ICO.back, 20, 2.2)}</button><span>Mapa</span></div><div class="hbtns"><button class="ibtn${S.mapOiBusy ? ' spin' : ''}" id="btnMapRef" aria-label="Odśwież mapę"${S.mapOiBusy ? ' disabled' : ''}>${svgI(ICO.refresh, 20, 1.8)}</button></div></header>`;
@@ -1743,26 +1826,29 @@ function mapHtml() {
   if (S.demo) h += `<div class="banner demo"><span>Dane DEMO: sztuczne, tylko do oglądania wyglądu. To nie są prawdziwe ceny.</span></div>`;
   if (!items.length) return h + `<div class="empty">${S.scanning ? 'Skanuję rynek. Mapa pojawi się, gdy skan pobierze świece.' : S.err ? 'Brak danych ze skanu (' + esc(S.err) + '). Wróć i odśwież skan.' : 'Najpierw potrzebny jest skan. Wróć i odśwież.'}</div>`;
   const br = mapBreadth(items), tot = br.oiUp + br.oiDown, btc = items.find(x => x.sym === 'BTCUSDT');
-  h += `<div class="mp-card"><div class="mp-lab">Szerokość rynku</div>`;
-  h += br.oiN ? `<div class="mp-br"><div><div class="mp-n up">${br.oiUp}</div><div class="mp-t">OI rośnie (4 godz.)</div></div><div style="text-align:right"><div class="mp-n down">${br.oiDown}</div><div class="mp-t">OI spada (4 godz.)</div></div></div>${tot ? `<div class="mp-bar"><i style="width:${(br.oiUp / tot * 100).toFixed(1)}%;background:var(--up)"></i><i style="width:${(br.oiDown / tot * 100).toFixed(1)}%;background:var(--down)"></i></div>` : ''}` : `<div class="mp-t" style="margin-top:8px">${S.mapOiBusy ? 'Pobieram OI…' : 'Brak danych OI (giełda nie odpowiedziała)'}</div>`;
+  let sBr = `<div class="mp-card"><div class="mp-lab">Szerokość rynku</div>`;
+  sBr += br.oiN ? `<div class="mp-br"><div><div class="mp-n up">${br.oiUp}</div><div class="mp-t">OI rośnie (4 godz.)</div></div><div style="text-align:right"><div class="mp-n down">${br.oiDown}</div><div class="mp-t">OI spada (4 godz.)</div></div></div>${tot ? `<div class="mp-bar"><i style="width:${(br.oiUp / tot * 100).toFixed(1)}%;background:var(--up)"></i><i style="width:${(br.oiDown / tot * 100).toFixed(1)}%;background:var(--down)"></i></div>` : ''}` : `<div class="mp-t" style="margin-top:8px">${S.mapOiBusy ? 'Pobieram OI…' : 'Brak danych OI (giełda nie odpowiedziała)'}</div>`;
   const oiNote = S.mapOiBusy ? `OI ${S.mapOiN}/${S.mapOiTot}` : br.oiN < items.length ? `OI dla ${br.oiN} z ${items.length}` : '';
-  h += `<div class="mp-chips">${btc && btc.chg != null ? `<span class="mp-chip">BTC <span class="${cls(btc.chg)}">${fmtPct(btc.chg)}</span></span>` : ''}<span class="mp-chip">Ceny: ${br.pUp} w górę / ${br.pDown} w dół</span>${oiNote ? `<span class="mp-chip g">${oiNote}</span>` : ''}</div></div>`;
+  sBr += `<div class="mp-chips">${btc && btc.chg != null ? `<span class="mp-chip">BTC <span class="${cls(btc.chg)}">${fmtPct(btc.chg)}</span></span>` : ''}<span class="mp-chip">Ceny: ${br.pUp} w górę / ${br.pDown} w dół</span>${oiNote ? `<span class="mp-chip g">${oiNote}</span>` : ''}</div></div>`;
   const chart = mapChartHtml(items, S.mapF, S.mapTrim);
-  if (chart) h += `<div class="mp-sec">Ścieżki ${mode === 'day' ? 'od początku dnia' : 'z 24 godzin'}</div><div class="mp-card mp-chart"><div class="mp-ctl"><button class="mp-btn" id="mpPlay" aria-label="Odtwórz dzień">${mapBtnHtml()}</button><button class="mp-btn${S.mapTrim ? ' on' : ''}" id="mpTrim" aria-pressed="${S.mapTrim}">Bez skrajnych</button><button class="mp-btn${S.mapFl ? ' on' : ''}" id="mpFl" aria-pressed="${S.mapFl}">Promienie</button></div><div id="mpPlot">${chart}</div><input class="mp-range" id="mpRange" type="range" min="0" max="1000" value="${Math.round(S.mapF * 1000)}" aria-label="Moment dnia"><div class="mp-sub">Każda linia to jeden coin (zmiana ceny w %). Zielone: powyżej poziomu startu, czerwone: poniżej. Podpisane są trzy najsilniejsze i trzy najsłabsze w danym momencie. ${S.mapTrim ? 'Oś ucięta do środkowych 98% punktów, skrajne linie wychodzą poza ramkę (ich wynik jest przy podpisie).' : ''}</div></div>`;
-  const sec = mapSectors(items);
+  let sChart = ''; if (chart) sChart = `<div class="mp-sec">Ścieżki ${mode === 'day' ? 'od początku dnia' : 'z 24 godzin'}</div><div class="mp-card mp-chart"><div class="mp-ctl"><button class="mp-btn" id="mpPlay" aria-label="Odtwórz dzień">${mapBtnHtml()}</button><button class="mp-btn${S.mapTrim ? ' on' : ''}" id="mpTrim" aria-pressed="${S.mapTrim}">Bez skrajnych</button><button class="mp-btn${S.mapFl ? ' on' : ''}" id="mpFl" aria-pressed="${S.mapFl}">Promienie</button></div><div id="mpPlot">${chart}</div><input class="mp-range" id="mpRange" type="range" min="0" max="1000" value="${Math.round(S.mapF * 1000)}" aria-label="Moment dnia"><div class="mp-sub">Każda linia to jeden coin (zmiana ceny w %). Zielone: powyżej poziomu startu, czerwone: poniżej. Podpisane są trzy najsilniejsze i trzy najsłabsze w danym momencie. ${S.mapTrim ? 'Oś ucięta do środkowych 98% punktów, skrajne linie wychodzą poza ramkę (ich wynik jest przy podpisie).' : ''}</div></div>`;
+  const sec = mapSectors(items); let sSec = '';
   if (sec.length) {
     const m = Math.max(0.5, ...sec.map(s => Math.abs(s.avg)));
-    h += `<div class="mp-sec">Sektory · średnia zmiana</div><div class="mp-rows">${sec.map(s => { const pos = s.avg >= 0, w = Math.min(Math.abs(s.avg) / m, 1) * 50; return `<div class="mp-srow"><div class="mp-nm">${esc(s.name)}<small>${s.n} coinów · ${s.up}↑ ${s.down}↓</small></div><div class="mp-dv"><i style="${pos ? 'left' : 'right'}:50%;width:${w.toFixed(1)}%;background:var(${pos ? '--up' : '--down'})"></i></div><div class="mp-pc ${pos ? 'up' : 'down'}">${fmtPct(s.avg)}</div></div>`; }).join('')}</div>`;
+    sSec = `<div class="mp-sec">Sektory · średnia zmiana</div><div class="mp-rows">${sec.map(s => { const pos = s.avg >= 0, w = Math.min(Math.abs(s.avg) / m, 1) * 50; return `<div class="mp-srow"><div class="mp-nm">${esc(s.name)}<small>${s.n} coinów · ${s.up}↑ ${s.down}↓</small></div><div class="mp-dv"><i style="${pos ? 'left' : 'right'}:50%;width:${w.toFixed(1)}%;background:var(${pos ? '--up' : '--down'})"></i></div><div class="mp-pc ${pos ? 'up' : 'down'}">${fmtPct(s.avg)}</div></div>`; }).join('')}</div>`;
   }
+  const wide = mapWide(), rk = mapRank(wp, wide ? (mapXL() ? 8 : 6) : 4), selSym = (wp.find(x => x.sym === S.mapSel) || rk.top[0] || rk.bottom[0] || {}).sym;
   const tile = x => {
     const up = x.chg >= 0, tag = x.label ? `<span class="mp-tag ${x.label}">${MAP_LAB[x.label]}</span>` : `<span class="mp-tag na">${S.mapOiBusy ? 'Pobieram OI…' : 'Brak danych OI'}</span>`;
-    return `<a class="mp-tile ${up ? 'u' : 'd'}" href="${tvLink(x.sym)}" target="_blank" rel="noopener"><div class="mp-h"><span class="mp-tk">${esc(base(x.sym))}</span><span class="mp-p ${up ? 'up' : 'down'}">${fmtPct(x.chg)}</span></div>${tag}<div class="mp-o">Cena 4 godz. ${fmtPct(x.p4)}<br>OI 4 godz. ${x.oi4 == null ? '–' : fmtPct(x.oi4)}</div>${sparkSvg(x.path.pts, 100, 26, 'mp-sp ' + (up ? 'up' : 'down'), 1.6)}</a>`;
+    const o = EMB ? `<button type="button" class="mp-tile ${up ? 'u' : 'd'}${selSym === x.sym ? ' sel' : ''}" data-pick="${x.sym}">` : `<a class="mp-tile ${up ? 'u' : 'd'}" href="${tvLink(x.sym)}" target="_blank" rel="noopener">`;
+    return `${o}<div class="mp-h"><span class="mp-tk">${esc(base(x.sym))}</span><span class="mp-p ${up ? 'up' : 'down'}">${fmtPct(x.chg)}</span></div>${tag}<div class="mp-o">Cena 4 godz. ${fmtPct(x.p4)}<br>OI 4 godz. ${x.oi4 == null ? '–' : fmtPct(x.oi4)}</div>${sparkSvg(x.path.pts, 100, 26, 'mp-sp ' + (up ? 'up' : 'down'), 1.6)}${EMB ? '</button>' : '</a>'}`;
   };
-  const rk = mapRank(wp, 4);
-  h += `<div class="mp-sec">Najsilniejsze</div><div class="mp-grid2">${rk.top.length ? rk.top.map(tile).join('') : '<div class="empty" style="grid-column:1/-1">Żaden coin nie jest teraz na plusie.</div>'}</div>`;
-  h += `<div class="mp-sec">Najsłabsze</div><div class="mp-grid2">${rk.bottom.length ? rk.bottom.map(tile).join('') : '<div class="empty" style="grid-column:1/-1">Żaden coin nie jest teraz na minusie.</div>'}</div>`;
-  h += `<div class="mp-sec">Jak czytać etykiety</div><div class="mp-quad"><div class="mp-q"><b class="up">Nowe longi</b>cena rośnie, OI rośnie</div><div class="mp-q"><b class="down">Nowe shorty</b>cena spada, OI rośnie</div><div class="mp-q"><b style="color:var(--gold)">Zamykanie shortów</b>cena rośnie, OI spada</div><div class="mp-q"><b style="color:var(--warn)">Zamykanie longów</b>cena spada, OI spada</div></div>`;
-  h += `<p class="fine">Mapa opisuje, co dzieje się teraz. To nie jest sygnał i nie ma udowodnionej przewagi. Zmiana na wykresie i w kafelkach liczona jest od ${mode === 'day' ? 'północy UTC' : 'ostatnich 24 godzin'} z zamkniętych świec 1H i bieżącej ceny. Etykieta bierze znak zmiany ceny i OI (w kontraktach) z ostatnich 4 godzin; gdy cena zmieniła się o nie więcej niż ${String(MAP_P_MIN).replace('.', ',')}% albo OI o nie więcej niż ${String(OI_MIN).replace('.', ',')}%, jest "Bez wyraźnego ruchu". Przypisanie do sektorów jest ręczne i przybliżone. Mapa obejmuje te same 100 coinów o największym wolumenie co skaner. Etykiety nie są (jeszcze) zapisywane w Dzienniku.</p><div style="margin:12px 20px 0">${tvBtn()}</div>`;
+  const sTop = `<div class="mp-sec">Najsilniejsze</div><div class="mp-grid2">${rk.top.length ? rk.top.map(tile).join('') : '<div class="empty" style="grid-column:1/-1">Żaden coin nie jest teraz na plusie.</div>'}</div>`;
+  const sBot = `<div class="mp-sec">Najsłabsze</div><div class="mp-grid2">${rk.bottom.length ? rk.bottom.map(tile).join('') : '<div class="empty" style="grid-column:1/-1">Żaden coin nie jest teraz na minusie.</div>'}</div>`;
+  const sQuad = `<div class="mp-sec">Jak czytać etykiety</div><div class="mp-quad"><div class="mp-q"><b class="up">Nowe longi</b>cena rośnie, OI rośnie</div><div class="mp-q"><b class="down">Nowe shorty</b>cena spada, OI rośnie</div><div class="mp-q"><b style="color:var(--gold)">Zamykanie shortów</b>cena rośnie, OI spada</div><div class="mp-q"><b style="color:var(--warn)">Zamykanie longów</b>cena spada, OI spada</div></div>`;
+  const sFine = `<p class="fine">Mapa opisuje, co dzieje się teraz. To nie jest sygnał i nie ma udowodnionej przewagi. Zmiana na wykresie i w kafelkach liczona jest od ${mode === 'day' ? 'północy UTC' : 'ostatnich 24 godzin'} z zamkniętych świec 1H i bieżącej ceny. Etykieta bierze znak zmiany ceny i OI (w kontraktach) z ostatnich 4 godzin; gdy cena zmieniła się o nie więcej niż ${String(MAP_P_MIN).replace('.', ',')}% albo OI o nie więcej niż ${String(OI_MIN).replace('.', ',')}%, jest "Bez wyraźnego ruchu". Przypisanie do sektorów jest ręczne i przybliżone. Mapa obejmuje te same 100 coinów o największym wolumenie co skaner. Etykiety nie są (jeszcze) zapisywane w Dzienniku.</p><div style="margin:12px 20px 0">${tvBtn()}</div>`;
+  if (!wide) return h + sBr + sChart + sSec + sTop + sBot + sQuad + sFine;
+  h += `<div class="mpw"><div class="mpw-l">${sBr}${sSec}</div><div class="mpw-c">${sChart}${sQuad}</div><div class="mpw-r">${mapDetail(wp.find(x => x.sym === selSym))}${sTop}${sBot}</div></div>`;
   return h;
 }
 
@@ -1879,6 +1965,10 @@ function macroHtml() {
   else h += cal.map(e => `<div class="mk-s"><div><b>${e.name}</b><small>${e.type === 'fomc' ? 'decyzja o stopach' + (e.sep ? ', z projekcjami makro' : '') + (e.strat ? ', posiedzenie o strategii' : '') : 'dane za ' + e.ref}</small></div><div class="mk-r"><span class="mk-st on">${wd(e.at)} · ${hm(e.at)}</span><small>za ${mkDur(e.at - now)}</small></div></div>`).join('');
   h += `<div class="mp-t">Godziny w Twojej strefie czasowej. Źródła: Fed i BLS (stan na ${MK_CAL_ASOF}). Daty FOMC są wstępne do potwierdzenia na poprzednim posiedzeniu, BLS czasem przesuwa publikacje. To tylko terminy: kalendarz nie mówi, jak zareaguje rynek.</div></div>`;
   h += `<p class="fine">Makro opisuje otoczenie rynku. To nie jest sygnał i nie ma udowodnionej przewagi, dlatego nie wchodzi do Dziennika. Dane pochodzą z darmowych źródeł (alternative.me, CoinGecko, DefiLlama, Polymarket); gdy źródło nie odpowiada, blok mówi "brak danych" i niczego nie szacujemy. Sesje to godziny głównych sesji giełd w ich czasie lokalnym, bez świąt i przerw na lunch. Zmiana dominacji liczona jest z zapisów w tej przeglądarce, więc pojawia się po około dobie.</p>`;
+  if (EMB && window.matchMedia('(min-width: 760px)').matches) {
+    const fi = h.lastIndexOf('<p class="fine">'), body = h.slice(0, fi), fine = h.slice(fi), parts = body.split('<div class="mp-sec">');
+    return parts[0] + '<div class="mkw">' + parts.slice(1).map(x => '<section class="mkc"><div class="mp-sec">' + x + '</section>').join('') + '</div>' + fine;
+  }
   return h;
 }
 function render() {
@@ -1944,6 +2034,8 @@ $app.addEventListener('click', e => {
     if (S.mapPlay) { cancelAnimationFrame(mapRaf); S.mapPlay = false; S.mapCache = null; return mapFrame(); }
     return S.mapF >= 1 ? mapAnimate(9000, 0) : mapAnimate(9000 * (1 - S.mapF), S.mapF);
   }
+  const pk = t.closest('[data-pick]'); if (pk) { S.mapSel = pk.dataset.pick; return render(); }
+  const op = t.closest('[data-open]'); if (op) { try { window.parent.postMessage({ busola: 'open', sym: op.dataset.open }, location.origin); } catch (er) { /* bez rodzica */ } return; }
   if (t.closest('#btnTv')) return tvAsk();
   if (t.closest('#mpFl')) { S.mapFl = !S.mapFl; try { localStorage.setItem('busola_map_fl', S.mapFl ? '1' : '0'); } catch (er) { /* tylko w pamięci */ } return render(); }
   if (t.closest('#mpTrim')) { S.mapTrim = !S.mapTrim; return render(); }
@@ -2004,7 +2096,20 @@ try {
 } catch (e) { /* bez ikony na ekranie głównym */ }
 
 if (/[?&]demo\b/.test(location.search)) S.demo = true;
-render(); scan();
+// Tryb osadzony (dla Busola Nawigator): ?embed=map albo ?embed=macro. Ten sam kod i te same dane, bez dolnego paska i przycisku wstecz.
+const EMB = (location.search.match(/[?&]embed=(map|macro)\b/) || [])[1] || null;
+if (EMB) { document.documentElement.classList.add('embed'); S.view = EMB; }
+// zmiana motywu w innym oknie lub ramce tej samej przeglądarki (np. w Nawigatorze) przełącza motyw tutaj
+window.addEventListener('storage', e => {
+  if (e.key !== 'busola_theme' || (e.newValue !== 'light' && e.newValue !== 'dark')) return;
+  const cl = document.documentElement.classList; cl.remove('dark', 'light'); cl.add(e.newValue);
+  const m = document.querySelector('meta[name=theme-color]'); if (m) m.content = e.newValue === 'light' ? '#f2f5f4' : '#020202';
+  render();
+});
+if (EMB) ['(min-width: 760px)', '(min-width: 1100px)'].forEach(q => window.matchMedia(q).addEventListener('change', () => { if (S.view === 'map' || S.view === 'macro') render(); }));
+if (EMB === 'macro') { render(); mkLoad(false); }
+else if (EMB === 'map') { mapStart(); S.mapF = 1; render(); scan(); }
+else { render(); scan(); }
 window.__busola = { S, scan, render, classify, rankTop };
 })();
 </script>
