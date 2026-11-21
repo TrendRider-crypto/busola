@@ -73,11 +73,6 @@ body.fs #chart{min-height:0}
 #info.open{display:grid}
 #scoreCard{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:10px 14px;border-top:1px solid var(--line);background:var(--panel)}
 #scoreCard:empty{display:none}
-#scoreCard .sc-dv{grid-column:1/-1;border-top:1px dashed var(--line);padding-top:8px;font-size:12px}
-#scoreCard .sc-dv .dvh{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-#scoreCard .sc-dv .mono{font-variant-numeric:tabular-nums}
-.dvb{margin-left:6px;font-size:10px;font-weight:700;padding:0 4px;border:1px solid var(--line);border-radius:3px;color:var(--mut)}
-.dvb.up{color:var(--up);border-color:var(--up)}.dvb.dn{color:var(--dn);border-color:var(--dn)}
 #scoreCard .sc-h{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px}
 #scoreCard .st{font-size:20px;font-weight:700}
 #scoreCard>div{min-width:0}
@@ -250,7 +245,6 @@ body.fs #split{display:none}
     <div class="tools" id="dirF" style="gap:4px"><button data-d="0" class="on">Wszystko</button><button data-d="1">Long</button><button data-d="-1">Short</button></div>
     <div class="tools" style="flex-wrap:wrap">
       <button id="btnAuto">Auto-skan: wył.</button>
-      <button id="btnDV" title="Pokaż tylko coiny z układem Da Vinci v3 (po skanowaniu)">Da Vinci: wszystkie</button>
       <select id="selEx" title="Giełda, z której pochodzą świece i ceny"><option value="binance">Giełda: Binance</option><option value="weex">Giełda: Weex</option><option value="bitunix">Giełda: Bitunix</option></select>
     <button id="btnTF" title="Kontrakty na akcje, ETF-y i surowce z Binance Futures">Akcje/ETF: wył.</button>
       <select id="selVol" title="Minimalny wolumen 24h"><option value="5">wol. ≥ 5 mln</option><option value="20">wol. ≥ 20 mln</option><option value="50">wol. ≥ 50 mln</option><option value="100">wol. ≥ 100 mln</option></select>
@@ -303,20 +297,15 @@ body.fs #split{display:none}
     </div>
     <div id="btBox" hidden>
       <div class="mu">Backtest odtwarza historię z Binance (niezależnie od wybranej giełdy): co godzinę liczy ten sam setup co terminal, ale tylko na świecach zamkniętych do tej chwili. Wejście = potwierdzenie 15M przy aktywnej strefie, stop za strefą, cel 2R, wynik po kosztach. Warstwa funding/OI nie jest liczona (brak historii). To test na danych, na których szukałeś reguł, więc wynik jest optymistyczny: traktuj go jako kontrolę, nie dowód.</div>
-      <div class="mu" style="margin-top:4px"><b>Da Vinci v3</b> (osobny przycisk): co zamknięcie świecy 4H szuka układu płynności zgodnego z kierunkiem 1D: Liquidity Block (dołek, który już zebrał płynność) → poziom wejścia (klaster EQL albo Strong Low po BOS) → Engineered Liquidity u góry (klaster EQH albo swing z reakcją). Zlecenie limit czeka na przebicie poziomu na świecach 15M, stop pod bazą LB (−0,1 ATR), cel = najniższy swing płynności z RR ≥ 2, 100% pozycji; SHORT to lustro. Używa pól Coiny, Okres, Przesunięcie, Koszt i Poślizg. Transakcji będzie mało, więc patrz na gwiazdkę przy małym n, a wyniki wariantów (klastry / swingi) czytaj razem, bez wybierania lepszego po fakcie.</div>
       <div class="mu" style="margin-top:4px"><b>Wybicie+retest</b> (osobny przycisk): strategia z transmisji. Trend 4H, linia korekty na 1H, wejście na wybiciu albo po reteście, w 6 wariantach (A / B1 / B2), każdy porównany z losowymi wejściami. Pełne kryteria pojawiają się pod wynikiem. Do oceny puść 5 okien: teraz, 180, 360, 540 i 720 dni wstecz (30 coinów, 180 dni, poślizg 0,05).</div>
       <div class="mu" style="margin-top:4px"><b>Sweep+reclaim</b> (osobny przycisk): sweep poziomu z 1H (klaster lub pojedynczy pivot) i wejście rynkowe po zamknięciu 15M z powrotem nad poziomem. Stop pod knotem, cel 2R, wyjście po 12 h, odrzucane transakcje z kosztem powyżej 0,2R. Ustaw Koszt 0,10 i Poślizg 0,1 (razem 0,2% na rundę). Żeby było z czego wyciągać wnioski (minimum 150 transakcji), użyj 100 coinów i okresu 180 dni, a okna przesuwaj (teraz, 180, 360 dni wstecz). Wniosek wymaga spełnienia kryteriów we wszystkich oknach.</div>
       <div class="mrow">
         <label class="mu">Coiny <select id="btN"><option>10</option><option selected>20</option><option>30</option><option>50</option><option>100</option></select></label>
         <label class="mu">Okres <select id="btD"><option value="30">30 dni</option><option value="60" selected>60 dni</option><option value="90">90 dni</option><option value="120">120 dni</option><option value="180">180 dni</option></select></label>
         <label class="mu">Koszt round-trip % <input id="btC" type="number" step="0.01" min="0" value="0.10" style="width:64px"></label>
-        <label class="mu" title="Limit: zlecenie czeka na poziomie (wypełnienie po cenie poziomu). Po odzyskaniu: wejście na zamknięciu świecy 15M, która wróciła nad poziom (long) / pod poziom (short), najpóźniej 2 h po przebiciu. Stop i cel te same, RR liczone od rzeczywistego wejścia (nadal ≥ 2).">Wejście <select id="btE"><option value="limit" selected>limit na poziomie</option><option value="reclaim">po odzyskaniu poziomu</option></select></label>
-        <label class="mu" title="Okno odzysku poziomu (tylko tryb „po odzyskaniu”): ile świec 15M po przebiciu można jeszcze wejść. 8 = 2 h, 24 = 6 h.">Okno odzysku <select id="btW"><option value="8" selected>2 h (8 świec)</option><option value="24">6 h (24 świece)</option></select></label>
-        <label class="mu" title="v3: klaster EQL wygasa od każdego knota pod poziomem, EQH musi powstać po drugim dołku. v3.1: knot do 0,15 ATR nie unieważnia klastra EQL (zamknięcia zostają po właściwej stronie), EQH może powstać już po pierwszym dołku i musi mieć zejście ≥ 1,5 ATR.">Reguły <select id="btR"><option value="v3" selected>v3</option><option value="v31">v3.1</option></select></label>
-        <label class="mu" title="4H: skan na świecach 4H, kierunek z 1D. 1H: skan na 1H, kierunek musi być zgodny na 1D i 4H (więcej, ale silnie skorelowanych setupów; pobieranie i liczenie trwa dłużej).">TF skanu <select id="btT"><option value="4h" selected>4H</option><option value="1h">1H</option></select></label>
         <label class="mu" title="Dodatkowy koszt wejścia limitem po cenie poziomu (poślizg), liczony razem z kosztem round-trip">Poślizg % <select id="btS"><option value="0" selected>0</option><option value="0.05">0,05</option><option value="0.1">0,1</option></select></label>
         <label class="mu" title="Testuj starszy okres: np. 180 dni + przesunięcie 180 dni = dane sprzed 360 do 180 dni temu">Przesunięcie <select id="btO"><option value="0" selected>teraz</option><option value="60">60 dni wstecz</option><option value="90">90 dni wstecz</option><option value="180">180 dni wstecz</option><option value="360">360 dni wstecz</option><option value="540">540 dni wstecz</option><option value="720">720 dni wstecz</option></select></label>
-        <button id="btGo">Start</button><button id="btDV" title="Test Da Vinci v3: Liquidity Block + poziom wejścia (EQL / Strong Low) + Engineered Liquidity (EQH / swing), zlecenie limit, RR ≥ 2">Da Vinci</button><button id="btTF" title="Test odniesienia: trend-following na świecach dziennych (kanał Donchiana)">Trend 1D</button><button id="btRK" title="Test rankingu dnia: czy najsilniejsze coiny od 00:00 UTC idą dalej (kontynuacja), czy się cofają (odwrócenie). Bez zleceń, na świecach 1H. Używa pól Coiny, Okres, Przesunięcie, Koszt i Poślizg.">Ranking</button><button id="btBR" title="Test wybicia i retestu linii korekty (strategia z transmisji) w 6 wariantach: A = stop pod dołkiem korekty i cel 2R; B1 = cel z płynności Da Vinci; B2 = stop pod Liquidity Block. Porównanie z losowymi wejściami.">Wybicie+retest</button><button id="btSR" title="Test sweep + reclaim: sweep poziomu z 1H (klaster lub pojedynczy pivot) i wejście rynkowe po reclaimie na 15M. Stop pod knotem, cel 2R, wyjście po 12 h, koszt max 0,2R. Warianty V0, V1 (CHoCH 15M), V2 (rozciągnięcie). Porównanie z losowymi wejściami i kryteria ustalone z góry.">Sweep+reclaim</button><button id="btCsv" hidden>Kopiuj CSV</button>
+        <button id="btGo">Start</button><button id="btTF" title="Test odniesienia: trend-following na świecach dziennych (kanał Donchiana)">Trend 1D</button><button id="btRK" title="Test rankingu dnia: czy najsilniejsze coiny od 00:00 UTC idą dalej (kontynuacja), czy się cofają (odwrócenie). Bez zleceń, na świecach 1H. Używa pól Coiny, Okres, Przesunięcie, Koszt i Poślizg.">Ranking</button><button id="btBR" title="Test wybicia i retestu linii korekty (strategia z transmisji) w 6 wariantach: A = stop pod dołkiem korekty i cel 2R; B1 = cel z płynności Da Vinci; B2 = stop pod Liquidity Block. Porównanie z losowymi wejściami.">Wybicie+retest</button><button id="btSR" title="Test sweep + reclaim: sweep poziomu z 1H (klaster lub pojedynczy pivot) i wejście rynkowe po reclaimie na 15M. Stop pod knotem, cel 2R, wyjście po 12 h, koszt max 0,2R. Warianty V0, V1 (CHoCH 15M), V2 (rozciągnięcie). Porównanie z losowymi wejściami i kryteria ustalone z góry.">Sweep+reclaim</button><button id="btCsv" hidden>Kopiuj CSV</button>
       </div>
       <div id="btProg" class="mu"></div>
       <textarea id="btTa" hidden readonly rows="4"></textarea>
@@ -1986,7 +1975,7 @@ if (typeof document !== 'undefined') (() => {
         try {
           const cs = await computeSetup(c.sym);
           S.trends[c.sym] = Object.fromEntries(Object.entries(cs.tr).map(([k, v]) => [k, { trend: v.trend }]));
-          S.scores[c.sym] = summ(cs.res); (S.dv = S.dv || {})[c.sym] = { status: cs.dvr.status, dir: cs.dvr.setups[0] ? cs.dvr.setups[0].dir : cs.dvr.bias };
+          S.scores[c.sym] = summ(cs.res)
           logSignal(c.sym, cs); structObs(c.sym, cs);
         } catch (e) { S.trends[c.sym] = null; }
         done++; $('btnScan').textContent = `Skanuję ${done}/${S.coins.length}`; $('scanBar').firstChild.firstChild.style.width = (done / S.coins.length * 100) + '%'; $('scanBar').lastChild.textContent = `${done}/${S.coins.length} rynków`;
@@ -2006,19 +1995,16 @@ if (typeof document !== 'undefined') (() => {
     return `<span class="b ${t === 1 ? 'u' : t === -1 ? 'd' : ''}">${lab}${t === 1 ? '↑' : t === -1 ? '↓' : '·'}</span>`;
   }
   let DIRF = 0;
-  const dvBadge = sym => { const d = S.dv && S.dv[sym]; if (!d || d.status !== 'SETUP') return ''; return `<span class="dvb ${d.dir > 0 ? 'up' : 'dn'}" title="Da Vinci v3: jest układ płynności (LB + poziom + cel), zlecenie czeka na poziomie">DV ${d.dir > 0 ? '▲' : '▼'}</span>`; };
-  let DVF = false;
   function renderList() {
     const q = $('search').value.trim().toUpperCase(), sort = $('sortSel').value;
     let L = S.coins.filter(c => c.sym.includes(q));
-    if (DVF) L = L.filter(c => S.dv && S.dv[c.sym] && S.dv[c.sym].status !== 'BRAK');
     if (DIRF) L = L.filter(c => { const sc = S.scores[c.sym], t = S.trends[c.sym]; const b = sc ? sc.bias : (t ? t['1d'].trend : 0); return b === DIRF; });
     if (sort === 'chg') L = [...L].sort((a, b) => Math.abs(b.chg) - Math.abs(a.chg));
     if (sort === 'al') L = [...L].sort((a, b) => Math.abs(alignment(S.trends[b.sym])) - Math.abs(alignment(S.trends[a.sym])));
     if (sort === 'sc') L = [...L].sort((a, b) => { const x = S.scores[a.sym], y = S.scores[b.sym]; if (!x && !y) return 0; if (!x) return 1; if (!y) return -1; return cmpScore(x, y); });
     $('list').innerHTML = L.map(c => {
       const tr = S.trends[c.sym], sc = S.scores[c.sym];
-      return `<div class="row ${c.sym === S.sel ? 'sel' : ''}" data-s="${c.sym}"><span class="s">${c.sym.replace('USDT', '')}<small>/USDT</small>${sc ? `<span class="sc ${sc.cls}">${sc.score} ${sc.status}</span>` : ''}${dvBadge(c.sym)}</span><span class="c ${c.chg >= 0 ? 'up' : 'dn'}">${c.chg >= 0 ? '+' : ''}${c.chg.toFixed(2)}%</span><span class="bd">${TFS.map(([k, l]) => badge(tr, k, l)).join('')}</span></div>`;
+      return `<div class="row ${c.sym === S.sel ? 'sel' : ''}" data-s="${c.sym}"><span class="s">${c.sym.replace('USDT', '')}<small>/USDT</small>${sc ? `<span class="sc ${sc.cls}">${sc.score} ${sc.status}</span>` : ''}</span><span class="c ${c.chg >= 0 ? 'up' : 'dn'}">${c.chg >= 0 ? '+' : ''}${c.chg.toFixed(2)}%</span><span class="bd">${TFS.map(([k, l]) => badge(tr, k, l)).join('')}</span></div>`;
     }).join('');
   }
 
@@ -2271,24 +2257,7 @@ if (typeof document !== 'undefined') (() => {
     let pos = null; try { pos = await derivFor(sym, pxChg); } catch (e) { pos = null; }
     const dv = pos ? { f: Engine.aggFunding(pos.ex), oiChg: pos.oiChg, priceChg: pos.pxChg } : null;
     const res = Engine.scoreSetup({ use1w: U.use1w, hu, dv, t1w: tr['1w'].trend, t1d: tr['1d'].trend, t4h: tr['4h'].trend, price, atr4, zones, vp, c15, ev15, ls, macroActive: macroActive(), stale });
-    const dvr = Engine.dv3(c4, S.N, tr['1d'].trend);
-    dvr.setups = dvr.setups.filter(x => x.dir > 0 ? (price > x.L && price < x.target) : (price < x.L && price > x.target)).map(x => ({ ...x, dist: Math.abs(price - x.L) / x.atr }));   // aktualne: cena jeszcze nad poziomem (long) i przed celem
-    if (!dvr.setups.length && dvr.status === 'SETUP') dvr.status = 'BRAK';
-    return { tr, res, zones, vp, price, atr4, pos, dvr };
-  }
-  function renderDV(cs) {
-    const d = cs.dvr, box = document.createElement('div'); box.className = 'sc-dv';
-    const sg = d.setups[0], cls = d.status === 'SETUP' ? (sg.dir > 0 ? 'up' : 'dn') : 'mu';
-    const KL = { EQL: 'klaster EQL', SL: 'Strong Low (start BOS)', EQH: 'klaster EQH', SH: 'swing z reakcją' }, KS = { EQL: 'klaster EQH', SL: 'Strong High (start BOS)', EQH: 'klaster EQL', SH: 'swing z reakcją' };
-    let h = `<div class="dvh"><b>Da Vinci v3 (mapa płynności, 4H)</b> <span class="tag ${cls}">${d.status}</span> <span class="mu">kierunek 1D: ${d.bias > 0 ? 'wzrostowy' : d.bias < 0 ? 'spadkowy' : 'brak'}</span></div>`;
-    if (d.setups.length) h += d.setups.slice(0, 3).map((x, i) => { const sh = x.dir < 0, nm = sh ? { ...KL, ...{ EQL: 'klaster EQH', SL: 'Strong High (start BOS)', EQH: 'klaster EQL' } } : KL;
-      return `<div style="margin-top:6px"><b class="${sh ? 'dn' : 'up'}">${sh ? 'SHORT' : 'LONG'}</b> zlecenie na <b class="mono">${fmt(x.L)}</b> (${nm[x.lKind]}${x.lTouches > 1 ? '×' + x.lTouches : ''}), cena ${x.dist.toFixed(1)} ATR od poziomu<br>
-      Stop <b class="mono">${fmt(x.stop)}</b> za bazą Liquidity Block ${fmt(x.lbBase)} (${x.riskAtr.toFixed(1)} ATR) · Cel <b class="mono">${fmt(x.target)}</b> (${nm[x.hKind]}) · <b>RR ${x.rr.toFixed(1)}</b>${i === 0 ? ' <button id="btnDVlv" style="margin-left:8px">Pokaż poziomy na wykresie</button>' : ''}</div>`; }).join('');
-    else h += '<div class="mu" style="margin-top:4px">Brak układu: potrzebny Liquidity Block, poziom wejścia nad nim i płynność po stronie celu (RR ≥ 2).</div>';
-    if (d.notes.length) h += `<div class="mu" style="margin-top:4px">${d.notes.slice(0, 3).map(esc).join('<br>')}</div>`;
-    h += '<div class="mu" style="font-size:11px;margin-top:4px">Hipoteza, nie sprawdzona: przycisk „Da Vinci" w Backteście liczy ją na historii i porównuje z losowymi wejściami. Nie jest to rekomendacja inwestycyjna.</div>';
-    box.innerHTML = h; const old = document.querySelector('#scoreCard .sc-dv'); if (old) old.remove(); $('scoreCard').appendChild(box);
-    const b = $('btnDVlv'); if (b) b.onclick = () => Chart.setLevels([{ p: sg.stop, t: 'Stop DV', col: '#ff7a7a' }, { p: sg.L, t: 'Wejście DV (limit)', col: '#00f6ac', dash: true }, { p: sg.target, t: `Cel DV ${sg.rr.toFixed(1)}R`, col: '#26a69a' }, { p: sg.lbBase, t: 'Baza LB', col: '#ffb300', dash: true }]);
+    return { tr, res, zones, vp, price, atr4, pos };
   }
   const statusCls = r => r.status === 'TRIGGER' ? (r.bias > 0 ? 'up' : 'dn') : r.status === 'READY' ? 'acc' : r.status === 'WAIT' ? 'wr' : 'mu';
   const RANK = { TRIGGER: 5, READY: 4, WAIT: 3, IGNORUJ: 2, BRAK: 1, WSTRZYMAJ: 1, 'BRAK DANYCH': 0 };
@@ -2323,7 +2292,7 @@ if (typeof document !== 'undefined') (() => {
       const { tr, res, zones, vp, price, atr4, pos } = cs;
       renderDbar(sym, pos); S.cs = { sym, cs }; renderSbar(sym, cs);
       S.trends[sym] = Object.fromEntries(Object.entries(tr).map(([k, v]) => [k, { trend: v.trend }]));
-      S.scores[sym] = summ(res); (S.dv = S.dv || {})[sym] = { status: cs.dvr.status, dir: cs.dvr.setups[0] ? cs.dvr.setups[0].dir : cs.dvr.bias };
+      S.scores[sym] = summ(res)
       logSignal(sym, cs);
       zones.forEach(z => {
         z.d = (price > z.top ? price - z.top : price < z.bottom ? z.bottom - price : 0) / atr4;
@@ -2349,7 +2318,6 @@ if (typeof document !== 'undefined') (() => {
         <div class="sc-r">${LAY.map(([n, k]) => `<div class="lay"><span>${n}</span><span class="bar"><i style="width:${res.layers[k].pts / res.layers[k].max * 100}%"></i></span><b>${res.layers[k].pts}/${res.layers[k].max}</b></div>`).join('')}
         ${res.layers.deriv ? '' : '<div class="lay mu"><span>Funding / OI</span><span class="bar"></span><b>–/10</b></div>'}
         <div class="mu" style="font-size:11px;margin-top:6px">Uwaga: w backteście 180 dni wyższy wynik nie dawał lepszego R (patrz zakładka Backtest). Wynik opisuje układ, nie jest sygnałem. „Skąd ten wynik?" rozwija szczegóły.</div></div>`;
-      renderDV(cs);
       renderList(); renderTop3();
     } catch (e) { el.innerHTML = `<span class="dn">Błąd: ${e.message}</span>`; }
   }
@@ -2611,43 +2579,28 @@ if (typeof document !== 'undefined') (() => {
     $('btRes').innerHTML = (note || '') + G.map(g => `<div class="btg">${g.title}</div><div class="btr"><span class="h">&nbsp;</span><span class="h">n</span><span class="h">trafność</span><span class="h">śr. R</span><span class="h">±95%</span><span class="h">suma</span><span class="h">PF</span></div>` + g.rows.map(r => `<div class="btr"><span>${r.label}</span><b>${r.s.n}${r.s.n > 0 && r.s.n < 30 ? '*' : ''}</b><b>${r.s.winRate == null ? '–' : Math.round(r.s.winRate * 100) + '%'}</b><b class="${r.s.avgR > 0 ? 'up' : r.s.avgR < 0 ? 'dn' : ''}">${fR(r.s.avgR)}</b><b class="mu">${r.s.ci == null ? '–' : '±' + r.s.ci.toFixed(2)}</b><b class="${r.s.sumR > 0 ? 'up' : r.s.sumR < 0 ? 'dn' : ''}">${r.s.n ? fR(r.s.sumR) : '–'}</b><b>${pf(r.s.pf)}</b></div>`).join('')).join('') +
       `<div class="mu" style="font-size:11px;margin-top:8px">* mniej niż 30 transakcji: nie wyciągaj wniosków. Wyniki netto po kosztach. Transakcje na wielu coinach w tym samym czasie są skorelowane (rynek krypto rusza się razem), więc realna próba jest mniejsza niż liczba n. „±95%” to przedział błędu średniego R: jeśli obejmuje 0, wynik nie odróżnia się od szczęścia.</div>`;
   }
-  function thesisHtml() {
-    const T = BT.thesis || {}; if (!T.all || !T.all.n) return '';
-    const line = (lab, a) => { if (!a || !a.n) return ''; const z = a.v > 0 ? (a.tgt - a.p0) / Math.sqrt(a.v) : 0; return `<div class="btr"><span>${lab}</span><b>${a.tgt} z ${a.n} (${Math.round(a.tgt / a.n * 100)}%)</b><b class="mu">oczekiwane: ${Math.round(a.p0 / a.n * 100)}%</b><b class="${z > 1.96 ? 'up' : z < -1.96 ? 'dn' : ''}">z = ${z >= 0 ? '+' : ''}${z.toFixed(1)}</b></div>`; };
-    return `<div class="btg">Test tezy bez zleceń: czy cena dociera do płynności u góry, zanim wróci na poziom wejścia?</div>` + line('Wszystkie rozstrzygnięte setupy', T.all) + line('LONG', T.long) + line('SHORT', T.short) +
-      `<div class="btg">Test tezy 2: wejście rynkowe w chwili pojawienia się setupu, czy cena dociera do celu przed stopem (pod bazą LB)?</div>` + line('Wszystkie rozstrzygnięte setupy', T.all2) + line('LONG', T.long2) + line('SHORT', T.short2) +
-      `<div class="mu" style="font-size:11px;margin:4px 0 8px">„Cel pierwszy” = cena dotknęła celu, zanim wróciła na poziom (setupy, które wygasły, nie wchodzą do liczenia). „Oczekiwane” = ile dałby rynek bez przewagi (błądzenie losowe: (cena − poziom) / (cel − poziom), liczone z ceny w chwili pojawienia się setupu). z powyżej +2 lub poniżej −2 oznacza różnicę poza zwykłym rozrzutem, ale setupy w tym samym czasie i na podobnych coinach są skorelowane, więc traktuj z ostrożnością i nie dziel na podgrupy.</div>`;
-  }
-  function funnelHtml() {
-    const F = BT.funnel || {}, keys = Object.keys(F).sort();
-    if (!keys.length) return '';
-    const row = k => `<div class="btr"><span>${k}</span><b>${F[k].size}</b></div>`, a = keys.filter(k => /^[1-5]/.test(k)), b = keys.filter(k => /^[78]/.test(k));
-    return thesisHtml() + `<div class="btg">Lejek: ile układów odpada na którym etapie (unikalne poziomy, wszystkie coiny)</div>` + a.map(row).join('') +
-      (b.length ? `<div class="btg">Co się stało z setupami (unikalne, po jednym na kierunek i poziom)</div>` + b.map(row).join('') : '') +
-      `<div class="mu" style="font-size:11px;margin:4px 0 8px">Ten sam poziom może mieć układ przez wiele świec, ale liczy się raz. Etapy 4a i 5a pokazują, jak rzadki jest klaster EQH. Przypadek 7a to setupy, w których cena poszła do celu bez powrotu na poziom: limit by ich nie złapał.</div>`;
-  }
-  async function runBacktest(mode) {
+  async function runBacktest() {
     if (BT.running) { BT.stop = true; return; }
     BT.running = true; BT.stop = false; BT.trades = []; BT.base = []; BT.skipped = []; BT.funnel = {}; BT.thesis = {};
     $('btGo').textContent = 'Stop'; $('btCsv').hidden = true; $('btRes').innerHTML = '';
-    const nC = +$('btN').value, days = +$('btD').value, off = +$('btO').value, cost = +$('btC').value || 0, now = Date.now() - off * 86400e3, startMs = now - days * 86400e3, fetchEnd = off ? Math.min(Date.now(), now + (mode === 'dv' ? 16 : 8) * 86400e3) : null, slip = +$('btS').value || 0;   // +8 dni: zamknięcie transakcji z końca okresu
-    const coins = S.coins.slice(0, nC), t0 = Date.now(), dvm = mode === 'dv', dvNote = `<div class="mu" style="margin-bottom:6px">Da Vinci ${$('btR').value === 'v31' ? 'v3.1' : 'v3'}, skan ${$('btT').value.toUpperCase()}, wejście: ${$('btE').value === 'reclaim' ? 'po odzyskaniu poziomu (zamknięcie 15M, do ' + (+$('btW').value / 4) + ' h po przebiciu)' : 'zlecenie limit na poziomie, wypełnienie po cenie poziomu'}, koszt ${cost}% + poślizg ${slip}%. Parametry ustawione z góry, niczego nie dostrajam po wynikach.</div>`;
-    const rend = () => dvm ? renderG([...(BT.base.length ? [Engine.btCompare(BT.trades, BT.base, 'Da Vinci v3 (' + ($('btE').value === 'reclaim' ? 'po odzyskaniu poziomu' : 'limit na poziomie') + ')')] : []), ...Engine.dv3Groups(BT.trades, { startMs, endMs: now })], dvNote + funnelHtml()) : renderBt(BT.trades, BT.base, { startMs, endMs: now });
+    const nC = +$('btN').value, days = +$('btD').value, off = +$('btO').value, cost = +$('btC').value || 0, now = Date.now() - off * 86400e3, startMs = now - days * 86400e3, fetchEnd = off ? Math.min(Date.now(), now + 8 * 86400e3) : null, slip = +$('btS').value || 0;   // +8 dni: zamknięcie transakcji z końca okresu
+    const coins = S.coins.slice(0, nC), t0 = Date.now();
+    const rend = () => renderBt(BT.trades, BT.base, { startMs, endMs: now });
     try {
       for (let i = 0; i < coins.length && !BT.stop; i++) {
         const sym = coins[i].sym, say = m => { $('btProg').textContent = `Coin ${i + 1}/${coins.length}: ${sym.replace('USDT', '')} · ${m} · transakcji: ${BT.trades.length}`; };
         say('pobieram historię…');
         const d = { sym };
         try {
-          for (const [tf, back] of (dvm ? [['15m', 3], ...($('btT').value === '1h' ? [['1h', 25]] : []), ['4h', 90], ['1d', 300]] : [['15m', 3], ['1h', 14], ['4h', 60], ['1d', 300], ['1w', 1400]])) { d[tf] = await klinesRange(sym, tf, startMs - back * 86400e3, fetchEnd); if (BT.stop) break; }
+          for (const [tf, back] of [['15m', 3], ['1h', 14], ['4h', 60], ['1d', 300], ['1w', 1400]]) { d[tf] = await klinesRange(sym, tf, startMs - back * 86400e3, fetchEnd); if (BT.stop) break; }
           if (BT.stop) break;
-          const tr = await (dvm ? Engine.backtestDV3 : Engine.backtestCoin)(d, { N: S.N, startMs, endMs: now, costPct: cost, slipPct: slip, entry: $('btE').value, reclaimBars: +$('btW').value, tf: $('btT').value, dv: { v31: $('btR').value === 'v31' }, funnel: BT.funnel, thesis: BT.thesis, use1w: U.use1w }, async f => { say(`liczę ${Math.round(f * 100)}%`); await sleep(0); return BT.stop; });
+          const tr = await Engine.backtestCoin(d, { N: S.N, startMs, endMs: now, costPct: cost, slipPct: slip, use1w: U.use1w }, async f => { say(`liczę ${Math.round(f * 100)}%`); await sleep(0); return BT.stop; });
           BT.trades.push(...tr);
-          BT.base.push(...Engine.btBaseline(d, tr, { N: S.N, startMs, endMs: now, costPct: cost + slip, ...(dvm ? { maxBars: 1344 } : {}) }, 1000 + i));
+          BT.base.push(...Engine.btBaseline(d, tr, { N: S.N, startMs, endMs: now, costPct: cost + slip }, 1000 + i));
         } catch (e) { BT.skipped.push(sym.replace('USDT', '')); }
         rend();
       }
-      $('btProg').textContent = (BT.stop ? 'Zatrzymano. ' : 'Gotowe. ') + `Okres ${new Date(startMs).toLocaleDateString('pl-PL')}–${new Date(now).toLocaleDateString('pl-PL')}. Transakcji: ${BT.trades.length}, czas ${Math.round((Date.now() - t0) / 1000)} s, ${S.demo ? 'dane DEMO (sztuczne, tylko test działania)' : 'dane Binance'}, ${dvm ? `poślizg ${slip}%` : '1W ' + (U.use1w ? 'włączony' : 'wyłączony')}, koszt ${cost}%.` + (BT.skipped.length ? ` Pominięte (błąd pobierania): ${BT.skipped.join(', ')}.` : '');
+      $('btProg').textContent = (BT.stop ? 'Zatrzymano. ' : 'Gotowe. ') + `Okres ${new Date(startMs).toLocaleDateString('pl-PL')}–${new Date(now).toLocaleDateString('pl-PL')}. Transakcji: ${BT.trades.length}, czas ${Math.round((Date.now() - t0) / 1000)} s, ${S.demo ? 'dane DEMO (sztuczne, tylko test działania)' : 'dane Binance'}, 1W ${U.use1w ? 'włączony' : 'wyłączony'}, koszt ${cost}%.` + (BT.skipped.length ? ` Pominięte (błąd pobierania): ${BT.skipped.join(', ')}.` : '');
     } catch (e) { $('btProg').textContent = 'Błąd: ' + e.message + ' (przerwane; wyniki do tej pory poniżej)'; }
     BT.running = false; $('btGo').textContent = 'Start'; $('btCsv').hidden = !BT.trades.length; rend();
   }
@@ -2766,7 +2719,6 @@ if (typeof document !== 'undefined') (() => {
 
   $('btnBT').onclick = () => { $('btBox').hidden = !$('btBox').hidden; };
   $('btGo').onclick = () => runBacktest('classic');
-  $('btDV').onclick = () => runBacktest('dv');
   // Trend-following 1D: parametry z góry, bez dostrajania. Pokazujemy dwa zestawy kanałów, żeby nie wybierać lepszego po fakcie.
   async function runTrendTest() {
     if (BT.running) return; BT.running = true; BT.stop = false; $('btTF').disabled = true; $('btRes').innerHTML = '';
@@ -2815,7 +2767,6 @@ if (typeof document !== 'undefined') (() => {
   $('btnTF').textContent = 'Akcje/ETF: ' + (U.tradfi ? 'wł.' : 'wył.'); $('selVol').value = String(U.minVol);
   const reloadUniverse = async () => { await loadCoins(); renderList(); renderTop3(); draw(); };
   const setFS = on => { document.body.classList.toggle('fs', on); $('btnFS').textContent = on ? '✕ Zamknij pełny ekran' : '⛶ Pełny ekran'; setTimeout(() => window.dispatchEvent(new Event('resize')), 30); };
-  $('btnDV').onclick = () => { DVF = !DVF; $('btnDV').textContent = 'Da Vinci: ' + (DVF ? 'tylko sygnały' : 'wszystkie'); $('btnDV').classList.toggle('on', DVF); renderList(); };
   $('btnFS').onclick = () => setFS(!document.body.classList.contains('fs'));
   document.addEventListener('keydown', e => {
     if (/INPUT|SELECT|TEXTAREA/.test(e.target.tagName) || e.ctrlKey || e.metaKey || e.altKey) return;
