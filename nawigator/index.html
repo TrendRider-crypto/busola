@@ -193,17 +193,23 @@ input,select,button{border-radius:3px}
 @media(max-width:760px){#cgrid{display:block;padding:6px}#chartW{height:380px}#chartW:has(#chart.hu){height:540px}#chartW #chart{height:auto}#minis{display:grid;grid-template-columns:1fr;grid-template-rows:none;margin-top:8px}.mp{height:210px}}
 #anat{border-top:1px solid var(--line);flex:none}
 .ah{display:flex;align-items:center;gap:10px;padding:5px 10px;font-size:12px}.ah b{font-size:11px;letter-spacing:1.3px;text-transform:uppercase}.ah button{padding:2px 8px;font-size:11px}
-.ag{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding:0 8px 8px}
-.ac{border:1px solid var(--line);border-radius:3px;padding:7px 10px;font-size:12px;display:flex;flex-direction:column;gap:3px;min-height:112px;max-height:178px;overflow:auto;background:var(--panel)}
-.ac h4{margin:0 0 2px;font-size:10px;letter-spacing:1.3px;text-transform:uppercase;color:var(--acc);font-weight:600}
+.ag{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding:0 8px 6px}
+.ac{border:1px solid var(--line);border-radius:3px;padding:5px 9px;font-size:11.5px;line-height:1.3;display:flex;flex-direction:column;gap:1px;min-height:0;overflow:hidden;background:var(--panel)}
+.ac h4{margin:0 0 1px;font-size:10px;letter-spacing:1.3px;text-transform:uppercase;color:var(--acc);font-weight:600}
 .ac .kv{display:flex;justify-content:space-between;gap:8px}.ac .up{color:var(--up)}.ac .dn{color:var(--dn)}.ac .mu{color:var(--mut)}
 .ac .bd2{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:2px}
 #anat.shut .ag{display:none}#dbar{display:none}
 body.fs #anat{display:none}
 @media(max-width:1100px){.ag{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:760px){.ag{grid-template-columns:1fr}.ac{max-height:none}}
-#under{flex:0 1 auto;min-height:0;max-height:44%;overflow:auto}
-@media(max-width:760px){#under{max-height:none;overflow:visible}}
+@media(max-width:760px){.ag{grid-template-columns:1fr}}
+.ac .g3{display:grid;grid-template-columns:auto 1fr 1fr;gap:1px 8px}.ac .g3 span{white-space:nowrap}.ac .g3 span:nth-child(3n+2),.ac .g3 span:nth-child(3n){text-align:right}
+#price{background:color-mix(in srgb,var(--bg) 72%,transparent);padding:1px 6px;border-radius:3px}
+#under{flex:none;height:var(--uh,230px);min-height:60px;overflow:auto}
+#split{flex:none;height:9px;cursor:row-resize;touch-action:none;position:relative;background:transparent}
+#split::after{content:'';position:absolute;left:50%;top:3px;width:46px;height:3px;margin-left:-23px;border-radius:2px;background:var(--line)}
+#split:hover::after,#split.drag::after{background:var(--acc)}
+body.fs #split{display:none}
+@media(max-width:760px){#split{display:none}#under{height:auto;overflow:visible}}
 </style>
 </head>
 <body>
@@ -265,6 +271,7 @@ body.fs #anat{display:none}
         <div class="mp"><div class="mh"><b id="mTH">1H</b><span class="mu" id="mSH"></span></div><div class="mc" id="chartH"></div></div>
       </div>
     </div>
+    <div id="split" role="separator" aria-orientation="horizontal" title="Przeciągnij, żeby zmienić wysokość wykresów. Dwuklik przywraca domyślną."></div>
     <div id="under">
     <div id="anat"><div class="ah"><b>Anatomia coina</b><span class="mu">opis rynku, nie sygnał</span><span style="flex:1"></span><button id="btnAnat">▾ Zwiń</button></div><div class="ag" id="anatG"></div></div>
     <div id="dbar"></div>
@@ -2098,10 +2105,10 @@ if (typeof document !== 'undefined') (() => {
       // 2. płynność
       const d1 = await klines(sym, '1d'); if (sym !== S.sel) return;
       const u1 = anatUnswept(closedOnly(d1), price), u4 = anatUnswept(c4, price), sw = anatSweeps(d1, price, 3);
-      const row = (lab, x, up) => `<div class="kv"><span class="mu">${lab}</span><span class="mono">${x ? `${fmt(x.price)} <b class="${up ? 'up' : 'dn'}">${pc(x.d)}</b>` : '–'}</span></div>`;
+      const cell = (x, up) => x ? `<span class="mono">${fmt(x.price)} <b class="${up ? 'up' : 'dn'}">${pc(x.d)}</b></span>` : '<span class="mu">–</span>';
       const G = []; for (const w of sw) { const g = G.find(x => x.side === w.side && x.ago === w.ago && x.kind === w.kind); g ? g.n++ : G.push({ ...w, n: 1 }); }
       const when = w => w.ago === 0 ? (w.forming ? 'dziś (świeca trwa)' : 'ostatnia świeca') : w.ago === 1 ? 'wczoraj' : w.ago + ' dni temu';
-      const c2 = `<h4>Płynność · niezdjęte poziomy</h4>${row('1D szczyt nad ceną', u1 && u1.up, true)}${row('1D dołek pod ceną', u1 && u1.dn, false)}${row('4H szczyt nad ceną', u4 && u4.up, true)}${row('4H dołek pod ceną', u4 && u4.dn, false)}
+      const c2 = `<h4>Płynność · niezdjęte poziomy</h4><div class="g3"><span></span><span class="mu">1D</span><span class="mu">4H</span><span class="mu">Szczyt nad ceną</span>${cell(u1 && u1.up, true)}${cell(u4 && u4.up, true)}<span class="mu">Dołek pod ceną</span>${cell(u1 && u1.dn, false)}${cell(u4 && u4.dn, false)}</div>
         ${G.slice(0, 2).map(w => `<div class="kv"><span style="color:var(--warn)">${w.kind === 'sweep' ? '⚡ Sweep 1D' : '↯ Przebicie 1D'} ${w.side === 'L' ? 'dołka' : 'szczytu'}${w.n > 1 ? ' ×' + w.n : ''}</span><span class="mu">${when(w)}</span></div>`).join('') || '<div class="mu">Brak zdjęcia poziomu 1D w ostatnich 3 świecach</div>'}`;
       // 3. pozycjonowanie
       const pxChg = c1.length > 25 ? (c1[c1.length - 1].close / c1[c1.length - 25].close - 1) * 100 : null;
@@ -2110,18 +2117,30 @@ if (typeof document !== 'undefined') (() => {
       let c3 = '<h4>Pozycjonowanie · funding i OI</h4>';
       if (!pos) c3 += '<div class="mu">Brak danych z giełd (blokada CORS lub brak połączenia).</div>';
       else { const oi = pos.ex.reduce((p, e) => p + (e.oi || 0), 0), f = Engine.aggFunding(pos.ex);
-        c3 += `<div class="kv"><span class="mu">Open interest</span><b class="mono">${fUsd(oi)}</b></div><div class="kv"><span class="mu">OI 24h</span><b class="${pos.oiChg == null ? 'mu' : pos.oiChg >= 0 ? 'up' : 'dn'}">${pc(pos.oiChg)}</b></div><div class="kv"><span class="mu">Funding śr. (%/8h)</span><b class="mono">${f >= 0 ? '+' : ''}${f.toFixed(4)}%</b></div><div class="kv"><span class="mu">Cena 24h</span><span>${pc(pxChg)}</span></div><div class="mu">${((Engine.derivReading(pxChg, pos.oiChg) || {}).txt || 'Brak historii OI')}</div>`; }
+        c3 += `<div class="kv"><span><span class="mu">OI</span> <b class="mono">${fUsd(oi)}</b></span><span><span class="mu">24h</span> <b class="${pos.oiChg == null ? 'mu' : pos.oiChg >= 0 ? 'up' : 'dn'}">${pc(pos.oiChg)}</b></span></div><div class="kv"><span><span class="mu">Funding</span> <b class="mono">${f >= 0 ? '+' : ''}${f.toFixed(4)}%</b><span class="mu">/8h</span></span><span><span class="mu">Cena 24h</span> ${pc(pxChg)}</span></div><div class="mu">${((Engine.derivReading(pxChg, pos.oiChg) || {}).txt || 'Brak historii OI')}</div>`; }
       // 4. kontekst
       const hu = Engine.hurst(c4), ho = hu.osc[hu.osc.length - 1], vp = Engine.volumeProfile(c4, 120, 48), nx = $('nextEv').textContent.replace(/\s+/g, ' ').trim();
-      const c4h = `<h4>Kontekst · cykl i wolumen</h4>${ho == null ? '' : `<div class="kv"><span class="mu">Hurst 4H (pozycja w kanale)</span><b class="mono">${ho.toFixed(0)}%</b></div><div class="mu">${ho > 100 ? 'cena nad górną wstęgą cyklu' : ho < 0 ? 'cena pod dolną wstęgą cyklu' : ho > 70 ? 'blisko górnej wstęgi' : ho < 30 ? 'blisko dolnej wstęgi' : 'środek kanału cyklu'}</div>`}
-        ${vp ? `<div class="kv"><span class="mu">POC 4H</span><span class="mono">${fmt(vp.poc)} <b>${pc((price / vp.poc - 1) * 100)}</b></span></div><div class="kv"><span class="mu">Obszar wartości</span><span>${price > vp.vah ? 'cena nad VAH' : price < vp.val ? 'cena pod VAL' : 'cena w środku'}</span></div>` : ''}
-        <div class="kv"><span class="mu">Makro</span><span>${macroActive() ? '<b class="dn">⚠ okno zdarzenia</b>' : esc(nx || 'brak')}</span></div>`;
+      const c4h = `<h4>Kontekst · cykl i wolumen</h4>${ho == null ? '' : `<div class="kv"><span><span class="mu">Hurst 4H</span> <b class="mono">${ho.toFixed(0)}%</b></span><span class="mu">${ho > 100 ? 'nad górną wstęgą' : ho < 0 ? 'pod dolną wstęgą' : ho > 70 ? 'blisko górnej wstęgi' : ho < 30 ? 'blisko dolnej wstęgi' : 'środek kanału'}</span></div>`}
+        ${vp ? `<div class="kv"><span><span class="mu">POC 4H</span> <span class="mono">${fmt(vp.poc)} <b>${pc((price / vp.poc - 1) * 100)}</b></span></span><span class="mu">${price > vp.vah ? 'nad VAH' : price < vp.val ? 'pod VAL' : 'w obszarze wartości'}</span></div>` : ''}
+        <div class="kv"><span class="mu">Makro</span><span>${macroActive() ? '<b class="dn">⚠ okno zdarzenia</b>' : esc(nx.replace(/^Następne zdarzenie:\s*/i, '') || 'brak')}</span></div>`;
       box.innerHTML = [k1, c2, c3, c4h].map(h => `<div class="ac">${h}</div>`).join('');
     } catch (e) { box.innerHTML = `<div class="ac"><div class="dn">Błąd: ${esc(e.message)}</div></div>`; }
   }
   $('btnAnat').onclick = () => { const a = $('anat'), sh = a.classList.toggle('shut'); $('btnAnat').textContent = sh ? '▸ Rozwiń' : '▾ Zwiń'; SS_('anat_shut', sh ? '1' : '0'); if (!sh) renderAnat(S.sel); window.dispatchEvent(new Event('resize')); };
   if (LS_('anat_shut', '0') === '1') { $('anat').classList.add('shut'); $('btnAnat').textContent = '▸ Rozwiń'; }
 
+
+  // przesuwany podział między wykresami a dolnymi panelami (wysokość zapamiętana w tej przeglądarce)
+  { const sp = $('split'), un = $('under'), DEF = 230; let h0 = +LS_('under_h', DEF); if (!(h0 >= 60)) h0 = DEF;
+    const apply = h => { const mh = $('main').clientHeight || 800; h = Math.max(60, Math.min(h, mh - 300)); un.style.setProperty('--uh', h + 'px'); return h; };
+    apply(h0);
+    let y0 = 0, hs = 0, on = false;
+    sp.addEventListener('pointerdown', e => { on = true; y0 = e.clientY; hs = un.clientHeight; sp.setPointerCapture(e.pointerId); sp.classList.add('drag'); e.preventDefault(); });
+    sp.addEventListener('pointermove', e => { if (on) apply(hs - (e.clientY - y0)); });
+    const end = e => { if (!on) return; on = false; sp.classList.remove('drag'); SS_('under_h', String(un.clientHeight)); window.dispatchEvent(new Event('resize')); };
+    sp.addEventListener('pointerup', end); sp.addEventListener('pointercancel', end);
+    sp.addEventListener('dblclick', () => { apply(DEF); SS_('under_h', String(DEF)); window.dispatchEvent(new Event('resize')); });
+    window.addEventListener('resize', () => { const c = un.clientHeight; if (c) apply(c); }); }
   // wspólny kursor: ruch nad jednym wykresem ustawia pionową linię czasu na pozostałych
   { const ALL = [Chart, ...MINIS.map(m => m[0])]; ALL.forEach(c => { c.onCross = t => ALL.forEach(o => { if (o !== c) o.setCross(t); }); }); }
   // do rysowania: aktywne (niezmitygowane) strefy najbliższe cenie, po 3 na rodzaj (OB / FVG) z każdego interwału
