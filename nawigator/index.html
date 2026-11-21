@@ -210,6 +210,10 @@ body.fs #anat{display:none}
 #split:hover::after,#split.drag::after{background:var(--acc)}
 body.fs #split{display:none}
 @media(max-width:760px){#split{display:none}#under{height:auto;overflow:visible}}
+
+.ac .lad{display:flex;gap:4px;align-items:center;margin:1px 0}.lad span{font-size:10px;padding:0 6px;border:1px solid var(--line);border-radius:2px;color:var(--mut)}.lad span.on.up{color:var(--up);border-color:var(--up);background:var(--upS)}.lad span.on.dn{color:var(--dn);border-color:var(--dn);background:var(--dnS)}.lad span.mu{border:0;padding:0}
+.ac .stfl{font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stg b{display:block;margin-bottom:1px}.stg{border:1px solid var(--line);border-radius:3px;padding:8px 10px;margin-top:8px}.stg .kv2{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;margin:4px 0;font-size:12px}.stg .kv2 b{text-align:right}
 </style>
 </head>
 <body>
@@ -223,6 +227,7 @@ body.fs #split{display:none}
       <button id="btnPlan">Planer</button>
       <button id="btnBT">Backtest</button>
       <button id="btnJ">Dziennik (0)</button>
+      <button id="btnSt" title="Zmiany kierunku 1H i 4H zapisywane do testu po fakcie">Struktura</button>
       <button id="btnMacro" title="Zdarzenia makro dodawane ręcznie: wstrzymują wynik o ±12 h">Zdarzenia (0)</button>
       <button id="btnAl">Alerty (0)</button>
     </nav>
@@ -319,6 +324,14 @@ body.fs #split{display:none}
       <div class="mrow"><button id="alNotif">Włącz powiadomienia systemowe</button><label class="mu"><input id="alSnd" type="checkbox" checked> Dźwięk</label><button id="alTest">Test alertu</button></div>
       <h4 style="margin:12px 0 4px">Rysunki</h4><div id="alList"></div>
       <h4 style="margin:12px 0 4px">Dziennik alertów</h4><div id="alLog"></div>
+    </div>
+    <div id="stBox" hidden>
+      <div class="mu" style="font-size:11.5px;line-height:1.45">Zapisujemy każdą zmianę kierunku struktury 1H (gdy 4H jest jeszcze przeciwne) i 4H (gdy 1D jest jeszcze przeciwne) na coinach ze skanu, bez wybierania przypadków. Z tego samego skanu bierzemy do 3 coinów kontrolnych w tym samym stanie, ale bez zmiany. Wynik rozlicza się po fakcie. To opis struktury i test częstości, nie sygnał.</div>
+      <div class="mu" style="font-size:11.5px;line-height:1.45;margin:8px 0"><b>Kryteria ustalone przed wynikami.</b> Test A: po zmianie 1H, czy po 3 dniach 4H ma kierunek zmiany. Test B: po zmianie 4H, czy po 10 dniach 1D ma kierunek zmiany. Wniosek dopiero od 100 rozliczonych zdarzeń z co najmniej 20 różnych dni. „Wskazuje różnicę”: częstość u coinów po zmianie wyższa od kontrolnej o co najmniej 10 pkt proc., a dolna granica 95% przedziału (bootstrap po dniach) powyżej zera. Inaczej: „Brak dowodu różnicy”. Czas zapisu zdarzenia to czas skanu, który ją wykrył, a porównujemy tylko ze skanem nie starszym niż 6 h (1H) lub 24 h (4H).</div>
+      <div id="stStats"></div>
+      <div class="mrow"><button id="stSettle">Rozlicz teraz</button><button id="stCsv">Kopiuj CSV</button></div>
+      <textarea id="stTa" hidden readonly rows="4"></textarea>
+      <div id="stList"></div>
     </div>
     <div id="jBox" hidden>
       <div class="mu">Dziennik zapisuje każdy sygnał TRIGGER: wejście w cenie sygnału, stop za strefą, cel 2R. Wynik sprawdzamy na świecach 15M; gdy jedna świeca dotyka stopu i celu naraz, liczymy stratę. Wyniki sprawdzamy na świecach Binance, niezależnie od giełdy, na której powstał sygnał. Zapis działa tylko, gdy strona jest otwarta i skan trwa (włącz „Auto-skan").</div>
@@ -1970,7 +1983,7 @@ if (typeof document !== 'undefined') (() => {
           const cs = await computeSetup(c.sym);
           S.trends[c.sym] = Object.fromEntries(Object.entries(cs.tr).map(([k, v]) => [k, { trend: v.trend }]));
           S.scores[c.sym] = summ(cs.res); (S.dv = S.dv || {})[c.sym] = { status: cs.dvr.status, dir: cs.dvr.setups[0] ? cs.dvr.setups[0].dir : cs.dvr.bias };
-          logSignal(c.sym, cs);
+          logSignal(c.sym, cs); structObs(c.sym, cs);
         } catch (e) { S.trends[c.sym] = null; }
         done++; $('btnScan').textContent = `Skanuję ${done}/${S.coins.length}`; $('scanBar').firstChild.firstChild.style.width = (done / S.coins.length * 100) + '%'; $('scanBar').lastChild.textContent = `${done}/${S.coins.length} rynków`;
         if (done % 5 === 0) { renderList(); renderTop3(); }
@@ -1980,7 +1993,7 @@ if (typeof document !== 'undefined') (() => {
     await Promise.all([worker(), worker(), worker(), worker()]);
     S.scanning = false; $('btnScan').textContent = 'Skanuj trendy (100)'; $('scanBar').hidden = true;
     $('sortSel').value = 'sc'; renderList(); renderTop3();
-    updateJournal();
+    updateJournal(); structAfterScan();
   }
 
   // ---------- lista ----------
@@ -2101,7 +2114,7 @@ if (typeof document !== 'undefined') (() => {
       const b = tr['1d'].trend, ag = b ? ['4h', '1h', '15m'].filter(k => tr[k].trend === b).length + 1 : 0, ev = tr['1d'].last;
       const k1 = `<h4>Trend · struktura</h4><div class="bd2">${['1d', '4h', '1h', '15m'].map(k => badge(tr, k, TFS.find(t => t[0] === k)[1])).join('')}</div>
         <div class="kv"><span class="mu">Kierunek 1D</span><b class="${ar(b)}">${b > 0 ? 'LONG' : b < 0 ? 'SHORT' : 'brak'}${b ? ', ' + ag + ' z 4' : ''}</b></div>
-        <div class="kv"><span class="mu">Ostatnie zdarzenie 1D</span><span>${ev ? `<b class="${ev.dir === 1 ? 'up' : 'dn'}">${ev.kind} ${ev.dir === 1 ? '↑' : '↓'}</b> ${fmt(ev.price)}` : '–'}</span></div>`;
+        <div class="kv"><span class="mu">Ostatnie zdarzenie 1D</span><span>${ev ? `<b class="${ev.dir === 1 ? 'up' : 'dn'}">${ev.kind} ${ev.dir === 1 ? '↑' : '↓'}</b> ${fmt(ev.price)}` : '–'}</span></div>${structRows(tr, price)}`;
       // 2. płynność
       const d1 = await klines(sym, '1d'); if (sym !== S.sel) return;
       const u1 = anatUnswept(closedOnly(d1), price), u4 = anatUnswept(c4, price), sw = anatSweeps(d1, price, 3);
@@ -2377,6 +2390,133 @@ if (typeof document !== 'undefined') (() => {
     return [head.join(',')].concat(jl().map(x => [new Date(x.t).toISOString(), x.sym, x.dir > 0 ? 'LONG' : 'SHORT', x.score, x.base, x.ls || 0, x.zone, x.entry, x.stop, x.entry + x.dir * (x.rr || 2) * Math.abs(x.entry - x.stop), x.status, x.r == null ? '' : x.r.toFixed(2), (x.mfe || 0).toFixed(2), (x.mae || 0).toFixed(2), x.w1 === false ? 'nie' : 'tak'].map(csvEsc).join(','))).join('\n');
   }
 
+
+
+  // ---------- Struktura: etapy zmiany kierunku (opis) i automatyczny zapis zmian do testu po fakcie ----------
+  // Etap liczony z trendów struktury (BOS/CHoCH): 1 = 1H przeciwne do 1D przy jeszcze zgodnym 4H, 2 = 4H przeciwne do 1D, 3 = 1D zmieniło kierunek CHoCH-em w ostatnich 5 dniach.
+  function structStage(tr) {
+    const t = k => (tr[k] ? tr[k].trend : 0), d1 = t('1d'), h4 = t('4h'), h1 = t('1h'), ev = tr['1d'] && tr['1d'].last, c1 = tr['1d'] && tr['1d'].c || [];
+    const age = ev && c1.length ? c1.length - 1 - ev.idx : null;
+    if (ev && ev.kind === 'CHoCH' && age != null && age <= 5 && d1 === ev.dir) return { stage: 3, dir: ev.dir, age };
+    if (!d1) return { stage: -1, dir: 0 };
+    if (h4 === -d1) return { stage: 2, dir: -d1 };
+    if (h1 === -d1) return { stage: 1, dir: -d1 };
+    return { stage: 0, dir: 0 };
+  }
+  function structRows(tr, price) {
+    let st; try { st = structStage(tr); } catch (e) { return ''; }
+    const cl = st.dir > 0 ? 'up' : st.dir < 0 ? 'dn' : 'mu', arrow = st.dir > 0 ? '↑' : '↓';
+    if (st.stage < 0) return `<div class="kv"><span class="mu">Zmiana struktury</span><span class="mu">1D bez kierunku</span></div>`;
+    const txt = st.stage === 0 ? '<span class="mu">brak: 4H i 1H zgodne z 1D</span>' : `<b class="${cl}">etap ${st.stage} z 3 ${arrow}</b>`;
+    const lad = [1, 2, 3].map(n => `<span class="${n <= st.stage ? 'on ' + cl : ''}">${['1H', '4H', '1D'][n - 1]}</span>`).join('');
+    let flags = '';
+    if (st.stage >= 1) {
+      const f = [];
+      try {
+        const sw = anatSweeps(tr['1d'].c, price, 3).filter(w => w.kind === 'sweep' && w.side === (st.dir > 0 ? 'L' : 'H'))[0];
+        if (sw) f.push(`sweep 1D ${st.dir > 0 ? 'dołka' : 'szczytu'} ${sw.ago === 0 ? 'dziś' : sw.ago === 1 ? 'wczoraj' : sw.ago + ' dni temu'}`);
+        const z = Engine.zones(tr['1h'].c, S.N).filter(q => !q.t1 && q.dir === st.dir).map(q => ({ ...q, d: q.bottom > price ? q.bottom / price - 1 : q.top < price ? q.top / price - 1 : 0 })).sort((a, b) => Math.abs(a.d) - Math.abs(b.d))[0];
+        if (z) f.push(`${z.kind} 1H ${st.dir > 0 ? 'popytu' : 'podaży'} ${fmt(z.bottom)}–${fmt(z.top)} (${z.d === 0 ? 'w strefie' : pc(z.d * 100)})`);
+      } catch (e) { /* bez kontekstu */ }
+      if (st.stage === 3) f.unshift(`CHoCH 1D ${st.age === 0 ? 'dziś' : st.age + ' dni temu'}`);
+      if (f.length) flags = `<div class="mu stfl" title="${esc(f.join(' · '))}">${esc(f.join(' · '))}</div>`;
+    }
+    return `<div class="kv"><span class="mu">Zmiana struktury</span>${txt}</div><div class="lad">${lad}<span class="mu" style="margin-left:4px">opis, nie sygnał</span></div>${flags}`;
+  }
+  function STC() { return { W1: 6 * 3600e3, W4: 24 * 3600e3, H1: 3 * 864e5, H4: 10 * 864e5, NMIN: 100, DMIN: 20, CTL: 3, KEEP: 5000, DIFF: 0.10 }; }
+  const STR = { live: { st: {}, ev: [] }, demo: { st: {}, ev: [] } };
+  ['live', 'demo'].forEach(m => { try { const o = JSON.parse(localStorage.getItem('struct_v1_' + m) || 'null'); if (o && o.st && Array.isArray(o.ev)) STR[m] = o; } catch (e) { /* pusty zapis */ } });
+  const stM = () => STR[S.demo ? 'demo' : 'live'];
+  const stSave = () => { try { localStorage.setItem('struct_v1_' + (S.demo ? 'demo' : 'live'), JSON.stringify(stM())); } catch (e) { /* tylko w pamięci strony */ } };
+  const stHash = str => { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; };
+  function structObs(sym, cs) {
+    try {
+      const tr = cs.tr, t = k => (tr[k] ? tr[k].trend : 0); let sw = '';
+      try { const w = anatSweeps(tr['1d'].c, cs.price, 2).find(x => x.kind === 'sweep'); if (w) sw = w.side; } catch (e) { /* bez flagi */ }
+      (S.sobs = S.sobs || {})[sym] = { h1: t('1h'), h4: t('4h'), d1: t('1d'), sw, at: Date.now() };
+    } catch (e) { /* pomijamy coin */ }
+  }
+  function structAfterScan() {
+    try {
+      const M = stM(), C = STC(), now = Date.now(), obs = S.sobs || {}, syms = Object.keys(obs).filter(k => now - obs[k].at < 3600e3);
+      if (syms.length < 20) return;
+      const evs = [], flipped = new Set();
+      for (const sym of syms) {
+        const o = obs[sym], pv = M.st[sym]; if (!pv) continue;
+        const age = now - pv[3];
+        if (age <= C.W1 && o.h1 !== 0 && pv[0] === -o.h1 && o.h4 === -o.h1) { evs.push({ sym, tf: '1h', dir: o.h1, sw: o.sw }); flipped.add(sym + '|1h'); }
+        if (age <= C.W4 && o.h4 !== 0 && pv[1] === -o.h4 && o.d1 === -o.h4) { evs.push({ sym, tf: '4h', dir: o.h4, sw: o.sw }); flipped.add(sym + '|4h'); }
+      }
+      const known = new Set(M.ev.map(e => e.id));
+      for (const e of evs) {
+        const id = e.sym + '|' + e.tf + '|' + new Date(now).toISOString().slice(0, 13); if (known.has(id)) continue;
+        const pool = syms.filter(k => k !== e.sym && !flipped.has(k + '|' + e.tf) && (e.tf === '1h' ? (obs[k].h4 === -e.dir && obs[k].h1 === -e.dir) : (obs[k].d1 === -e.dir && obs[k].h4 === -e.dir)));
+        const ctl = pool.map(k => [stHash(k + id), k]).sort((a, b) => a[0] - b[0]).slice(0, C.CTL).map(x => x[1]);
+        M.ev.push({ id, sym: e.sym, tf: e.tf, dir: e.dir, t: now, sw: e.sw || '', ctl, done: false, ok: null, cok: [] });
+      }
+      for (const sym of syms) { const o = obs[sym]; M.st[sym] = [o.h1, o.h4, o.d1, now]; }
+      if (M.ev.length > C.KEEP) M.ev = M.ev.filter(e => !e.done).concat(M.ev.filter(e => e.done).slice(-(C.KEEP - 1000)));
+      stSave(); if (RCUR === 'st') renderStruct();
+      structSettle().catch(() => { /* następnym razem */ });
+    } catch (e) { /* zapis struktury nie może psuć skanu */ }
+  }
+  async function structTrendAt(sym, tf, end) {
+    const stp = STEP[tf] * 1000, c = await klinesRange(sym, tf, end - 220 * stp, end);
+    return Engine.analyze(c.filter(x => x.closeTime <= end), S.N).trend;
+  }
+  let stBusy = false;
+  async function structSettle(max = 10) {
+    if (stBusy) return; stBusy = true;
+    try {
+      const M = stM(), C = STC(), now = Date.now();
+      const due = M.ev.filter(e => !e.done && now >= e.t + (e.tf === '1h' ? C.H1 : C.H4)).slice(0, max);
+      for (const e of due) {
+        const hz = e.tf === '1h' ? C.H1 : C.H4, tf = e.tf === '1h' ? '4h' : '1d', end = e.t + hz;
+        try {
+          e.ok = (await structTrendAt(e.sym, tf, end)) === e.dir ? 1 : 0;
+          e.cok = []; for (const k of e.ctl) { try { e.cok.push((await structTrendAt(k, tf, end)) === e.dir ? 1 : 0); } catch (er) { /* kontrolny bez danych */ } }
+          e.done = true;
+        } catch (er) { /* spróbujemy przy następnym skanie */ }
+        stSave();
+      }
+    } finally { stBusy = false; if (RCUR === 'st') renderStruct(); }
+  }
+  function stBoot(list, B = 1000) {
+    // różnica częstości: zdarzenia minus kontrole; przedział bootstrapem po dniach
+    const byDay = {}; for (const e of list) (byDay[new Date(e.t).toISOString().slice(0, 10)] = byDay[new Date(e.t).toISOString().slice(0, 10)] || []).push(e);
+    const days = Object.keys(byDay), stat = ds => { let a = 0, n = 0, b = 0, m = 0; for (const d of ds) for (const e of byDay[d]) { a += e.ok; n++; for (const x of e.cok) { b += x; m++; } } return n && m ? a / n - b / m : null; };
+    const pt = stat(days); if (pt == null) return { diff: null, lo: null, hi: null, days: days.length };
+    let seed = 12345; const rnd = () => { seed = (seed + 0x6D2B79F5) >>> 0; let t = seed; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+    const out = []; for (let i = 0; i < B; i++) { const ds = []; for (let j = 0; j < days.length; j++) ds.push(days[Math.floor(rnd() * days.length)]); const v = stat(ds); if (v != null) out.push(v); }
+    out.sort((a, b) => a - b);
+    return { diff: pt, lo: out[Math.floor(out.length * 0.025)], hi: out[Math.ceil(out.length * 0.975) - 1], days: days.length };
+  }
+  function stGroup(tf) {
+    const M = stM(), C = STC(), all = M.ev.filter(e => e.tf === tf), done = all.filter(e => e.done && e.cok.length);
+    const r = stBoot(done), n = done.length, pe = n ? done.reduce((a, e) => a + e.ok, 0) / n : null, nc = done.reduce((a, e) => a + e.cok.length, 0), pcn = nc ? done.reduce((a, e) => a + e.cok.reduce((x, y) => x + y, 0), 0) / nc : null;
+    let verdict, vcl = 'mu';
+    if (n < C.NMIN || r.days < C.DMIN) verdict = `Za mało danych: ${n} z ${C.NMIN} zdarzeń, ${r.days} z ${C.DMIN} dni.`;
+    else if (r.lo > 0 && r.diff >= C.DIFF) { verdict = 'Wskazuje różnicę (kryteria spełnione).'; vcl = 'up'; }
+    else verdict = 'Brak dowodu różnicy.';
+    return { all, n, pe, pcn, nc, r, verdict, vcl };
+  }
+  function renderStruct() {
+    const C = STC(), pct = v => v == null ? '–' : Math.round(v * 100) + '%', pp = v => v == null ? '–' : (v >= 0 ? '+' : '−') + Math.abs(v * 100).toFixed(0) + ' pkt';
+    const row = (lab, g) => `<div class="stg"><b>${lab}</b><span class="mu">zapisane ${g.all.length}, rozliczone ${g.n}</span>
+      <div class="kv2"><span>Po zmianie</span><b>${pct(g.pe)}</b><span>Kontrola</span><b>${pct(g.pcn)}</b><span>Różnica</span><b>${pp(g.r.diff)}${g.r.lo != null ? ` <small class="mu">(95%: ${pp(g.r.lo)} do ${pp(g.r.hi)})</small>` : ''}</b></div>
+      <div class="${g.vcl}" style="font-size:11.5px">${g.verdict}</div></div>`;
+    $('stStats').innerHTML = `<div class="mu" style="font-size:11px;margin-bottom:4px">${S.demo ? 'DEMO (dane sztuczne, tylko do testu)' : 'LIVE'} · zapis w tej przeglądarce, tylko gdy Nawigator jest otwarty podczas skanu.</div>`
+      + row('Test A: zmiana 1H, wynik 4H po 3 dniach', stGroup('1h')) + row('Test B: zmiana 4H, wynik 1D po 10 dniach', stGroup('4h'));
+    const last = [...stM().ev].reverse().slice(0, 12);
+    $('stList').innerHTML = last.length ? '<h4 style="margin:10px 0 4px;font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:var(--mut)">Ostatnie zdarzenia</h4>' + last.map(e => `<div class="jrow"><span><b class="${e.dir > 0 ? 'up' : 'dn'}">${e.sym.replace('USDT', '')} ${e.tf.toUpperCase()} ${e.dir > 0 ? '↑' : '↓'}</b> <small>${fdate(e.t / 1000)}${e.sw ? ' · sweep 1D' : ''} · kontr. ${e.ctl.length}</small></span><span>${e.done ? (e.ok ? '<b class="up">tak</b>' : '<b class="dn">nie</b>') + ' <small class="mu">' + e.cok.reduce((a, b) => a + b, 0) + '/' + e.cok.length + '</small>' : '<span class="mu">czeka</span>'}</span></div>`).join('') : '<div class="mu" style="margin-top:8px">Brak zapisanych zmian. Zapis zaczyna się od drugiego skanu (pierwszy zapamiętuje stan).</div>';
+  }
+  $('stSettle').onclick = () => { $('stSettle').textContent = 'Rozliczam…'; structSettle(30).finally(() => { $('stSettle').textContent = 'Rozlicz teraz'; renderStruct(); }); };
+  $('stCsv').onclick = async () => {
+    const head = ['czas', 'coin', 'interwal', 'kierunek', 'sweep1D', 'kontrolne', 'rozliczone', 'wynik', 'kontr_wyniki'];
+    const csv = [head.join(',')].concat(stM().ev.map(e => [new Date(e.t).toISOString(), e.sym, e.tf, e.dir > 0 ? 'UP' : 'DOWN', e.sw || '', e.ctl.join(' '), e.done ? 1 : 0, e.ok == null ? '' : e.ok, e.cok.join(' ')].map(csvEsc).join(','))).join('\n');
+    try { await navigator.clipboard.writeText(csv); $('stCsv').textContent = 'Skopiowano'; setTimeout(() => { $('stCsv').textContent = 'Kopiuj CSV'; }, 1800); }
+    catch (e) { $('stTa').hidden = false; $('stTa').value = csv; $('stTa').select(); }
+  };
 
   // ---------- backtest: pobranie historii i raport ----------
   const BT = { running: false, stop: false, trades: [], base: [], skipped: [] };
@@ -2712,7 +2852,7 @@ if (typeof document !== 'undefined') (() => {
   $('btnTheme').textContent = document.documentElement.classList.contains('light') ? '☾' : '☀';
   $('btnTheme').onclick = () => setTheme(document.documentElement.classList.contains('light') ? 'dark' : 'light', true);
   $('btnDemo').onclick = async () => {
-    S.scanning = false; S.cache = {}; S.trends = {}; S.scores = {};
+    S.scanning = false; S.cache = {}; S.trends = {}; S.scores = {}; S.sobs = {};
     if (!S.demo) useDemoCoins(); else await loadCoins();
     renderList(); renderTop3(); renderJournal(); draw();
   };
@@ -2735,7 +2875,7 @@ if (typeof document !== 'undefined') (() => {
   }
 
   // prawy panel z kartami: Planer / Backtest / Dziennik / Makro
-  const RT = { plan: ['tabPlan', 'Planer pozycji'], bt: ['btBox', 'Backtest'], j: ['jBox', 'Dziennik sygnałów'], macro: ['macroBox', 'Zdarzenia makro'], al: ['alBox', 'Rysunki i alerty'] };
+  const RT = { plan: ['tabPlan', 'Planer pozycji'], bt: ['btBox', 'Backtest'], j: ['jBox', 'Dziennik sygnałów'], macro: ['macroBox', 'Zdarzenia makro'], al: ['alBox', 'Rysunki i alerty'], st: ['stBox', 'Struktura: zmiany kierunku'] };
   let RCUR = null;
   function openR(tab, force) {
     if (VCUR) leaveV();
@@ -2744,8 +2884,8 @@ if (typeof document !== 'undefined') (() => {
     Object.values(RT).forEach(([id]) => { $(id).hidden = true; });
     $('rside').hidden = !tab; document.body.classList.toggle('dr', !!tab); document.body.classList.toggle('drw', tab === 'bt');
     $('navMain').classList.toggle('on', !tab);
-    [['plan', 'btnPlan'], ['bt', 'btnBT'], ['j', 'btnJ'], ['macro', 'btnMacro'], ['al', 'btnAl']].forEach(([k, id]) => $(id).classList.toggle('on', k === tab));
-    if (tab) { $(RT[tab][0]).hidden = false; $('rTitle').textContent = RT[tab][1]; if (tab === 'j') { renderJournal(); updateJournal(); } if (tab === 'plan') renderPlan(); if (tab === 'al') DRW.render(); }
+    [['plan', 'btnPlan'], ['bt', 'btnBT'], ['j', 'btnJ'], ['macro', 'btnMacro'], ['al', 'btnAl'], ['st', 'btnSt']].forEach(([k, id]) => $(id).classList.toggle('on', k === tab));
+    if (tab) { $(RT[tab][0]).hidden = false; $('rTitle').textContent = RT[tab][1]; if (tab === 'j') { renderJournal(); updateJournal(); } if (tab === 'plan') renderPlan(); if (tab === 'al') DRW.render(); if (tab === 'st') renderStruct(); }
     else Chart.setLevels([]);
     if (tab !== 'plan') Chart.setLevels([]);
     setTimeout(() => window.dispatchEvent(new Event('resize')), 30);
@@ -2777,7 +2917,7 @@ if (typeof document !== 'undefined') (() => {
   });
   $('btnMapV').onclick = () => openV('map'); $('btnMkV').onclick = () => openV('mk');
   $('navMain').onclick = () => openR(null);
-  $('btnPlan').onclick = () => openR('plan'); $('btnBT').onclick = () => openR('bt'); $('btnJ').onclick = () => openR('j'); $('btnMacro').onclick = () => openR('macro'); $('btnAl').onclick = () => openR('al');
+  $('btnPlan').onclick = () => openR('plan'); $('btnBT').onclick = () => openR('bt'); $('btnJ').onclick = () => openR('j'); $('btnMacro').onclick = () => openR('macro'); $('btnAl').onclick = () => openR('al'); $('btnSt').onclick = () => openR('st');
   $('rClose').onclick = () => openR(null);
 
   // ---------- rysunki użytkownika i alerty wybicia ----------
