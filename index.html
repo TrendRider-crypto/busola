@@ -486,7 +486,7 @@ html.skin-nav .app { max-width: none; padding: 0; height: 100%; }
 .nv-pad { display: flex; flex-direction: column; gap: 7px; padding: 11px 12px; }
 .nv-dh { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; } .skin-nav .mpd-tk { font-family: 'Inter', system-ui, sans-serif; font-size: 20px; font-weight: 700; } .skin-nav .mpd-tk small { font-size: 11px; font-weight: 500; color: var(--muted); }
 .skin-nav .mpd-chg { font-size: 24px; font-weight: 700; } .nv-ex { margin: 0; font-size: 11.5px; color: var(--fg); }
-.nv-kv { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px 8px; } .nv-kv small { display: block; font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); } .nv-kv b { font-size: 12.5px; }
+.nv-kv { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px 8px; } .nv-kv2 { margin-top: 8px; } .nv-kv2 b { font-weight: 600; line-height: 1.3; } .nv-kv small { display: block; font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); } .nv-kv b { font-size: 12.5px; }
 .nv-sm { margin-top: 4px; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
 .nv-bd { display: flex; gap: 4px; flex-wrap: wrap; } .nv-bd span { font-size: 10.5px; padding: 1px 6px; border-radius: 2px; border: 1px solid var(--line); color: var(--muted); } .nv-bd .u { color: var(--up); border-color: var(--up); background: var(--up-soft); } .nv-bd .d { color: var(--down); border-color: var(--down); background: var(--down-soft); }
 .nv-go { display: flex; flex-direction: column; gap: 6px; } .nv-go .mp-btn { justify-content: center; height: 34px; border-radius: 3px; text-decoration: none; }
@@ -1427,6 +1427,22 @@ async function mapPrices() {
     for (const sym of Object.keys(S.D)) { const v = m.get(sym); if (v > 0) S.mapLast[sym] = v; }
     S.mapTs = Date.now(); if (S.view === 'map' && !S.mapPlay) render();
   } catch (e) { /* następne odświeżenie za 15 s */ }
+  if (!S.mapFundTs || Date.now() - S.mapFundTs > 5 * 60e3) {   // funding zmienia się rzadko: wystarczy co 5 min, jedno zapytanie dla wszystkich coinów
+    S.mapFundTs = Date.now();
+    try { const r = await getJSON(`${BASE}/fapi/v1/premiumIndex`, 1), m = {}; for (const x of r) if (x.symbol && x.lastFundingRate != null && x.lastFundingRate !== '') m[x.symbol] = { r: +x.lastFundingRate * 100, next: +x.nextFundingTime || 0 }; S.mapFund = m; if (S.view === 'map' && !S.mapPlay) render(); } catch (e) { S.mapFundTs = Date.now() - 4 * 60e3; }
+  }
+}
+// Funding: ostatnia stawka w % (dodatnia = longi płacą shortom). W demo wartości sztuczne.
+function mapFundOf(sym) {
+  if (S.demo) { const r = rng(hashStr(sym + 'fund')); return { r: (r() - 0.45) * 0.06, next: 0 }; }
+  return (S.mapFund && S.mapFund[sym]) || null;
+}
+// Najbliższe strefy OB/FVG nad i pod ceną (odległość od ceny do bliższego brzegu strefy), z tych samych stref co wykres.
+function mapNearZones(d, price) {
+  const z = d && d.zn; if (!z || !(price > 0)) return null;
+  const all = z.above.concat(z.inside, z.below).map(q => ({ ...q, dd: q.bottom > price ? (q.bottom / price - 1) * 100 : q.top < price ? (q.top / price - 1) * 100 : 0 }));
+  const ins = all.filter(q => q.dd === 0), up = all.filter(q => q.dd > 0).sort((a, b) => a.dd - b.dd)[0] || null, dn = all.filter(q => q.dd < 0).sort((a, b) => b.dd - a.dd)[0] || null;
+  return { ins, up, dn };
 }
 const tvLink = sym => tvUrl(sym, S.tvLayout);
 const tvBtn = () => `<button class="tvset" id="btnTv">${S.tvLayout ? 'Twój układ TradingView jest zapisany: zmień lub usuń' : 'Dodaj swój układ TradingView (wskaźniki, MEXC)'}</button>`;
@@ -1924,6 +1940,15 @@ function mapZoneList(d, price) {
   if (!all.length) return '<div class="mp-t">Brak niewypełnionych stref OB i FVG na 1H i 4H.</div>';
   return all.map(q => `<div class="nv-z"><span class="nv-zd ${q.dir > 0 ? 'u' : 'd'}${q.kind === 'FVG' ? ' f' : ''}"></span><b>${q.kind} ${q.tf}</b><small>${q.dir > 0 ? 'popyt' : 'podaż'}${q.tested ? ' · test.' : ''}</small><span class="nvm nv-zr">${fmtPrice(q.bottom)}–${fmtPrice(q.top)}</span><span class="nvm nv-zp ${q.dd > 0 ? 'up' : q.dd < 0 ? 'down' : ''}">${q.dd === 0 ? 'w strefie' : fmtPct(q.dd)}</span></div>`).join('');
 }
+function mapFundNear(x) {
+  const px = S.mapLast[x.sym] || (x.d && x.d.last), f = mapFundOf(x.sym), nz = mapNearZones(x.d, px);
+  const zt = q => q ? `${q.kind} ${q.tf} ${q.dir > 0 ? 'popyt' : 'podaż'} <span class="nvm">${q.dd > 0 ? '+' : ''}${q.dd.toFixed(1).replace('.', ',')}%</span>` : '–';
+  const insT = nz && nz.ins.length ? nz.ins.map(q => `${q.kind} ${q.tf} ${q.dir > 0 ? 'popyt' : 'podaż'}`).join(', ') : '';
+  const nxt = f && f.next ? ` · następny ${new Date(f.next).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })}` : '';
+  return `<div class="nv-kv nv-kv2"><div><small>Funding</small><b class="nvm">${f ? (f.r > 0 ? '+' : '') + f.r.toFixed(4).replace('.', ',') + '%' : '–'}</b></div><div><small>Strefa nad ceną</small><b>${nz ? zt(nz.up) : '–'}</b></div><div><small>Strefa pod ceną</small><b>${nz ? zt(nz.dn) : '–'}</b></div></div>`
+    + (insT ? `<div class="mp-t">Cena jest teraz w strefie: ${insT}.</div>` : '')
+    + `<div class="mp-t">Funding: ostatnia stawka${nxt}. Dodatni = longi płacą shortom. Opis, nie sygnał.</div>`;
+}
 function mapDetailNav(x) {
   if (!x) return '<div class="nv-pad"><div class="mp-t">Wybierz coina z listy.</div></div>';
   const d = x.d, up = x.chg >= 0, lab = x.label, canOpen = window.parent && window.parent !== window;
@@ -1933,6 +1958,7 @@ function mapDetailNav(x) {
     + `<div class="mpd-chg nvm ${up ? 'up' : 'down'}">${arrow(x.chg)} ${fmtPct(Math.abs(x.chg)).replace('+', '')}</div>`
     + `<div class="mp-t nv-ex">${lab ? MAP_EXP[lab] + ' To opis, nie sygnał.' : 'Brak danych OI dla tego coina.'}</div>`
     + `<div class="nv-kv"><div><small>Cena</small><b class="nvm">${fmtPrice(S.mapLast[x.sym] || d.last)}</b></div><div><small>Cena 4 godz.</small><b class="nvm ${cls(x.p4)}">${fmtPct(x.p4)}</b></div><div><small>OI 4 godz.</small><b class="nvm ${cls(x.oi4)}">${x.oi4 == null ? '–' : fmtPct(x.oi4)}</b></div></div>`
+    + mapFundNear(x)
     + `<div class="nv-sm">Trend wg struktury</div><div class="nv-bd">${bd('1D', d.t.d1)}${bd('4H', d.t.h4)}${bd('1H', d.t.h1)}${bd('15M', d.t.m15)}</div>`
     + `<div class="nv-sm">Świece 4H · strefy OB i FVG (1H, 4H)</div><div class="nv-zc">${mapZoneChart(d, S.mapLast[x.sym] || d.last)}</div><div class="nv-zs">${mapZoneList(d, S.mapLast[x.sym] || d.last)}</div><div class="mp-t">Strefy: niewypełnione OB i FVG z reguł Busoli. Ciągła ramka OB, przerywana FVG. Zielone: popyt, czerwone: podaż. „test.”: cena już dotknęła strefy.</div>`
     + `<div class="nv-sm">Ścieżka ${x.path.mode === 'day' ? 'od 00:00 UTC' : 'z 24 godzin'}</div>` + sparkSvg(x.path.pts, 300, 60, 'mp-sp mpd-sp nv-sp2 ' + (up ? 'up' : 'down'), 2)
