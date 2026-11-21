@@ -1165,7 +1165,7 @@ function mkFomcNear(endTs) {
 // czyli na pierwszym zamknięciu za najbliższym lokalnym dołkiem (szczytem) sprzed sweepu, w ciągu CONF świec od sweepu; lokalny = min low (max high) z SW świec przed sweepem.
 // Stop (koniec knota + PAD ATR), cel i reszta bez zmian. Z powodu drugiej hipotezy przedział ufności 99% zamiast 95%.
 // Wynik w R po koszcie COST% (od wartości pozycji). Gdy w jednej świecy dotknięty i stop, i cel: liczymy stop. Brak poślizgu.
-const LQ = { CONF: 10, SW: 5, ALPHA_B: 0.005, N: 48, TOUCH: 2, TOL: 0.15, MIN: 0.1, MAX: 1.5, RECL: 3, PAD: 0.1, RR: 2, HOR: 48, COST: 0.1, TREND: 100, K: 5, NMIN: 100, DMIN: 20 };
+const LQ = { CONF: 10, SW: 5, ALPHA_B: 0.005, N: 48, TOUCH: 2, TOL: 0.15, MIN: 0.1, MAX: 1.5, RECL: 3, PAD: 0.1, RR: 2, HOR: 48, COST: 0.1, TREND: 100, K: 5, NMIN: 100, DMIN: 20, FWD: Date.UTC(2026, 10, 22) };
 function lqTouches(win, level, tol, up) {
   let runs = 0, prev = false;
   for (const x of win) { const t = up ? x.high >= level - tol : x.low <= level + tol; if (t && !prev) runs++; prev = t; }
@@ -1222,8 +1222,9 @@ function lqOutcome(c, ev) {
   return { r: dir * (c[end].close - entry) / risk - cost, how: 'to' };
 }
 // ten sam stop i cel (w % ceny), wejście w losowej świecy tego samego coina i kierunku
-function lqBaseline(c, ev, rnd) {
-  const lo = Math.max(LQ.N, LQ.TREND), hi = c.length - LQ.HOR - 2, out = [];
+function lqBaseline(c, ev, rnd, tmin = 0) {
+  let lo = Math.max(LQ.N, LQ.TREND); if (tmin > 0) { const f = c.findIndex(x => x.closeTime > tmin); lo = f < 0 ? c.length : Math.max(lo, f); }
+  const hi = c.length - LQ.HOR - 2, out = [];
   if (hi <= lo) return out;
   const frac = ev.risk / ev.entry;
   for (let q = 0; q < LQ.K; q++) {
@@ -1235,11 +1236,12 @@ function lqBaseline(c, ev, rnd) {
   return out;
 }
 // jedna moneta: zdarzenia, ich wyniki i średnia z losowych prób na zdarzenie (para do przedziału różnicy)
-function lqCoin(sym, c, v = 'A') {
+function lqCoin(sym, c, v = 'A', tmin = 0) {
   const h = [...sym].reduce((a, ch) => (Math.imul(a, 31) + ch.charCodeAt(0)) >>> 0, 7), rnd = jrRng(h), rows = [];
   for (const ev of lqEvents(c, v)) {
+    if (tmin > 0 && !(c[ev.i].closeTime > tmin)) continue;
     const o = lqOutcome(c, ev); if (!o) continue;
-    const b = lqBaseline(c, ev, rnd); if (!b.length) continue;
+    const b = lqBaseline(c, ev, rnd, tmin); if (!b.length) continue;
     const bw = b.filter(x => x.withTrend === ev.withTrend);
     rows.push({ sym, t: c[ev.i].closeTime, day: jrDay(c[ev.i].closeTime), dir: ev.dir, withTrend: ev.withTrend, r: o.r, how: o.how, br: b.reduce((a, x) => a + x.r, 0) / b.length, brw: bw.length ? bw.reduce((a, x) => a + x.r, 0) / bw.length : null });
   }
@@ -1877,10 +1879,10 @@ async function lqCandles(sym, tf) {
   }
   return out;
 }
-const lqKey = (tf, v) => v === 'B' ? tf + 'B' : tf;
+const lqKey = (tf, v, f) => (v === 'B' ? tf + 'B' : tf) + (f ? 'F' : '');
 async function lqRun() {
   const L = S.lq; if (L.busy) return;
-  const tf = L.tf, v = L.v, alpha = v === 'B' || tf === '1d' ? LQ.ALPHA_B : 0.025; L.busy = true; L.err = ''; L.done = 0; L.tot = 0; if (S.view === 'lab') render();
+  const tf = L.tf, v = L.v, fwd = tf === '1d' && L.fwd, alpha = v === 'B' || tf === '1d' ? LQ.ALPHA_B : 0.025; L.busy = true; L.err = ''; L.done = 0; L.tot = 0; if (S.view === 'lab') render();
   try {
     if (!S.coins.length) S.coins = await loadCoins();
     const coins = S.coins.slice(0, LQ_COINS); L.tot = coins.length; if (!coins.length) throw new Error('pusta lista coinów');
@@ -1889,13 +1891,13 @@ async function lqRun() {
       try {
         const k = closedOnly(await lqCandles(c.sym, tf), Date.now());
         if (k.length) { t0 = Math.min(t0, k[0].closeTime); t1 = Math.max(t1, k[k.length - 1].closeTime); }
-        for (const r of lqCoin(c.sym, k, v)) rows.push(r);
+        for (const r of lqCoin(c.sym, k, v, fwd ? LQ.FWD : 0)) rows.push(r);
       } catch (e) { fail++; }
       L.done++; if (S.view === 'lab' && L.done % 3 === 0) render();
     });
     if (fail > coins.length / 2) throw new Error('giełda nie odpowiedziała dla ' + fail + ' z ' + coins.length + ' coinów');
     const stats = LQ_GROUPS.map(g => lqStat(rows, g, alpha));
-    L.res[lqKey(tf, v)] = { ts: Date.now(), coins: coins.length - fail, from: t0, to: t1, stats, alpha, v: lqVerdict(stats[0]) };
+    L.res[lqKey(tf, v, fwd)] = { ts: Date.now(), coins: coins.length - fail, from: t0, to: t1, stats, alpha, v: lqVerdict(stats[0]) };
     try { localStorage.setItem('busola_lq_v1', JSON.stringify(L.res)); } catch (e) { /* tylko w pamięci */ }
   } catch (e) { L.err = e && e.message ? e.message : 'nieznany błąd'; }
   L.busy = false; if (S.view === 'lab') render();
@@ -1903,18 +1905,20 @@ async function lqRun() {
 const fmtR = v => v == null || !isFinite(v) ? '–' : (Math.abs(v) < 0.005 ? '0,00' : (v > 0 ? '+' : '−') + Math.abs(v).toFixed(2).replace('.', ',')) + 'R';
 function labBtn() { return `<button class="lab-b" id="btnLab"><span><b>Test pułapki płynności</b><small>sweep i reclaim: czy coś dodaje do losowego wejścia?</small></span>${svgI(ICO.back, 18, 2.2)}</button>`; }
 function labHtml() {
-  const L = S.lq, B = L.v === 'B', r = L.res[lqKey(L.tf, L.v)], d = ts => new Date(ts).toLocaleDateString('pl-PL', { day: 'numeric', month: 'short', year: 'numeric' });
+  const L = S.lq, B = L.v === 'B', F = L.tf === '1d' && L.fwd, r = L.res[lqKey(L.tf, L.v, F)], d = ts => new Date(ts).toLocaleDateString('pl-PL', { day: 'numeric', month: 'short', year: 'numeric' });
   let h = `<header class="hdr"><div class="brand"><button class="ibtn" id="btnBack" aria-label="Wróć">${svgI(ICO.back, 20, 2.2)}</button><span>Test</span></div></header>`;
   h += `<div class="meta"><span>Pułapka płynności · opis historii, nie sygnał</span></div>`;
   h += `<div class="jseg" role="group" aria-label="Wariant">${[['A', 'A: sam sweep'], ['B', 'B: z potwierdzeniem']].map(x => `<button class="jsb${L.v === x[0] ? ' on' : ''}" data-lqv="${x[0]}"${L.busy ? ' disabled' : ''}>${x[1]}</button>`).join('')}</div>`;
   h += `<div class="jcard"><div class="jlab">Co sprawdzamy${B ? ' (wariant B)' : ''}</div><div class="jsub">Cena przebija równe szczyty (albo dołki) z ostatnich ${LQ.N} świec o ${String(LQ.MIN).replace('.', ',')}–${String(LQ.MAX).replace('.', ',')} ATR i w ciągu ${LQ.RECL} świec zamyka się z powrotem w zakresie. Wejście w stronę powrotu, stop za knotem + ${String(LQ.PAD).replace('.', ',')} ATR, cel ${LQ.RR}R, wyjście po ${LQ.HOR} świecach, koszt ${String(LQ.COST).replace('.', ',')}%. Porównujemy z losowymi wejściami na tych samych coinach, z tym samym stopem, celem i kierunkiem. Parametry ustaliłem przed pierwszym uruchomieniem i ich nie zmieniam po wyniku.${B ? ' <br><br>' + `Wariant B: wejście dopiero po potwierdzeniu struktury: pierwsze zamknięcie za lokalnym dołkiem (przy sweepie dołka: szczytem) z ${LQ.SW} świec sprzed sweepu, najpóźniej ${LQ.CONF} świec po nim. Stop, cel, koszty i porównanie z losowymi wejściami bez zmian. Wariant dodałem po wyniku A, więc to druga hipoteza na tych samych danych. Dlatego przedział ufności jest ostrzejszy: 99% zamiast 95%. Reguły zapisałem przed pierwszym uruchomieniem. ` : ''}</div></div>`;
   h += `<div class="jseg" role="group" aria-label="Interwał">${Object.keys(LQ_TFL).map(k => `<button class="jsb${L.tf === k ? ' on' : ''}" data-lqtf="${k}"${L.busy ? ' disabled' : ''}>${LQ_TFL[k]}${k === '1h' ? ' ★' : ''}</button>`).join('')}</div>`;
   h += `<div class="jnote">★ = interwał główny, ustalony z góry. Pozostałe są kontrolą: wygrana tylko na jednym z interwałów to słabszy dowód, bo każdy kolejny to następna szansa na przypadkowy wynik.</div>`;
-  if (L.tf === '1d') h += `<div class="jcard"><div class="jlab">1 dzień: zapisane przed uruchomieniem</div><div class="jsub">Hipoteza: zebranie płynności na 1D z powrotem za poziom odwraca ruch lepiej niż losowe wejście. Interwał dodany po wynikach 1H i 4H (które przewagi nie pokazały), więc to nowa hipoteza i obowiązuje ostrzejszy przedział 99%, także w wariancie A. Reguły i liczby bez zmian względem 1H i 4H, tylko świece są dzienne: poziom z ostatnich ${LQ.N} dni, trend to średnia ze ${LQ.TREND} dni, wyjście po ${LQ.HOR} dniach. Werdykt dotyczy wyłącznie wiersza Wszystkie. Podgrupa „Pod trend” (czyli odwrócenia) jest tylko opisem. Liczy się pierwsze uruchomienie dla A i dla B. Parametrów po zobaczeniu wyniku nie zmieniam.</div></div>`;
+  if (L.tf === '1d') h += `<div class="jseg" role="group" aria-label="Dane">${[[0, 'Cała historia'], [1, 'Tylko nowe dane']].map(x => `<button class="jsb${(L.fwd ? 1 : 0) === x[0] ? ' on' : ''}" data-lqf="${x[0]}"${L.busy ? ' disabled' : ''}>${x[1]}</button>`).join('')}</div>`;
+  if (F) h += `<div class="jcard"><div class="jlab">Test na nowych danych: zapisane przed uruchomieniem</div><div class="jsub">Liczą się tylko zdarzenia, w których świeca wejścia zamyka się po 22.11.2026 00:00 UTC, czyli po wyniku z 21.11.2026. Losowe wejścia do porównania też są tylko z tego okresu. Reguły, liczby, przedział 99% i próg ${LQ.NMIN} zdarzeń z ${LQ.DMIN} dni bez zmian. Zdarzenie musi mieć za sobą ${LQ.HOR} dni, żeby się rozstrzygnąć. W całej historii wariant A dawał średnio około 0,2 zdarzenia dziennie na ${LQ_COINS} coinów, więc próg wymaga ponad roku, a wariant B (około 4 razy rzadszy) przez kilka lat go nie osiągnie. Do tego czasu zobaczysz „Za mało danych” i to jest zamierzone. Lista ${LQ_COINS} coinów to największe w dniu uruchomienia. Wynik liczy się z pierwszego uruchomienia po osiągnięciu progu.</div></div>`;
+  if (L.tf === '1d' && !F) h += `<div class="jcard"><div class="jlab">1 dzień: zapisane przed uruchomieniem</div><div class="jsub">Hipoteza: zebranie płynności na 1D z powrotem za poziom odwraca ruch lepiej niż losowe wejście. Interwał dodany po wynikach 1H i 4H (które przewagi nie pokazały), więc to nowa hipoteza i obowiązuje ostrzejszy przedział 99%, także w wariancie A. Reguły i liczby bez zmian względem 1H i 4H, tylko świece są dzienne: poziom z ostatnich ${LQ.N} dni, trend to średnia ze ${LQ.TREND} dni, wyjście po ${LQ.HOR} dniach. Werdykt dotyczy wyłącznie wiersza Wszystkie. Podgrupa „Pod trend” (czyli odwrócenia) jest tylko opisem. Liczy się pierwsze uruchomienie dla A i dla B. Parametrów po zobaczeniu wyniku nie zmieniam.</div></div>`;
   h += `<div style="margin:14px 20px 0"><button class="lab-run" id="btnLq"${L.busy ? ' disabled' : ''}>${L.busy ? `Liczę… ${L.done}/${L.tot || LQ_COINS}` : r ? 'Uruchom ponownie' : 'Uruchom test'}</button></div>`;
   if (L.busy) h += `<div class="jbar" style="margin:12px 20px 0"><i style="width:${L.tot ? Math.round(L.done / L.tot * 100) : 0}%"></i></div>`;
   if (L.err) h += `<div class="banner"><span>Nie udało się: ${esc(L.err)}. Spróbuj za chwilę.</span></div>`;
-  if (!r) return h + `<p class="fine">Test pobiera z Binance historię ${LQ_COINS} największych coinów (dla ${LQ_TFL[L.tf]} około ${LQ_PAGES[L.tf] * 1500} świec na coin) i liczy wszystko w tej przeglądarce. Zajmuje to około pół minuty.</p>`;
+  if (!r) return h + `<p class="fine">${F ? 'Tryb nowych danych pokaże wynik dopiero, gdy minie ' + LQ.HOR + ' dni od 22.11.2026 i zbierze się wystarczająco zdarzeń. ' : ''}Test pobiera z Binance historię ${LQ_COINS} największych coinów (dla ${LQ_TFL[L.tf]} około ${LQ_PAGES[L.tf] * 1500} świec na coin) i liczy wszystko w tej przeglądarce. Zajmuje to około pół minuty.</p>`;
   const v = r.v, st = r.stats[0], cl = Math.round((1 - 2 * (r.alpha || 0.025)) * 100);
   h += `<div class="jcard"><div class="jlab">Werdykt</div>`;
   if (v.state === 'wait') h += `<div class="jbig">Za mało danych</div><div class="jsub">Wniosek pokażę dopiero od ${LQ.NMIN} zdarzeń z co najmniej ${LQ.DMIN} różnych dni. Jest ${st.n} zdarzeń z ${st.days} dni.</div>`;
@@ -2033,6 +2037,7 @@ $app.addEventListener('click', e => {
   if (t.closest('#btnLab')) { S.view = 'lab'; window.scrollTo(0, 0); return render(); }
   if (t.closest('#btnLq')) return lqRun();
   const lv = t.closest('[data-lqv]'); if (lv) { if (!S.lq.busy) { S.lq.v = lv.dataset.lqv; render(); } return; }
+  const lf = t.closest('[data-lqf]'); if (lf) { if (!S.lq.busy) { S.lq.fwd = lf.dataset.lqf === '1'; render(); } return; }
   const lt = t.closest('[data-lqtf]'); if (lt) { if (!S.lq.busy) { S.lq.tf = lt.dataset.lqtf; render(); } return; }
   if (t.closest('#btnMk')) { mapStop(); S.view = 'macro'; window.scrollTo(0, 0); render(); return mkLoad(false); }
   if (t.closest('#btnMkRef')) return mkLoad(true);
