@@ -297,7 +297,7 @@ body.fs #split{display:none}
     </div>
     <div id="btBox" hidden>
       <div class="mu">Backtest odtwarza historię z Binance (niezależnie od wybranej giełdy): co godzinę liczy ten sam setup co terminal, ale tylko na świecach zamkniętych do tej chwili. Wejście = potwierdzenie 15M przy aktywnej strefie, stop za strefą, cel 2R, wynik po kosztach. Warstwa funding/OI nie jest liczona (brak historii). To test na danych, na których szukałeś reguł, więc wynik jest optymistyczny: traktuj go jako kontrolę, nie dowód.</div>
-      <div class="mu" style="margin-top:4px"><b>Wybicie+retest</b> (osobny przycisk): strategia z transmisji. Trend 4H, linia korekty na 1H, wejście na wybiciu albo po reteście, w 6 wariantach (A / B1 / B2), każdy porównany z losowymi wejściami. Pełne kryteria pojawiają się pod wynikiem. Do oceny puść 5 okien: teraz, 180, 360, 540 i 720 dni wstecz (30 coinów, 180 dni, poślizg 0,05).</div>
+      <div class="mu" style="margin-top:4px"><b>Wybicie+retest</b> (osobny przycisk): strategia z transmisji. Trend 4H, linia korekty na 1H, wejście na wybiciu albo po reteście, w wariancie A (stop pod dołkiem korekty, cel 2R), osobno dla wybicia i dla retestu, każdy porównany z losowymi wejściami. Pełne kryteria pojawiają się pod wynikiem. Do oceny puść 5 okien: teraz, 180, 360, 540 i 720 dni wstecz (30 coinów, 180 dni, poślizg 0,05).</div>
       <div class="mu" style="margin-top:4px"><b>Sweep+reclaim</b> (osobny przycisk): sweep poziomu z 1H (klaster lub pojedynczy pivot) i wejście rynkowe po zamknięciu 15M z powrotem nad poziomem. Stop pod knotem, cel 2R, wyjście po 12 h, odrzucane transakcje z kosztem powyżej 0,2R. Ustaw Koszt 0,10 i Poślizg 0,1 (razem 0,2% na rundę). Żeby było z czego wyciągać wnioski (minimum 150 transakcji), użyj 100 coinów i okresu 180 dni, a okna przesuwaj (teraz, 180, 360 dni wstecz). Wniosek wymaga spełnienia kryteriów we wszystkich oknach.</div>
       <div class="mrow">
         <label class="mu">Coiny <select id="btN"><option>10</option><option selected>20</option><option>30</option><option>50</option><option>100</option></select></label>
@@ -305,7 +305,7 @@ body.fs #split{display:none}
         <label class="mu">Koszt round-trip % <input id="btC" type="number" step="0.01" min="0" value="0.10" style="width:64px"></label>
         <label class="mu" title="Dodatkowy koszt wejścia limitem po cenie poziomu (poślizg), liczony razem z kosztem round-trip">Poślizg % <select id="btS"><option value="0" selected>0</option><option value="0.05">0,05</option><option value="0.1">0,1</option></select></label>
         <label class="mu" title="Testuj starszy okres: np. 180 dni + przesunięcie 180 dni = dane sprzed 360 do 180 dni temu">Przesunięcie <select id="btO"><option value="0" selected>teraz</option><option value="60">60 dni wstecz</option><option value="90">90 dni wstecz</option><option value="180">180 dni wstecz</option><option value="360">360 dni wstecz</option><option value="540">540 dni wstecz</option><option value="720">720 dni wstecz</option></select></label>
-        <button id="btGo">Start</button><button id="btTF" title="Test odniesienia: trend-following na świecach dziennych (kanał Donchiana)">Trend 1D</button><button id="btRK" title="Test rankingu dnia: czy najsilniejsze coiny od 00:00 UTC idą dalej (kontynuacja), czy się cofają (odwrócenie). Bez zleceń, na świecach 1H. Używa pól Coiny, Okres, Przesunięcie, Koszt i Poślizg.">Ranking</button><button id="btBR" title="Test wybicia i retestu linii korekty (strategia z transmisji) w 6 wariantach: A = stop pod dołkiem korekty i cel 2R; B1 = cel z płynności Da Vinci; B2 = stop pod Liquidity Block. Porównanie z losowymi wejściami.">Wybicie+retest</button><button id="btSR" title="Test sweep + reclaim: sweep poziomu z 1H (klaster lub pojedynczy pivot) i wejście rynkowe po reclaimie na 15M. Stop pod knotem, cel 2R, wyjście po 12 h, koszt max 0,2R. Warianty V0, V1 (CHoCH 15M), V2 (rozciągnięcie). Porównanie z losowymi wejściami i kryteria ustalone z góry.">Sweep+reclaim</button><button id="btCsv" hidden>Kopiuj CSV</button>
+        <button id="btGo">Start</button><button id="btTF" title="Test odniesienia: trend-following na świecach dziennych (kanał Donchiana)">Trend 1D</button><button id="btRK" title="Test rankingu dnia: czy najsilniejsze coiny od 00:00 UTC idą dalej (kontynuacja), czy się cofają (odwrócenie). Bez zleceń, na świecach 1H. Używa pól Coiny, Okres, Przesunięcie, Koszt i Poślizg.">Ranking</button><button id="btBR" title="Test wybicia i retestu linii korekty (strategia z transmisji) w wariancie A (stop pod dołkiem korekty, cel 2R), osobno dla wybicia i dla retestu. Porównanie z losowymi wejściami.">Wybicie+retest</button><button id="btSR" title="Test sweep + reclaim: sweep poziomu z 1H (klaster lub pojedynczy pivot) i wejście rynkowe po reclaimie na 15M. Stop pod knotem, cel 2R, wyjście po 12 h, koszt max 0,2R. Warianty V0, V1 (CHoCH 15M), V2 (rozciągnięcie). Porównanie z losowymi wejściami i kryteria ustalone z góry.">Sweep+reclaim</button><button id="btCsv" hidden>Kopiuj CSV</button>
       </div>
       <div id="btProg" class="mu"></div>
       <textarea id="btTa" hidden readonly rows="4"></textarea>
@@ -2634,16 +2634,17 @@ if (typeof document !== 'undefined') (() => {
   }
   $('btRK').onclick = runRank;
 
-  // ---------- test wybicia i retestu linii korekty (+ Da Vinci) ----------
+  // ---------- test wybicia i retestu linii korekty (tylko warianty A; B1/B2 ukryte w UI) ----------
+  const BR_SHOW = Engine.BR_VARIANTS.filter(([k]) => k.endsWith('|A'));
   function brNoteHtml(startMs, endMs, cost, slip) {
     return `<div class="mu" style="margin-bottom:6px">Wybicie / retest linii korekty, ${new Date(startMs).toLocaleDateString('pl-PL')}–${new Date(endMs).toLocaleDateString('pl-PL')}. Trend 4H zgodny (1D nie przeciwny), linia korekty na 1H przez dwa ostatnie szczyty (dołki dla SHORT), wybicie = zamknięcie 15M ponad linią + 0,1 ATR, retest = powrót do linii i zamknięcie z powrotem po stronie trendu. Koszt ${cost}% + poślizg ${slip}%, wyniki netto.</div>`;
   }
   function brCritHtml() {
-    return `<div class="mu" style="font-size:11px;margin:6px 0">Kryteria ustalone z góry: wariant A „działa” tylko wtedy, gdy średnie R po kosztach jest dodatnie i wyższe niż losowe wejścia z tym samym stopem w co najmniej 4 z 5 okien (teraz, 180, 360, 540, 720 dni wstecz), a łączne t ≥ 3 (podniesione, bo sprawdzamy sześć wariantów naraz). B1 i B2 dodają coś tylko wtedy, gdy są lepsze od A w co najmniej 4 z 5 okien. Wiersze „losowo” używają tego samego stopu i RR co dany wariant. Transakcje są skorelowane między coinami, a starsze okna mają niedobór coinów (które potem zniknęły z giełdy), więc wynik jest raczej optymistyczny. B1/B2 bywa pomijane, gdy brak płynności u góry albo Liquidity Block pod ceną: porównuj tylko wiersze z podobnym n.</div>`;
+    return `<div class="mu" style="font-size:11px;margin:6px 0">Kryteria ustalone z góry: wariant A „działa” tylko wtedy, gdy średnie R po kosztach jest dodatnie i wyższe niż losowe wejścia z tym samym stopem w co najmniej 4 z 5 okien (teraz, 180, 360, 540, 720 dni wstecz), a łączne t ≥ 3 (próg ustalony wcześniej, gdy sprawdzano sześć wariantów; zostaje bez zmian, choć teraz są dwa). Wiersze „losowo” używają tego samego stopu i RR co dany wariant. Transakcje są skorelowane między coinami, a starsze okna mają niedobór coinów (które potem zniknęły z giełdy), więc wynik jest raczej optymistyczny.</div>`;
   }
   function brFunnelHtml(F) {
-    const keys = Object.keys(F || {}).sort(); if (!keys.length) return '';
-    return `<div class="btg">Lejek (liczba zdarzeń, wszystkie coiny)</div>` + keys.map(k => `<div class="btr"><span>${k}</span><b>${F[k]}</b></div>`).join('');
+    const keys = Object.keys(F || {}).filter(k => !/B1|B2/.test(k.replace(/^A\/B1 /, ''))).sort(); if (!keys.length) return '';
+    return `<div class="btg">Lejek (liczba zdarzeń, wszystkie coiny)</div>` + keys.map(k => `<div class="btr"><span>${k.replace(/^A\/B1 /, 'A ')}</span><b>${F[k]}</b></div>`).join('');
   }
   async function runBR() {
     if (BT.running) { BT.stop = true; return; }
@@ -2651,7 +2652,7 @@ if (typeof document !== 'undefined') (() => {
     const nC = +$('btN').value, days = +$('btD').value, off = +$('btO').value, cost = +$('btC').value || 0, slip = +$('btS').value || 0, now = Date.now() - off * 86400e3, startMs = now - days * 86400e3, fetchEnd = off ? Math.min(Date.now(), now + 8 * 86400e3) : null;
     const coins = S.coins.slice(0, nC), t0 = Date.now(), F = {}, baseV = {};
     const rend = () => {
-      const G = Engine.BR_VARIANTS.map(([k, lab]) => Engine.btCompare(BT.trades.filter(x => x.variant === k), baseV[k] || [], lab));
+      const G = BR_SHOW.map(([k, lab]) => Engine.btCompare(BT.trades.filter(x => x.variant === k), baseV[k] || [], lab));
       renderG([...G, ...Engine.brGroups(BT.trades).slice(1)], brNoteHtml(startMs, now, cost, slip) + brCritHtml() + brFunnelHtml(F));
     };
     try {
@@ -2662,8 +2663,8 @@ if (typeof document !== 'undefined') (() => {
           for (const [tf, back] of [['15m', 3], ['1h', 14], ['4h', 90], ['1d', 300]]) { d[tf] = await klinesRange(sym, tf, startMs - back * 86400e3, fetchEnd); if (BT.stop) break; }
           if (BT.stop) break;
           const tr = await Engine.backtestBR(d, { N: S.N, startMs, endMs: now, costPct: cost, slipPct: slip, funnel: F }, async f => { say(`liczę ${Math.round(f * 100)}%`); await sleep(0); return BT.stop; });
-          BT.trades.push(...tr);
-          for (const [k] of Engine.BR_VARIANTS) { const l = tr.filter(x => x.variant === k); if (l.length) (baseV[k] = baseV[k] || []).push(...Engine.btBaseline(d, l, { N: S.N, startMs, endMs: now, costPct: cost + slip, maxBars: 1344 }, 2000 + i)); }
+          const trA = tr.filter(x => BR_SHOW.some(([k]) => k === x.variant)); BT.trades.push(...trA);
+          for (const [k] of BR_SHOW) { const l = trA.filter(x => x.variant === k); if (l.length) (baseV[k] = baseV[k] || []).push(...Engine.btBaseline(d, l, { N: S.N, startMs, endMs: now, costPct: cost + slip, maxBars: 1344 }, 2000 + i)); }
         } catch (e) { BT.skipped.push(sym.replace('USDT', '')); }
         rend();
       }
