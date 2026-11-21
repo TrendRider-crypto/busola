@@ -1927,6 +1927,7 @@ if (typeof document !== 'undefined') (() => {
       const a = Engine.analyze(c, S.N);
       res[tf] = { trend: a.trend, last: a.events[a.events.length - 1] || null, c };
     }
+    res['1w'] = { trend: 0, last: null, c: [] };   // 1W wyłączony na stałe (silnik oczekuje pola, ale go nie używa przy use1w: false)
     return res;
   }
   function alignment(tr) {
@@ -2216,10 +2217,10 @@ if (typeof document !== 'undefined') (() => {
       });
       zones.sort((x, y) => x.d - y.d);
       const list = zones.slice(0, 5).map(z => `<div class="ev"><b class="${z.dir === 1 ? 'up' : 'dn'}">${z.kind} ${z.tf} ${z.dir === 1 ? '↑' : '↓'}</b> ${fmt(z.bottom)}–${fmt(z.top)} <small>${z.d === 0 ? 'cena w strefie' : z.d.toFixed(1) + ' ATR'}${z.f ? ' · ✓' + z.f : ''}</small></div>`).join('') || '<span class="mu">Brak aktywnych stref</span>';
-      const LAY = [['Trend 1W/1D/4H', 'trend'], ['Strefa 4H/1H', 'zone'], ['Volume Profile', 'vp'], ['Wejście 15M', 'entry'], ['Hurst 4H', 'hurst'], ['Funding / OI', 'deriv']].filter(([, k]) => res.layers[k]);
-      const b1w = tr['1w'].trend, b1d = tr['1d'].trend, ar = t => t === 1 ? '↑' : t === -1 ? '↓' : '·';
+      const LAY = [['Trend 1D/4H', 'trend'], ['Strefa 4H/1H', 'zone'], ['Volume Profile', 'vp'], ['Wejście 15M', 'entry'], ['Hurst 4H', 'hurst'], ['Funding / OI', 'deriv']].filter(([, k]) => res.layers[k]);
+      const b1d = tr['1d'].trend, ar = t => t === 1 ? '↑' : t === -1 ? '↓' : '·';
       el.innerHTML = `<div class="st ${statusCls(res)}">${res.status} <span class="mu" style="font-weight:400;font-size:12px">· wynik ${res.score}/100${res.mult.applied ? ` (baza ${res.base}, LS +${res.mult.pct}%)` : ''}</span></div>
-        <div>Kierunek: <b class="${res.bias > 0 ? 'up' : res.bias < 0 ? 'dn' : 'mu'}">${res.bias > 0 ? 'LONG' : res.bias < 0 ? 'SHORT' : 'brak'}</b> <small>(1W${ar(b1w)} 1D${ar(b1d)})</small></div>
+        <div>Kierunek: <b class="${res.bias > 0 ? 'up' : res.bias < 0 ? 'dn' : 'mu'}">${res.bias > 0 ? 'LONG' : res.bias < 0 ? 'SHORT' : 'brak'}</b> <small>(1D${ar(b1d)})</small></div>
         ${agreeBars(tr, res.bias)}${res.filters.map(x => `<div class="dn">⛔ ${x.msg}</div>`).join('')}${reasonLine(res, tr) ? `<div class="why1">${reasonLine(res, tr)}</div>` : ''}
         <div style="margin:8px 0 4px">${LAY.map(([n, k]) => `<div class="lay"><span>${n}</span><span class="bar"><i style="width:${res.layers[k].pts / res.layers[k].max * 100}%"></i></span><b>${res.layers[k].pts}/${res.layers[k].max}</b></div>`).join('')}
         ${res.layers.deriv ? '' : '<div class="lay mu"><span>Funding / OI</span><span class="bar"></span><b>brak</b></div>'}</div>
@@ -2229,7 +2230,7 @@ if (typeof document !== 'undefined') (() => {
         <div class="mu" style="font-size:11px;margin:8px 0 2px">Najbliższe aktywne strefy 4H/1H (✓POC = pokrywa POC, ✓VA = w Value Area):</div>${list}
         <small style="display:block;margin-top:6px">Obserwacja, nie rekomendacja inwestycyjna.</small>`;
       $('scoreCard').innerHTML = `<div class="sc-l"><div class="sc-h">Strefy 4H/1H i wejście 15M</div><div class="st ${statusCls(res)}">${res.status} <span class="mu" style="font-weight:400;font-size:12px">· wynik ${res.score}/100${res.mult.applied ? ` (baza ${res.base}, LS +${res.mult.pct}%)` : ''}</span></div>
-        <div>Kierunek: <b class="${res.bias > 0 ? 'up' : res.bias < 0 ? 'dn' : 'mu'}">${res.bias > 0 ? 'LONG' : res.bias < 0 ? 'SHORT' : 'brak'}</b> <small>(1W${ar(b1w)} 1D${ar(b1d)})</small></div>
+        <div>Kierunek: <b class="${res.bias > 0 ? 'up' : res.bias < 0 ? 'dn' : 'mu'}">${res.bias > 0 ? 'LONG' : res.bias < 0 ? 'SHORT' : 'brak'}</b> <small>(1D${ar(b1d)})</small></div>
         ${agreeBars(tr, res.bias)}${res.filters.map(x => `<div class="dn">⛔ ${x.msg}</div>`).join('')}${reasonLine(res, tr) ? `<div class="why1">${reasonLine(res, tr)}</div>` : ''}</div>
         <div class="sc-r">${LAY.map(([n, k]) => `<div class="lay"><span>${n}</span><span class="bar"><i style="width:${res.layers[k].pts / res.layers[k].max * 100}%"></i></span><b>${res.layers[k].pts}/${res.layers[k].max}</b></div>`).join('')}
         ${res.layers.deriv ? '' : '<div class="lay mu"><span>Funding / OI</span><span class="bar"></span><b>–/10</b></div>'}
