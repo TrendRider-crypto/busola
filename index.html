@@ -1863,7 +1863,7 @@ function mapHtml() {
 }
 
 // ---------- Test pułapki płynności: pobieranie i widok ----------
-const LQ_PAGES = { '15m': 4, '1h': 4, '4h': 3 }, LQ_COINS = 40, LQ_TFL = { '15m': '15 min', '1h': '1 godz.', '4h': '4 godz.' };
+const LQ_PAGES = { '15m': 4, '1h': 4, '4h': 3, '1d': 2 }, LQ_COINS = 40, LQ_TFL = { '15m': '15 min', '1h': '1 godz.', '4h': '4 godz.', '1d': '1 dzień' };
 try { const j = JSON.parse(localStorage.getItem('busola_lq_v1') || 'null'); if (j && typeof j === 'object') S.lq.res = j; } catch (e) { /* tylko w pamięci */ }
 async function lqCandles(sym, tf) {
   if (S.demo) return klines(sym, tf, 3000);
@@ -1880,7 +1880,7 @@ async function lqCandles(sym, tf) {
 const lqKey = (tf, v) => v === 'B' ? tf + 'B' : tf;
 async function lqRun() {
   const L = S.lq; if (L.busy) return;
-  const tf = L.tf, v = L.v, alpha = v === 'B' ? LQ.ALPHA_B : 0.025; L.busy = true; L.err = ''; L.done = 0; L.tot = 0; if (S.view === 'lab') render();
+  const tf = L.tf, v = L.v, alpha = v === 'B' || tf === '1d' ? LQ.ALPHA_B : 0.025; L.busy = true; L.err = ''; L.done = 0; L.tot = 0; if (S.view === 'lab') render();
   try {
     if (!S.coins.length) S.coins = await loadCoins();
     const coins = S.coins.slice(0, LQ_COINS); L.tot = coins.length; if (!coins.length) throw new Error('pusta lista coinów');
@@ -1909,7 +1909,8 @@ function labHtml() {
   h += `<div class="jseg" role="group" aria-label="Wariant">${[['A', 'A: sam sweep'], ['B', 'B: z potwierdzeniem']].map(x => `<button class="jsb${L.v === x[0] ? ' on' : ''}" data-lqv="${x[0]}"${L.busy ? ' disabled' : ''}>${x[1]}</button>`).join('')}</div>`;
   h += `<div class="jcard"><div class="jlab">Co sprawdzamy${B ? ' (wariant B)' : ''}</div><div class="jsub">Cena przebija równe szczyty (albo dołki) z ostatnich ${LQ.N} świec o ${String(LQ.MIN).replace('.', ',')}–${String(LQ.MAX).replace('.', ',')} ATR i w ciągu ${LQ.RECL} świec zamyka się z powrotem w zakresie. Wejście w stronę powrotu, stop za knotem + ${String(LQ.PAD).replace('.', ',')} ATR, cel ${LQ.RR}R, wyjście po ${LQ.HOR} świecach, koszt ${String(LQ.COST).replace('.', ',')}%. Porównujemy z losowymi wejściami na tych samych coinach, z tym samym stopem, celem i kierunkiem. Parametry ustaliłem przed pierwszym uruchomieniem i ich nie zmieniam po wyniku.${B ? ' <br><br>' + `Wariant B: wejście dopiero po potwierdzeniu struktury: pierwsze zamknięcie za lokalnym dołkiem (przy sweepie dołka: szczytem) z ${LQ.SW} świec sprzed sweepu, najpóźniej ${LQ.CONF} świec po nim. Stop, cel, koszty i porównanie z losowymi wejściami bez zmian. Wariant dodałem po wyniku A, więc to druga hipoteza na tych samych danych. Dlatego przedział ufności jest ostrzejszy: 99% zamiast 95%. Reguły zapisałem przed pierwszym uruchomieniem. ` : ''}</div></div>`;
   h += `<div class="jseg" role="group" aria-label="Interwał">${Object.keys(LQ_TFL).map(k => `<button class="jsb${L.tf === k ? ' on' : ''}" data-lqtf="${k}"${L.busy ? ' disabled' : ''}>${LQ_TFL[k]}${k === '1h' ? ' ★' : ''}</button>`).join('')}</div>`;
-  h += `<div class="jnote">★ = interwał główny, ustalony z góry. Pozostałe są kontrolą: wygrana tylko na jednym z trzech to słabszy dowód, bo każdy interwał to kolejna szansa na przypadkowy wynik.</div>`;
+  h += `<div class="jnote">★ = interwał główny, ustalony z góry. Pozostałe są kontrolą: wygrana tylko na jednym z interwałów to słabszy dowód, bo każdy kolejny to następna szansa na przypadkowy wynik.</div>`;
+  if (L.tf === '1d') h += `<div class="jcard"><div class="jlab">1 dzień: zapisane przed uruchomieniem</div><div class="jsub">Hipoteza: zebranie płynności na 1D z powrotem za poziom odwraca ruch lepiej niż losowe wejście. Interwał dodany po wynikach 1H i 4H (które przewagi nie pokazały), więc to nowa hipoteza i obowiązuje ostrzejszy przedział 99%, także w wariancie A. Reguły i liczby bez zmian względem 1H i 4H, tylko świece są dzienne: poziom z ostatnich ${LQ.N} dni, trend to średnia ze ${LQ.TREND} dni, wyjście po ${LQ.HOR} dniach. Werdykt dotyczy wyłącznie wiersza Wszystkie. Podgrupa „Pod trend” (czyli odwrócenia) jest tylko opisem. Liczy się pierwsze uruchomienie dla A i dla B. Parametrów po zobaczeniu wyniku nie zmieniam.</div></div>`;
   h += `<div style="margin:14px 20px 0"><button class="lab-run" id="btnLq"${L.busy ? ' disabled' : ''}>${L.busy ? `Liczę… ${L.done}/${L.tot || LQ_COINS}` : r ? 'Uruchom ponownie' : 'Uruchom test'}</button></div>`;
   if (L.busy) h += `<div class="jbar" style="margin:12px 20px 0"><i style="width:${L.tot ? Math.round(L.done / L.tot * 100) : 0}%"></i></div>`;
   if (L.err) h += `<div class="banner"><span>Nie udało się: ${esc(L.err)}. Spróbuj za chwilę.</span></div>`;
