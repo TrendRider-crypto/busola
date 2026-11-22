@@ -1562,7 +1562,7 @@ if (typeof document !== 'undefined') (() => {
     const IS_LIGHT = () => document.documentElement.classList.contains('light');
     const LMAP = { '#0e1110': '#e8edeb', '#a3a8a6': '#5a5f5d', '#232826': '#cfd6d3', '#00f6ac': '#00946a', '#ff7a7a': '#d64538', '#f2b766': '#b86b00',
       '#4dd0e1': '#0097a7', '#ffb74d': '#e08600', '#00bfff': '#0084c8', '#3a403e': '#9aa3a0', '#0a0d0c': '#f2f5f4',
-      'rgba(245,197,66,0.85)': 'rgba(176,100,0,0.95)', 'rgba(245,197,66,0.5)': 'rgba(214,150,0,0.45)', 'rgba(125,138,153,0.8)': 'rgba(90,95,93,0.8)' };
+      'rgba(245,197,66,0.85)': 'rgba(176,100,0,0.95)', 'rgba(245,197,66,0.38)': 'rgba(214,150,0,0.38)', 'rgba(125,138,153,0.55)': 'rgba(90,95,93,0.6)' };
     ['fillStyle', 'strokeStyle'].forEach(k => {
       const d = Object.getOwnPropertyDescriptor(CanvasRenderingContext2D.prototype, k);
       Object.defineProperty(ctx, k, { configurable: true, get() { return d.get.call(this); }, set(v) { d.set.call(this, IS_LIGHT() && typeof v === 'string' && LMAP[v] ? LMAP[v] : v); } });
@@ -1639,9 +1639,11 @@ if (typeof document !== 'undefined') (() => {
 
       // siatka + oś ceny
       ctx.font = '11px system-ui,sans-serif'; ctx.textBaseline = 'middle';
+      const tagYs = (ann.liq || []).map(L => Y(L.level)).filter(y => y > 0 && y < ch);
       for (let k = 0; k <= 5; k++) {
         const p = lo + (hi - lo) * k / 5, y = Y(p);
         ctx.strokeStyle = '#0e1110'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(cw, y); ctx.stroke();
+        if (tagYs.some(ty => Math.abs(ty - y) < 12)) continue;
         ctx.fillStyle = '#a3a8a6'; ctx.textAlign = 'left'; ctx.fillText(fmt(p), cw + 5, y);
       }
       // oś czasu
@@ -1661,14 +1663,14 @@ if (typeof document !== 'undefined') (() => {
       });
       // profil wolumenu (tło, od prawej) + POC / VAH / VAL
       if (ann.showVP && ann.vp) {
-        const vp = ann.vp, maxw = cw * 0.22;
+        const vp = ann.vp, maxw = cw * 0.16;
         for (let k = 0; k < vp.v.length; k++) {
           const yT = Y(vp.lo + (k + 1) * vp.bs), yB = Y(vp.lo + k * vp.bs), w = vp.v[k] / vp.max * maxw;
-          ctx.fillStyle = k === vp.pocIdx ? 'rgba(245,197,66,0.5)' : (k >= vp.vaLo && k <= vp.vaHi ? 'rgba(63,167,255,0.28)' : 'rgba(125,138,153,0.2)');
+          ctx.fillStyle = k === vp.pocIdx ? 'rgba(245,197,66,0.38)' : (k >= vp.vaLo && k <= vp.vaHi ? 'rgba(63,167,255,0.17)' : 'rgba(125,138,153,0.11)');
           ctx.fillRect(cw - w, yT, w, Math.max(1, yB - yT - 1));
         }
         ctx.font = '9px system-ui,sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
-        [[vp.poc, 'POC', 'rgba(245,197,66,0.85)', []], [vp.vah, 'VAH', 'rgba(125,138,153,0.8)', [3, 3]], [vp.val, 'VAL', 'rgba(125,138,153,0.8)', [3, 3]]].forEach(([p, lab, col, dash]) => {
+        [[vp.poc, 'POC', 'rgba(245,197,66,0.85)', []], [vp.vah, 'VAH', 'rgba(125,138,153,0.55)', [3, 3]], [vp.val, 'VAL', 'rgba(125,138,153,0.55)', [3, 3]]].forEach(([p, lab, col, dash]) => {
           const y = Y(p); ctx.strokeStyle = col; ctx.fillStyle = col; ctx.setLineDash(dash);
           ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(cw, y); ctx.stroke(); ctx.setLineDash([]);
           ctx.fillText(lab + ' ' + fmt(p), 3, y - 1);
@@ -1681,7 +1683,7 @@ if (typeof document !== 'undefined') (() => {
           if (x1 < 0 || x0 > cw) return;
           const yT = Y(z.top), yB = Y(z.bottom), h = Math.max(1, yB - yT), col = z.dir === 1 ? '38,194,129' : '239,83,80';
           ctx.fillStyle = `rgba(${col},${z.kind === 'OB' ? 0.17 : 0.09})`; ctx.fillRect(x0, yT, x1 - x0, h);
-          ctx.strokeStyle = `rgba(${col},0.75)`; ctx.lineWidth = 1; ctx.setLineDash(z.kind === 'OB' ? [] : [3, 3]);
+          ctx.strokeStyle = `rgba(${col},0.5)`; ctx.lineWidth = 1; ctx.setLineDash(z.kind === 'OB' ? [] : [3, 3]);
           ctx.strokeRect(x0 + 0.5, yT + 0.5, x1 - x0, h); ctx.setLineDash([]);
           // etykieta na środku widocznej części strefy (poziomo i pionowo)
           const vx0 = Math.max(x0, 0), vx1 = Math.min(x1, cw), vy0 = Math.max(yT, 0), vy1 = Math.min(yB, ch);
@@ -1691,13 +1693,13 @@ if (typeof document !== 'undefined') (() => {
         });
       }
       // linie zdarzeń (poziom złamany)
-      ctx.setLineDash([4, 3]); ctx.lineWidth = 1;
+      ctx.setLineDash([4, 3]); ctx.lineWidth = 1; ctx.globalAlpha = 0.55;
       ann.events.forEach(e => {
         if (e.idx < i0 - 1 || e.from > i1) return;
         ctx.strokeStyle = e.kind === 'CHoCH' ? '#f2b766' : '#00f6ac';
         ctx.beginPath(); ctx.moveTo(X(e.from), Y(e.price)); ctx.lineTo(X(e.idx), Y(e.price)); ctx.stroke();
       });
-      ctx.setLineDash([]);
+      ctx.setLineDash([]); ctx.globalAlpha = 1;
       // świece
       const body = Math.max(1, bw * 0.7);
       for (let i = i0; i <= i1; i++) {
@@ -1719,10 +1721,10 @@ if (typeof document !== 'undefined') (() => {
       // niezdjęte szczyty/dołki (LS): linia od pivotu w prawo, cena na osi
       if (ann.liq) ann.liq.forEach(L => {
         const y = Y(L.level); if (!(y > 0 && y < ch)) return;
-        const x0 = Math.max(0, X(idxOfTime(L.tFrom))), al = L.tf === '1d' ? 0.95 : L.tf === '4h' ? 0.8 : 0.6;
-        ctx.strokeStyle = `rgba(199,125,255,${al})`; ctx.lineWidth = 1.2; ctx.setLineDash([]);
+        const x0 = Math.max(0, X(idxOfTime(L.tFrom))), al = L.tf === '1d' ? 0.9 : L.tf === '4h' ? 0.65 : 0.45;
+        ctx.strokeStyle = `rgba(199,125,255,${al})`; ctx.lineWidth = 1; ctx.setLineDash([]);
         ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(cw, y); ctx.stroke();
-        ctx.font = 'bold 9px system-ui,sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = L.side === 'H' ? 'bottom' : 'top'; ctx.fillStyle = `rgba(199,125,255,${al})`;
+        ctx.font = '9px system-ui,sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = L.side === 'H' ? 'bottom' : 'top'; ctx.fillStyle = `rgba(199,125,255,${al})`;
         ctx.fillText((TFL[L.tf] || '') + (L.side === 'H' ? ' szczyt' : ' dołek'), x0 + 4, y + (L.side === 'H' ? -2 : 2));
         liqTags.push({ y, p: L.level, al });
       });
@@ -1795,10 +1797,16 @@ if (typeof document !== 'undefined') (() => {
         ctx.setLineDash([]);
       }
       ctx.restore();
+      // tagi cen niezdjętych poziomów: rozsunięte, żeby się nie nakładały (maks. kilkanaście px od swojej linii)
+      { const tg = liqTags.slice().sort((x, y) => x.y - y.y); tg.forEach((t, i) => { t.yy = i ? Math.max(t.y, tg[i - 1].yy + 16) : t.y; });
+        for (let i = tg.length - 1; i >= 0; i--) { const mx = i === tg.length - 1 ? ch - 8 : tg[i + 1].yy - 16; if (tg[i].yy > mx) tg[i].yy = mx; } }
       liqTags.forEach(t => {
         const txt = fmt(t.p); ctx.font = 'bold 10px system-ui,sans-serif'; const w = ctx.measureText(txt).width + 8;
-        ctx.fillStyle = `rgba(199,125,255,${t.al})`; ctx.fillRect(cw + 1, t.y - 8, Math.min(w, PR - 2), 16);
-        ctx.fillStyle = '#020202'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText(txt, cw + 5, t.y);
+        const tw = Math.min(w, PR - 2), lt = IS_LIGHT();
+        ctx.fillStyle = lt ? '#ffffff' : '#020202'; ctx.fillRect(cw + 1, t.yy - 8, tw, 16);
+        ctx.fillStyle = `rgba(199,125,255,${lt ? t.al * 0.3 : t.al * 0.22})`; ctx.fillRect(cw + 1, t.yy - 8, tw, 16);
+        ctx.strokeStyle = `rgba(${lt ? '123,63,184' : '199,125,255'},${t.al})`; ctx.lineWidth = 1; ctx.strokeRect(cw + 1.5, t.yy - 7.5, tw - 1, 15);
+        ctx.fillStyle = lt ? '#5a2a91' : '#e3c4ff'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText(txt, cw + 5, t.yy);
       });
       // panel oscylatora Hurst pod wykresem: cena (niebieska), średnia (pomarańczowa), górka >100% (czerwone), dołek <0% (zielone)
       if (ann.hurst) {
