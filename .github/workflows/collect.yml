@@ -1,13 +1,11 @@
 name: Zbieracz danych (OI i funding)
 
+# Harmonogram wyłączony: test z 22.11.2026 pokazał, że Binance Futures odrzuca zapytania z serwerów GitHuba (HTTP 451).
+# Zostaje tylko ręczne uruchomienie. Przywrócenie: odkomentować schedule.
 on:
-  schedule:
-    - cron: '*/15 * * * *'
+  # schedule:
+  #   - cron: '*/15 * * * *'
   workflow_dispatch:
-  push:
-    paths:
-      - 'collector/**'
-      - '.github/workflows/collect.yml'
 
 permissions:
   contents: write
