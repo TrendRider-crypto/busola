@@ -1699,6 +1699,7 @@ if (typeof document !== 'undefined') (() => {
       ctx.strokeStyle = '#232826'; ctx.beginPath(); ctx.moveTo(cw, 0); ctx.lineTo(cw, bot); ctx.moveTo(0, ch); ctx.lineTo(cw, ch); if (ph) { ctx.moveTo(0, bot); ctx.lineTo(cw, bot); } ctx.stroke();
 
       ctx.save(); ctx.beginPath(); ctx.rect(0, 0, cw, ch); ctx.clip();
+      const liqTags = [];
       // poziomy planera: stop, wejście, 1R/2R/3R
       levels.forEach(L => {
         const y = Y(L.p); if (!(y > 0 && y < ch)) return;
@@ -1763,6 +1764,16 @@ if (typeof document !== 'undefined') (() => {
           ctx.fillText(p.label, X(p.idx), p.type === 'H' ? Y(p.price) - 3 : Y(p.price) + 3);
         });
       }
+      // niezdjęte szczyty/dołki (LS): linia od pivotu w prawo, cena na osi
+      if (ann.liq) ann.liq.forEach(L => {
+        const y = Y(L.level); if (!(y > 0 && y < ch)) return;
+        const x0 = Math.max(0, X(idxOfTime(L.tFrom))), al = L.tf === '1d' ? 0.95 : L.tf === '4h' ? 0.8 : 0.6;
+        ctx.strokeStyle = `rgba(199,125,255,${al})`; ctx.lineWidth = 1.2; ctx.setLineDash([]);
+        ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(cw, y); ctx.stroke();
+        ctx.font = 'bold 9px system-ui,sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = L.side === 'H' ? 'bottom' : 'top'; ctx.fillStyle = `rgba(199,125,255,${al})`;
+        ctx.fillText((TFL[L.tf] || '') + (L.side === 'H' ? ' szczyt' : ' dołek'), x0 + 4, y + (L.side === 'H' ? -2 : 2));
+        liqTags.push({ y, p: L.level, al });
+      });
       // Liquidity Sweep: kreska na wyciętym poziomie + romb przy knocie + etykieta LS
       if (ann.sweeps) ann.sweeps.forEach(s => {
         const xi = idxOfTime(s.t), xf = idxOfTime(s.tFrom);
@@ -1832,6 +1843,11 @@ if (typeof document !== 'undefined') (() => {
         ctx.setLineDash([]);
       }
       ctx.restore();
+      liqTags.forEach(t => {
+        const txt = fmt(t.p); ctx.font = 'bold 10px system-ui,sans-serif'; const w = ctx.measureText(txt).width + 8;
+        ctx.fillStyle = `rgba(199,125,255,${t.al})`; ctx.fillRect(cw + 1, t.y - 8, Math.min(w, PR - 2), 16);
+        ctx.fillStyle = '#020202'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillText(txt, cw + 5, t.y);
+      });
       // panel oscylatora Hurst pod wykresem: cena (niebieska), średnia (pomarańczowa), górka >100% (czerwone), dołek <0% (zielone)
       if (ann.hurst) {
         const hg = pgeom('hurst'), os = ann.hurst.osc, py0 = hg.y0, py1 = hg.y1;
@@ -2179,7 +2195,7 @@ if (typeof document !== 'undefined') (() => {
         zs.push(...pickZones(Engine.zones(ct, S.N), t, all[all.length - 1].close, kinds));
       }
       // Liquidity Sweep: z włączonych interwałów, tylko równych lub wyższych niż interwał wykresu
-      const sws = [];
+      const sws = [], liq = [];
       for (const t of ZSEL.LS) {
         if (STEP[t] < STEP[S.tf]) continue;
         const ct = t === S.tf ? closed : closedOnly(await klines(sym, t));
@@ -2189,9 +2205,11 @@ if (typeof document !== 'undefined') (() => {
         // pojedyncze szczyty i dołki (jak na Busoli): niezdjęty pivot, który zdjął knot i świeca zamknęła się z powrotem; klastry EQH/EQL powyżej mają pierwszeństwo
         const seen = new Set(cl.map(s => ct[s.idx].time + '|' + s.dir));
         swingSweeps(ct, S.N, 250).slice(-5).forEach(s => { if (!seen.has(s.t + '|' + s.dir)) sws.push({ ...s, tf: t }); });
+        // niezdjęte szczyty nad ceną i dołki pod ceną jako poziomy w prawo (jak na TradingView), po 4 najbliższe z każdej strony
+        liq.push(...openLevels(t === S.tf ? all : ct, ct, S.N, all[all.length - 1].close, 4).map(x => ({ ...x, tf: t })));
       }
       const vp = Engine.volumeProfile(closed, 150, 48);
-      Chart.set(all, { events: a.events.slice(-14), pivots: a.pivots.slice(-40), showPiv: false, zones: zs, sweeps: sws, vp, showZones: true, showVP: $('chkVP').checked, hurst: $('chkHU').checked ? Engine.hurst(all) : null, st: $('chkST').checked ? indST(all) : null, ema: $('chkEMA').checked ? indEMAs(all) : null, macd: $('chkMACD').checked ? indMACD(all) : null, rsi: $('chkRSI').checked ? indRSI(all) : null, tf: S.tf }, keep);
+      Chart.set(all, { events: a.events.slice(-14), pivots: a.pivots.slice(-40), showPiv: false, zones: zs, sweeps: sws, liq, vp, showZones: true, showVP: $('chkVP').checked, hurst: $('chkHU').checked ? Engine.hurst(all) : null, st: $('chkST').checked ? indST(all) : null, ema: $('chkEMA').checked ? indEMAs(all) : null, macd: $('chkMACD').checked ? indMACD(all) : null, rsi: $('chkRSI').checked ? indRSI(all) : null, tf: S.tf }, keep);
       DRW.sync();
       S.vkey = vkey;
       S.lastPrice = fmt(all[all.length - 1].close);
@@ -2202,6 +2220,18 @@ if (typeof document !== 'undefined') (() => {
     renderTrends(sym);
     renderSetup(sym);
     renderAnat(sym);
+  }
+  // Niezdjęte poziomy: pivot, którego nie przebiła żadna późniejsza świeca (knotem). Szczyty tylko nad ceną, dołki tylko pod ceną; n najbliższych z każdej strony.
+  function openLevels(chk, c, N, price, n) {
+    if (!c || c.length < 40) return [];
+    const pv = Engine.analyze(c, N).pivots, out = [];
+    for (const p of pv) {
+      if (p.type === 'H' ? !(p.price > price) : !(p.price < price)) continue;
+      let ok = true; for (let k = p.idx + 1; k < chk.length; k++) if (p.type === 'H' ? chk[k].high > p.price : chk[k].low < p.price) { ok = false; break; }
+      if (ok) out.push({ side: p.type, level: p.price, tFrom: c[p.idx].time });
+    }
+    const hs = out.filter(x => x.side === 'H').sort((a, b) => a.level - b.level).slice(0, n), ls = out.filter(x => x.side === 'L').sort((a, b) => b.level - a.level).slice(0, n);
+    return hs.concat(ls);
   }
   // LS z pojedynczych szczytów i dołków (UI, bez zmian w silniku): pivot nie zdjęty przez żadną wcześniejszą zamkniętą świecę;
   // pierwsza świeca, która go przebiła knotem i zamknęła się z powrotem po właściwej stronie, to zebranie płynności (dir +1 = dołek, −1 = szczyt).
@@ -2941,7 +2971,7 @@ if (typeof document !== 'undefined') (() => {
 
   // ---------- przyciski OB / FVG z wysuwanym wyborem interwałów ----------
   const ZTF = ['1d', '4h', '1h', '15m'];
-  const LTF = ['1d', '4h'], OPTS = { OB: ZTF, FVG: ZTF, LS: LTF };
+  const LTF = ['1d', '4h', '1h'], OPTS = { OB: ZTF, FVG: ZTF, LS: LTF };
   let ZSEL = { OB: ['4h'], FVG: [], LS: ['4h', '1d'] };
   try {
     const s = JSON.parse(localStorage.getItem('zoneSel') || 'null');
