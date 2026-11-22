@@ -60,8 +60,12 @@ button.on{background:var(--upS);border-color:var(--acc)}
 #side{grid-row:4;grid-column:1}
 #rside{grid-row:4;grid-column:3}
 #bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--line)}
-#bar .t{font-size:16px;font-weight:700}
-#bar .g{display:flex;gap:4px}
+#bar .t{font-size:16px;font-weight:700;margin-right:6px}
+#bar .g{display:flex;gap:4px;align-items:center}#bar .sp{flex:1}
+#bar .sep{width:1px;height:20px;background:var(--line);flex:none}
+#bar button,#bar .ddb{height:30px;padding:0 10px}
+#bar .seg{gap:0}#bar .seg button{border-radius:0;margin-left:-1px;min-width:34px;padding:0 9px}#bar .seg button:first-child{border-radius:3px 0 0 3px;margin-left:0}#bar .seg button:last-child{border-radius:0 3px 3px 0}#bar .seg button:hover,#bar .seg button.on{position:relative;z-index:1}
+.ddc{flex:1 0 100%;font-size:10.5px;color:var(--mut);padding:0 2px 2px;letter-spacing:.2px}
 #price{font-variant-numeric:tabular-nums;font-size:12px}
 #dbar{padding:6px 10px;font-size:12px;border-top:1px solid var(--line)}
 #chart{flex:1;min-height:260px;position:relative;overflow:hidden}
@@ -84,7 +88,8 @@ body.fs #chart{min-height:0}
 .oc-ring{position:relative;width:min(132px,100%);aspect-ratio:1;flex:none}.oc-ring svg{display:block;width:100%;height:100%}.oc-ring .rb{fill:none;stroke:var(--line);stroke-width:12}.oc-ring .rf{fill:none;stroke:var(--acc);stroke-width:12;stroke-linecap:round}
 .oc-n{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}.oc-n b{font-size:34px;line-height:1;font-family:'Space Grotesk',Inter,sans-serif}
 .oc-i{width:100%;display:flex;flex-direction:column;gap:3px;font-size:11.5px;line-height:1.35;text-align:left}.oc-i .r:empty{display:none}.oc-i .r{color:var(--mut)}.oc-i .r b{color:var(--txt);font-weight:600}.oc-i .wn{color:var(--warn,#f2b766)}.oc-d{font-size:14px}.oc-w{font-size:12px;text-align:center;line-height:1.35}.oc-bars{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}.oc-s{font-size:11.5px}.oc-b{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:auto}
-@container (max-height:410px){#sbar{gap:6px;padding:10px}.oc-ring{width:min(96px,100%)}.oc-n b{font-size:26px}.oc-w{font-size:11px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}.oc-s{display:none}}@container (max-height:350px){#ocBtc{display:none}.oc-bars{display:none}.oc-w{-webkit-line-clamp:2}.oc-ring{width:min(72px,100%)}.oc-n b{font-size:20px}.oc-n .badge{font-size:9px;padding:0 5px}.oc-d{font-size:14px}.oc-i{font-size:11px}}
+@container (max-height:410px){#sbar{gap:6px;padding:10px}.oc-ring{width:min(clamp(96px,26cqh,120px),100%)}.oc-n b{font-size:26px}.oc-w{font-size:11px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}.oc-s{display:none}}@container (max-height:350px){.oc-bars{display:none}.oc-w{-webkit-line-clamp:2}.oc-ring{width:min(clamp(72px,27cqh,104px),100%)}.oc-n b{font-size:20px}.oc-n .badge{font-size:9px;padding:0 5px}.oc-d{font-size:14px}.oc-i{font-size:11px}}
+@container (max-height:300px){#ocBtc{display:none}.oc-ring{width:min(72px,100%)}}
 @container (max-height:270px){.oc-w,.oc-i .r{display:none}}
 body.fs #chartCard{border:0}
 .sb1{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center}.sb1 .sp{flex:1}
@@ -99,9 +104,9 @@ body.fs #chartCard{border:0}
 .st{font-size:15px;font-weight:700;margin-bottom:4px}
 .acc{color:var(--acc)}
 .ddw{position:relative;display:inline-block}
-.dd{position:absolute;left:0;top:calc(100% + 4px);z-index:20;display:flex;gap:4px;padding:6px;background:var(--panel);border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.5)}
+.dd{position:absolute;left:0;top:calc(100% + 4px);z-index:20;display:flex;flex-wrap:wrap;gap:4px;padding:8px;width:max-content;max-width:260px;background:var(--panel);border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.5)}
 .dd[hidden]{display:none}
-.ddi{flex-direction:column;gap:2px;left:auto;right:0;width:290px;padding:8px}.ind{display:flex;gap:9px;align-items:flex-start;padding:6px 6px;border-radius:6px;cursor:pointer}.ind:hover{background:var(--upS)}.ind input{margin-top:3px}.ind b{display:block;font-size:12.5px}.ind small{display:block;color:var(--muted);font-size:11px;line-height:1.3}.indn{color:var(--muted);font-size:10.5px;padding:4px 6px 0}
+.ddi{flex-direction:column;flex-wrap:nowrap;gap:2px;left:auto;right:0;width:310px;max-width:none;padding:8px}.ind{display:flex;gap:9px;align-items:flex-start;padding:6px 6px;border-radius:6px;cursor:pointer}.ind:hover{background:var(--upS)}.ind input{margin-top:3px}.ind b{display:block;font-size:12.5px}.ind small{display:block;color:var(--muted);font-size:11px;line-height:1.3}.indn{color:var(--muted);font-size:10.5px;padding:4px 6px 0}
 #toasts{position:fixed;top:12px;right:12px;z-index:60;display:flex;flex-direction:column;gap:8px;max-width:min(360px,calc(100vw - 24px));pointer-events:none}
 .toast{pointer-events:auto;background:var(--panel);border:1px solid var(--acc);border-radius:8px;padding:8px 12px;font-size:12px;line-height:1.4;box-shadow:0 6px 18px rgba(0,0,0,.55)}
 .alr{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center;padding:6px 0;border-bottom:1px dashed var(--line);font-size:12px}.alr .sp{flex:1}.alr .als{font-weight:700;cursor:pointer}.alr .als:hover{color:var(--acc)}
@@ -205,7 +210,9 @@ input,select,button{border-radius:3px}
 body.fs #anat{display:none}
 @media(max-width:1100px){.ag{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:760px){.ag{grid-template-columns:1fr}}
-.ac .g3{display:grid;grid-template-columns:auto 1fr 1fr;gap:1px 8px}.ac .g3 span{white-space:nowrap}.ac .g3 span:nth-child(3n+2),.ac .g3 span:nth-child(3n){text-align:right}
+.ac .g3{display:grid;grid-template-columns:auto minmax(0,1fr) minmax(0,1fr);gap:1px 10px}.ac .g3 span{white-space:nowrap}.ac .g3 span:nth-child(3n+2),.ac .g3 span:nth-child(3n){text-align:right}
+/* jeden krój i cyfry tabelaryczne w kartach (zamiast mieszania monospace z Inter) */
+.ac,.oc-i{font-variant-numeric:tabular-nums}.ac .mono,.oc-i .mono{font-family:inherit}
 #price{background:color-mix(in srgb,var(--bg) 72%,transparent);padding:1px 6px;border-radius:3px}
 #under{flex:none;height:var(--uh,230px);min-height:60px;overflow:auto}
 #split{flex:none;height:9px;cursor:row-resize;touch-action:none;position:relative;background:transparent}
@@ -267,15 +274,16 @@ body.fs #split,body.fs #under{display:none}
     <div id="chartCard">
     <div id="bar">
       <button id="btnFav" class="fav" title="Ulubione: dodaje coina do Twojej listy (ta sama lista co powiadomienia struktury)" aria-label="Ulubione">☆</button><span class="t" id="title">—</span>
-      <span class="g" id="tfBtns"></span>
-      <span class="g"><button id="zOut">−</button><button id="zIn">+</button><button id="zEnd">⇥</button></span>
-      <button id="btnFS" title="Wykres na cały ekran (klawisz F, wyjście Esc; strzałki ↑↓ zmieniają coin)">⛶ Pełny ekran</button>
-      <label class="mu">Pivot N <input id="nIn" type="number" min="1" max="10" value="3" style="width:52px"></label>
+      <span class="g seg" id="tfBtns"></span>
+      <span class="sep"></span>
+      <span class="g seg"><button id="zOut" title="Oddal">−</button><button id="zIn" title="Przybliż">+</button><button id="zEnd" title="Przewiń do ostatniej świecy">⇥</button></span>
+      <span class="sep"></span>
       <span class="g" id="drawBtns"><button id="btnTL" title="Linia trendu: kliknij dwa punkty (przyciąga do szczytów i dołków świec). Esc anuluje.">╱ Trend</button><button id="btnHL" title="Linia pozioma: jedno kliknięcie. Esc anuluje.">― Poziom</button><button id="btnDelDr" hidden title="Usuwa wszystkie narysowane linie (trendu i poziome) tego coina. Pojedynczą linię usuniesz w Alerty → Usuń.">✕ Linie</button></span>
+      <span class="sep"></span>
+      <span class="g">
       <span class="ddw" id="ddOB"><button class="ddb" id="btnOB">OB</button><div class="dd" hidden></div></span>
       <span class="ddw" id="ddFVG"><button class="ddb" id="btnFVG">FVG</button><div class="dd" hidden></div></span>
       <span class="ddw" id="ddLS"><button class="ddb" id="btnLS">LS</button><div class="dd" hidden></div></span>
-      <label class="mu"><input id="chkVP" type="checkbox" checked> Profil</label>
       <span class="ddw" id="ddIND"><button class="ddb" id="btnIND" title="Wskaźniki na wykresie (wszystkie domyślnie wyłączone)">Wskaźniki</button><div class="dd ddi" hidden>
         <label class="ind"><input id="chkHU" type="checkbox"><span><b>Hurst</b><small>cykl: kanał 15 ± 2×ATR, oscylator w panelu pod wykresem</small></span></label>
         <label class="ind"><input id="chkST" type="checkbox"><span><b>SuperTrend</b><small>ATR 10, mnożnik 3: linia pod ceną = trend wzrostowy, nad ceną = spadkowy</small></span></label>
@@ -284,6 +292,13 @@ body.fs #split,body.fs #under{display:none}
         <label class="ind"><input id="chkRSI" type="checkbox"><span><b>RSI 14</b><small>panel pod wykresem, poziomy 30 i 70</small></span></label>
         <div class="indn">Opis stanu wykresu, nie sygnały.</div>
       </div></span>
+      </span>
+      <span class="ddw" id="ddSET"><button class="ddb" id="btnSET" title="Ustawienia wykresu: Pivot N i profil wolumenu">⚙ N=3</button><div class="dd ddi" hidden>
+        <label class="ind"><span><b>Pivot N</b><small>ile świec po każdej stronie potwierdza szczyt lub dołek (1–10); zmienia trend, strefy i poziomy</small></span><input id="nIn" type="number" min="1" max="10" value="3" style="width:56px;margin-left:auto"></label>
+        <label class="ind"><input id="chkVP" type="checkbox" checked><span><b>Profil wolumenu</b><small>poziomy z największym obrotem, POC i obszar wartości (VAH/VAL)</small></span></label>
+      </div></span>
+      <span class="sp"></span>
+      <button id="btnFS" title="Wykres na cały ekran (klawisz F, wyjście Esc; strzałki ↑↓ zmieniają coin)">⛶ Pełny ekran</button>
     </div>
     <div id="cgrid">
       <div id="chartW"><span id="price" class="mu"></span><div id="chart"></div></div>
@@ -2222,7 +2237,7 @@ if (typeof document !== 'undefined') (() => {
       const cell = (x, up) => x ? `<span class="mono">${fmt(x.price)} <b class="${up ? 'up' : 'dn'}">${pc(x.d)}</b></span>` : '<span class="mu">–</span>';
       const G = []; for (const w of sw) { const g = G.find(x => x.side === w.side && x.ago === w.ago && x.kind === w.kind); g ? g.n++ : G.push({ ...w, n: 1 }); }
       const when = w => w.ago === 0 ? (w.forming ? 'dziś (świeca trwa)' : 'ostatnia świeca') : w.ago === 1 ? 'wczoraj' : w.ago + ' dni temu';
-      const c2 = `<h4>Płynność · niezdjęte poziomy</h4><div class="g3"><span></span><span class="mu">1D</span><span class="mu">4H</span><span class="mu">Szczyt nad ceną</span>${cell(u1 && u1.up, true)}${cell(u4 && u4.up, true)}<span class="mu">Dołek pod ceną</span>${cell(u1 && u1.dn, false)}${cell(u4 && u4.dn, false)}</div>
+      const c2 = `<h4>Płynność · niezdjęte poziomy</h4><div class="g3"><span></span><span class="mu">1D</span><span class="mu">4H</span><span class="mu" title="Najbliższy niezdjęty szczyt nad ceną">Szczyt ↑</span>${cell(u1 && u1.up, true)}${cell(u4 && u4.up, true)}<span class="mu" title="Najbliższy niezdjęty dołek pod ceną">Dołek ↓</span>${cell(u1 && u1.dn, false)}${cell(u4 && u4.dn, false)}</div>
         ${G.slice(0, 2).map(w => `<div class="kv"><span style="color:var(--warn)">${w.kind === 'sweep' ? '⚡ Sweep 1D' : '↯ Przebicie 1D'} ${w.side === 'L' ? 'dołka' : 'szczytu'}${w.n > 1 ? ' ×' + w.n : ''}</span><span class="mu">${when(w)}</span></div>`).join('') || '<div class="mu">Brak zdjęcia poziomu 1D w ostatnich 3 świecach</div>'}`;
       // 3. pozycjonowanie
       const pxChg = c1.length > 25 ? (c1[c1.length - 1].close / c1[c1.length - 25].close - 1) * 100 : null;
@@ -2899,7 +2914,7 @@ if (typeof document !== 'undefined') (() => {
   $('btnTF').onclick = () => { U.tradfi = !U.tradfi; SS_('incTradfi', U.tradfi ? '1' : '0'); $('btnTF').textContent = 'Akcje/ETF: ' + (U.tradfi ? 'wł.' : 'wył.'); reloadUniverse(); };
   $('selVol').onchange = () => { U.minVol = +$('selVol').value; SS_('minVolM', String(U.minVol)); reloadUniverse(); };
   $('search').oninput = renderList; $('sortSel').onchange = renderList;
-  $('nIn').onchange = () => { S.N = Math.max(1, Math.min(10, +$('nIn').value || 3)); S.trends = {}; S.scores = {}; renderList(); renderTop3(); draw(); };
+  $('nIn').onchange = () => { S.N = Math.max(1, Math.min(10, +$('nIn').value || 3)); $('btnSET').textContent = '⚙ N=' + S.N; S.trends = {}; S.scores = {}; renderList(); renderTop3(); draw(); };
   $('chkVP').onchange = draw; const IND = ['chkHU', 'chkST', 'chkEMA', 'chkMACD', 'chkRSI'];
   const indApply = save => { { const n = IND.filter(k => $(k).checked).length; $('btnIND').textContent = n ? `Wskaźniki (${n})` : 'Wskaźniki'; $('btnIND').classList.toggle('act', n > 0); } $('cgrid').style.setProperty('--np', ['chkHU', 'chkMACD', 'chkRSI'].filter(k => $(k).checked).length); if (save) try { localStorage.setItem('nav_ind_v1', JSON.stringify(Object.fromEntries(IND.slice(1).map(k => [k, $(k).checked])))); } catch (e) { /* tylko w pamięci */ } };
   IND.forEach(k => { $(k).onchange = () => { indApply(true); draw(); setTimeout(() => window.dispatchEvent(new Event('resize')), 30); }; });
@@ -2915,15 +2930,16 @@ if (typeof document !== 'undefined') (() => {
     if (s && Array.isArray(s.OB) && Array.isArray(s.FVG)) ZSEL = { OB: s.OB.filter(t => ZTF.includes(t)), FVG: s.FVG.filter(t => ZTF.includes(t)), LS: Array.isArray(s.LS) ? s.LS.filter(t => LTF.includes(t)) : ZSEL.LS };
   } catch (e) { /* bez pamięci: ustawienia domyślne */ }
   const saveZSel = () => { try { localStorage.setItem('zoneSel', JSON.stringify(ZSEL)); } catch (e) { /* ignoruj */ } };
+  const DDCAP = { OB: 'Order Blocki: na których interwałach', FVG: 'Fair Value Gap: na których interwałach', LS: 'Płynność (EQH/EQL, szczyty, dołki): interwały' };
   function renderZoneBtns() {
     [['OB', 'ddOB', 'btnOB', 'up'], ['FVG', 'ddFVG', 'btnFVG', 'dn'], ['LS', 'ddLS', 'btnLS', 'ls']].forEach(([k, wid, bid, cls]) => {
       const n = ZSEL[k].length;
       $(bid).textContent = k + (n ? ' (' + n + ')' : '');
       $(bid).classList.toggle('act', n > 0);
-      $(wid).querySelector('.dd').innerHTML = OPTS[k].map(t => `<button data-k="${k}" data-t="${t}" class="${ZSEL[k].includes(t) ? 'on ' + cls : ''}">${t.toUpperCase().replace('M', 'M')}</button>`).join('');
+      $(wid).querySelector('.dd').innerHTML = `<div class="ddc">${DDCAP[k]}</div>` + OPTS[k].map(t => `<button data-k="${k}" data-t="${t}" class="${ZSEL[k].includes(t) ? 'on ' + cls : ''}">${t.toUpperCase().replace('M', 'M')}</button>`).join('');
     });
   }
-  ['ddOB', 'ddFVG', 'ddLS', 'ddIND'].forEach(wid => {
+  ['ddOB', 'ddFVG', 'ddLS', 'ddIND', 'ddSET'].forEach(wid => {
     const w = $(wid), dd = w.querySelector('.dd');
     w.querySelector('.ddb').onclick = e => {
       e.stopPropagation();
