@@ -2184,7 +2184,11 @@ if (typeof document !== 'undefined') (() => {
         if (STEP[t] < STEP[S.tf]) continue;
         const ct = t === S.tf ? closed : closedOnly(await klines(sym, t));
         if (sym !== S.sel) return;
-        Engine.sweeps(ct, S.N, 250).slice(-4).forEach(s => sws.push({ t: ct[s.idx].time, tFrom: ct[s.from].time, level: s.level, extreme: s.extreme, dir: s.dir, tf: t, ret: s.ret, kind: s.kind, touches: s.touches }));
+        const cl = Engine.sweeps(ct, S.N, 250).slice(-4);
+        cl.forEach(s => sws.push({ t: ct[s.idx].time, tFrom: ct[s.from].time, level: s.level, extreme: s.extreme, dir: s.dir, tf: t, ret: s.ret, kind: s.kind, touches: s.touches }));
+        // pojedyncze szczyty i dołki (jak na Busoli): niezdjęty pivot, który zdjął knot i świeca zamknęła się z powrotem; klastry EQH/EQL powyżej mają pierwszeństwo
+        const seen = new Set(cl.map(s => ct[s.idx].time + '|' + s.dir));
+        swingSweeps(ct, S.N, 250).slice(-5).forEach(s => { if (!seen.has(s.t + '|' + s.dir)) sws.push({ ...s, tf: t }); });
       }
       const vp = Engine.volumeProfile(closed, 150, 48);
       Chart.set(all, { events: a.events.slice(-14), pivots: a.pivots.slice(-40), showPiv: false, zones: zs, sweeps: sws, vp, showZones: true, showVP: $('chkVP').checked, hurst: $('chkHU').checked ? Engine.hurst(all) : null, st: $('chkST').checked ? indST(all) : null, ema: $('chkEMA').checked ? indEMAs(all) : null, macd: $('chkMACD').checked ? indMACD(all) : null, rsi: $('chkRSI').checked ? indRSI(all) : null, tf: S.tf }, keep);
@@ -2198,6 +2202,19 @@ if (typeof document !== 'undefined') (() => {
     renderTrends(sym);
     renderSetup(sym);
     renderAnat(sym);
+  }
+  // LS z pojedynczych szczytów i dołków (UI, bez zmian w silniku): pivot nie zdjęty przez żadną wcześniejszą zamkniętą świecę;
+  // pierwsza świeca, która go przebiła knotem i zamknęła się z powrotem po właściwej stronie, to zebranie płynności (dir +1 = dołek, −1 = szczyt).
+  function swingSweeps(c, N, look) {
+    if (!c || c.length < 40) return [];
+    const n = c.length, out = [];
+    for (const p of Engine.analyze(c, N).pivots) {
+      if (n - 1 - p.idx > look) continue;
+      let j = -1; for (let k = p.idx + 1; k < n; k++) if (p.type === 'H' ? c[k].high > p.price : c[k].low < p.price) { j = k; break; }
+      if (j < 0 || (p.type === 'H' ? c[j].close > p.price : c[j].close < p.price)) continue;
+      out.push({ idx: j, t: c[j].time, tFrom: c[p.idx].time, level: p.price, extreme: p.type === 'H' ? c[j].high : c[j].low, dir: p.type === 'H' ? -1 : 1, ret: 1, kind: p.type === 'H' ? 'Szczyt' : 'Dołek', touches: 0 });
+    }
+    return out.sort((a, b) => a.idx - b.idx);
   }
   // ---------- Anatomia coina: opis rynku z danych, które już mamy (bez nowych reguł wejścia) ----------
   const pc = v => v == null || !isFinite(v) ? '–' : (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(1) + '%';
