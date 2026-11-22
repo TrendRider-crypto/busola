@@ -1,0 +1,15 @@
+{
+ "ts": "2026-11-22T22:08:38Z",
+ "base": "https://fapi.binance.com",
+ "ok": false,
+ "checks": {
+  "ticker24h": 451
+ },
+ "errors": [
+  "ticker24h: HTTP 451 {\n  \"code\": 0,\n  \"msg\": \"Service unavailable from a restricted location according to 'b. Eligibility' in https://www.binance.com/en/terms. Please contact customer service if you believe you received t"
+ ],
+ "github_actions": true,
+ "runner_os": "Linux",
+ "coins_requested": 0,
+ "coins_ok": 0
+}
