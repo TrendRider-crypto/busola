@@ -211,7 +211,7 @@ body.fs #anat{display:none}
 #split{flex:none;height:9px;cursor:row-resize;touch-action:none;position:relative;background:transparent}
 #split::after{content:'';position:absolute;left:50%;top:3px;width:46px;height:3px;margin-left:-23px;border-radius:2px;background:var(--line)}
 #split:hover::after,#split.drag::after{background:var(--acc)}
-body.fs #split{display:none}
+body.fs #split,body.fs #under{display:none}
 @media(max-width:760px){#split{display:none}#under{height:auto;overflow:visible}}
 
 .ac .lad{display:flex;gap:4px;align-items:center;margin:1px 0}.lad span{font-size:10px;padding:0 6px;border:1px solid var(--line);border-radius:2px;color:var(--mut)}.lad span.on.up{color:var(--up);border-color:var(--up);background:var(--upS)}.lad span.on.dn{color:var(--dn);border-color:var(--dn);background:var(--dnS)}.lad span.mu{border:0;padding:0}
@@ -282,7 +282,7 @@ html.light body.sk2 .ac{box-shadow:0 10px 26px rgba(20,70,55,.10);border-color:#
 body.sk2 .ac h4{font-size:10.5px;margin-bottom:6px}
 body.sk2 #scoreCard,body.sk2 #info{border:1px solid var(--line);border-radius:20px;margin:0 0 12px;box-shadow:0 14px 34px rgba(0,0,0,.30)}
 html.light body.sk2 #scoreCard,html.light body.sk2 #info{border-color:#e6ece9;box-shadow:0 10px 26px rgba(20,70,55,.10)}
-body.fs.sk2 #chartCard{border:0;border-radius:0;box-shadow:none}
+body.fs.sk2 #chartCard{border:0;border-radius:0;box-shadow:none}body.fs.sk2 #app{padding:0;gap:0}body.fs.sk2 #cgrid{padding:0;gap:0}body.fs.sk2 #chartW #chart{border-radius:0}body.fs.sk2 #main.card{gap:0}
 body.sk2 #evView{background:transparent;border:0;box-shadow:none;border-radius:0}
 </style>
 </head>
