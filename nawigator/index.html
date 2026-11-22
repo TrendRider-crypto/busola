@@ -133,6 +133,7 @@ body.fs #chartCard{border:0}
 details summary{cursor:pointer;color:var(--acc);margin:6px 0}
 #top3{border-bottom:1px solid var(--line);flex:none}
 .t3h{padding:6px 10px 2px;font-size:11px;color:var(--mut);letter-spacing:.6px}
+button.t3h{display:block;width:100%;text-align:left;background:none;border:0;cursor:pointer;font-family:inherit;padding:7px 10px}button.t3h:hover{color:var(--txt)}.t3s{color:var(--txt);letter-spacing:.2px}
 .t3{padding:5px 10px;cursor:pointer;border-top:1px dashed var(--line)}.t3:hover{background:var(--hov)}
 #btBox{padding:8px 12px;border-bottom:1px solid var(--line);background:var(--panel)}
 #btBox[hidden]{display:none}
@@ -231,9 +232,65 @@ body.fs #split,body.fs #under{display:none}
 
 @media(max-width:1100px){#cgrid{grid-template-rows:minmax(300px,1fr) auto}}
 @media(max-width:760px){#minis{display:block;margin-top:8px;container-type:normal}#sbar{height:auto}}
+
+/* ---- PODGLĄD (?sd=2): węższy pasek skanera, gęstsze wiersze, ustawienia skanera w składanym bloku. Tylko układ ---- */
+#scanSetBar{display:none}
+@media(min-width:1101px){
+body.sd2 #app{grid-template-columns:252px minmax(0,1fr)}
+body.sd2.dr #app{grid-template-columns:252px minmax(0,1fr) var(--dw,440px)}
+body.sd2 #side .tools{padding:6px 8px;gap:4px}
+body.sd2 #side .cardh{padding:8px 8px;gap:6px}body.sd2 #side .cardh b{font-size:13px}
+body.sd2 #btnScan{padding:5px 8px;font-size:12px}
+body.sd2 #scanInfo{display:none}
+body.sd2 #sortSel{width:92px;flex:none;padding:5px 4px;font-size:12px}
+body.sd2 #search{font-size:12px}
+body.sd2 #dirF button{padding:4px 2px;font-size:11px}
+body.sd2 #scanSetBar{display:flex;padding:4px 8px;border-bottom:1px solid var(--line)}
+body.sd2 #btnScanSet{flex:1;text-align:left;background:none;border:0;color:var(--mut);padding:3px 2px;font-size:11.5px}body.sd2 #btnScanSet:hover{color:var(--txt)}
+body.sd2 #scanSet{display:none}body.sd2 #scanSet.open{display:flex}
+body.sd2 .t3{padding:5px 8px}body.sd2 .t3 .mu{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11.5px}
+body.sd2 .t3h{padding:6px 8px 2px}
+body.sd2 .row{padding:5px 8px;gap:1px 6px}
+body.sd2 .row .s small{display:none}
+body.sd2 .row .s{display:flex;align-items:center;gap:4px;min-width:0;font-size:13px}
+body.sd2 .row .s .sc{margin-left:auto;font-size:10.5px;padding:1px 5px;white-space:nowrap}
+body.sd2 .row .c{font-size:12px}
+body.sd2 .bd{gap:2px}body.sd2 .b{font-size:9.5px;padding:1px 4px}
+}
+
+/* ---- Pasek skanera (≥1101 px): lista jako karty (numer, nazwa, status, pasek 4 interwałów, wynik) ---- */
+@media(min-width:1101px){
+body.sd3 #app{grid-template-columns:228px minmax(0,1fr)}body.sd3.dr #app{grid-template-columns:228px minmax(0,1fr) var(--dw,440px)}
+body.sd3 #side .cardh{flex-wrap:wrap;padding:10px 8px 8px;border-bottom:0}
+body.sd3 #side .cardh b{font-size:11px;letter-spacing:.8px;font-weight:600}body.sd3 #side .cardh .hd{font-weight:400;letter-spacing:.3px}
+body.sd3 #btnScan{order:3;flex:1 0 100%;padding:9px 8px;font-size:13px;border-radius:8px}
+body.sd3 #side .tools{border-bottom:0}
+body.sd3 #dirF{background:var(--inp);border:1px solid var(--line);border-radius:8px;padding:3px;gap:2px;margin:0 8px 6px}
+body.sd3 #dirF button{border:0;background:transparent;border-radius:6px;padding:5px 2px;color:var(--mut)}
+body.sd3 #dirF button.on{background:var(--panel2);color:var(--txt);box-shadow:0 0 0 1px var(--line)}
+body.sd3 #dirF #btnFavF{color:var(--warn)}body.sd3 #dirF #btnFavF.on{color:var(--txt)}
+body.sd3 #scanSetBar{border-bottom:0}
+body.sd3 #top3{padding:0 6px 2px}
+body.sd3 #list{padding:6px 6px 8px;display:flex;flex-direction:column;gap:6px}
+body.sd3 .row{display:block;border:1px solid var(--line);border-radius:8px;background:var(--panel2);padding:7px 8px;flex:none}
+body.sd3 .row:hover{border-color:var(--navLn)}body.sd3 .row.sel{border-color:var(--acc);background:var(--selbg)}
+body.sd3 .r1{display:flex;align-items:center;gap:4px;min-width:0}
+body.sd3 .rk{font-style:normal;color:var(--mut);font-size:11px;width:13px;text-align:right;flex:none;font-variant-numeric:tabular-nums}
+body.sd3 .r1 .fav{padding:0;flex:none}
+body.sd3 .tk{font-size:13.5px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+body.sd3 .r1 .c{font-size:11px;margin-left:1px;flex:none}
+body.sd3 .r1 .sc{margin-left:auto;flex:none;font-size:9.5px;letter-spacing:.3px;padding:2px 6px;border:1px solid transparent}
+body.sd3{--rdy:#38bdf8}html.light body.sd3{--rdy:#0369a1}
+body.sd3 .r1 .sc{background:transparent;border:1.5px solid currentColor;border-radius:999px;padding:1px 7px;font-weight:700;letter-spacing:.5px;font-size:9.5px}
+body.sd3 .r1 .sc.up{color:var(--up)}body.sd3 .r1 .sc.dn{color:var(--dn)}body.sd3 .r1 .sc.acc{color:var(--rdy)}body.sd3 .r1 .sc.wr{color:var(--warn)}body.sd3 .r1 .sc.mu{color:var(--mut)}
+body.sd3 .r2{display:flex;align-items:center;gap:10px;margin-top:8px}
+body.sd3 .seg4{display:flex;gap:4px;flex:1}body.sd3 .seg4 i{flex:1;height:4px;border-radius:2px;background:var(--trk2)}body.sd3 .seg4 i.u{background:var(--up)}body.sd3 .seg4 i.d{background:var(--dn)}
+body.sd3 .scn{font-size:12px;color:var(--mut);font-variant-numeric:tabular-nums;min-width:22px;text-align:right;font-weight:600}
+}
 </style>
 </head>
 <body>
+<script>document.body.classList.add("sd2","sd3")</script>
 <div id="app">
   <header id="top">
     <div class="brand"><svg class="logo" width="30" height="30" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="38" fill="none" stroke="currentColor" stroke-opacity=".28" stroke-width="2.6"/><line x1="50" y1="9" x2="50" y2="17" transform="rotate(0 50 50)" stroke="currentColor" stroke-opacity="0.85" stroke-width="3.4" stroke-linecap="round"/><line x1="50" y1="9" x2="50" y2="14" transform="rotate(30 50 50)" stroke="currentColor" stroke-opacity="0.4" stroke-width="2.2" stroke-linecap="round"/><line x1="50" y1="9" x2="50" y2="14" transform="rotate(60 50 50)" stroke="currentColor" stroke-opacity="0.4" stroke-width="2.2" stroke-linecap="round"/><line x1="50" y1="9" x2="50" y2="17" transform="rotate(90 50 50)" stroke="currentColor" stroke-opacity="0.85" stroke-width="3.4" stroke-linecap="round"/><line x1="50" y1="9" x2="50" y2="14" transform="rotate(120 50 50)" stroke="currentColor" stroke-opacity="0.4" stroke-width="2.2" stroke-linecap="round"/><line x1="50" y1="9" x2="50" y2="14" transform="rotate(150 50 50)" stroke="currentColor" stroke-opacity="0.4" stroke-width="2.2" stroke-linecap="round"/><line x1="50" y1="9" x2="50" y2="17" transform="rotate(180 50 50)" stroke="currentColor" stroke-opacity="0.85" stroke-width="3.4" stroke-linecap="round"/><line x1="50" y1="9" x2="50" y2="14" transform="rotate(210 50 50)" stroke="currentColor" stroke-opacity="0.4" stroke-width="2.2" stroke-linecap="round"/><line x1="50" y1="9" x2="50" y2="14" transform="rotate(240 50 50)" stroke="currentColor" stroke-opacity="0.4" stroke-width="2.2" stroke-linecap="round"/><line x1="50" y1="9" x2="50" y2="17" transform="rotate(270 50 50)" stroke="currentColor" stroke-opacity="0.85" stroke-width="3.4" stroke-linecap="round"/><line x1="50" y1="9" x2="50" y2="14" transform="rotate(300 50 50)" stroke="currentColor" stroke-opacity="0.4" stroke-width="2.2" stroke-linecap="round"/><line x1="50" y1="9" x2="50" y2="14" transform="rotate(330 50 50)" stroke="currentColor" stroke-opacity="0.4" stroke-width="2.2" stroke-linecap="round"/><g transform="rotate(40 50 50)"><path d="M50 17 L61 50 L39 50 Z" fill="var(--acc)"/><path d="M50 83 L61 50 L39 50 Z" fill="currentColor" fill-opacity=".35"/></g><circle cx="50" cy="50" r="5.6" fill="var(--bg)" stroke="var(--acc)" stroke-width="2.6"/></svg><span class="bn">BUSOLA</span><span class="bs">NAWIGATOR</span></div>
@@ -258,11 +315,12 @@ body.fs #split,body.fs #under{display:none}
   <div id="banner"></div>
   <div id="toasts"></div>
   <aside id="side" class="card">
-    <div class="cardh"><b>Skaner</b><span class="mu" id="scanInfo"></span><span style="flex:1"></span><button id="btnScan" class="go">Skanuj trendy (100)</button></div>
+    <div class="cardh"><b>SKANER <span class="mu hd">· 1D → 4H → 1H → 15M</span></b><span class="mu" id="scanInfo"></span><span style="flex:1"></span><button id="btnScan" class="go">Skanuj trendy (100)</button></div>
     <div class="scanbar" id="scanBar" hidden><div class="pbarw"><i></i></div><span></span></div>
     <div class="tools"><input id="search" placeholder="Szukaj coina…"><select id="sortSel"><option value="vol">Wolumen</option><option value="chg">Zmiana 24h</option><option value="al">Zgodność TF</option><option value="sc">Wynik</option></select></div>
     <div class="tools" id="dirF" style="gap:4px"><button data-d="0" class="on">Wszystko</button><button data-d="1">Long</button><button data-d="-1">Short</button><button id="btnFavF" title="Pokaż tylko ulubione coiny (★). Ulubione ustawiasz gwiazdką przy coinie; ta sama lista jest używana w powiadomieniach o strukturze.">★</button></div>
-    <div class="tools" style="flex-wrap:wrap">
+    <div class="tools" id="scanSetBar"><button id="btnScanSet">⚙ Auto-skan: wył. ▾</button></div>
+    <div class="tools" id="scanSet" style="flex-wrap:wrap">
       <button id="btnAuto">Auto-skan: wył.</button>
       <select id="selEx" title="Giełda, z której pochodzą świece i ceny"><option value="binance">Giełda: Binance</option><option value="weex">Giełda: Weex</option><option value="bitunix">Giełda: Bitunix</option></select>
     <button id="btnTF" title="Kontrakty na akcje, ETF-y i surowce z Binance Futures">Akcje/ETF: wył.</button>
@@ -2024,6 +2082,8 @@ if (typeof document !== 'undefined') (() => {
   // rozpoznajemy po underlyingType z exchangeInfo (inny niż COIN) oraz po liście znanych tickerów (zapas).
   const LS_ = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } };
   const SS_ = (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* tylko w pamięci strony */ } };
+  const CARDMQ = window.matchMedia('(min-width:1101px)');
+  CARDMQ.addEventListener('change', () => { try { renderList(); } catch (e) { /* lista jeszcze niegotowa */ } });
   const U = { ex: LS_('exch', 'binance'), use1w: false, tradfi: LS_('incTradfi', '0') === '1', minVol: +LS_('minVolM', '20') };
   const TRADFI_RE = /^(SPY|QQQ|SQQQ|TQQQ|IWM|DIA|META|AMD|NVDA|TSLA|AAPL|MSFT|AMZN|GOOGL?|NFLX|COIN|MSTR|HOOD|PLTR|INTC|ORCL|BABA|XAU|XAG|XPT|XPD|CL|BZ|NATGAS|EURUSD|GBPUSD|USDJPY)USDT$/;
   let TFSYM = null;
@@ -2133,8 +2193,10 @@ if (typeof document !== 'undefined') (() => {
     if (sort === 'al') L = [...L].sort((a, b) => Math.abs(alignment(S.trends[b.sym])) - Math.abs(alignment(S.trends[a.sym])));
     if (sort === 'sc') L = [...L].sort((a, b) => { const x = S.scores[a.sym], y = S.scores[b.sym]; if (!x && !y) return 0; if (!x) return 1; if (!y) return -1; return cmpScore(x, y); });
     if (FAVF && !L.length) { $('list').innerHTML = '<div class="mu" style="padding:12px 10px">Brak ulubionych na liście skanera. Dodaj coina gwiazdką ☆ (coin musi być na liście: wolumen ≥ ' + U.minVol + ' mln, top 100).</div>'; return; }
-    $('list').innerHTML = L.map(c => {
+    const CARDS = document.body.classList.contains('sd3') && CARDMQ.matches;
+    $('list').innerHTML = L.map((c, i) => {
       const tr = S.trends[c.sym], sc = S.scores[c.sym];
+      if (CARDS) return `<div class="row ${c.sym === S.sel ? 'sel' : ''}" data-s="${c.sym}"><div class="r1"><i class="rk">${i + 1}</i><button type="button" class="fav${favHas(c.sym) ? ' on' : ''}" data-fav="${c.sym}" title="Ulubione" aria-label="Ulubione ${c.sym.replace('USDT', '')}">${favHas(c.sym) ? '★' : '☆'}</button><b class="tk">${c.sym.replace('USDT', '')}</b><span class="c ${c.chg >= 0 ? 'up' : 'dn'}">${c.chg >= 0 ? '+' : ''}${c.chg.toFixed(1)}%</span>${sc ? `<span class="sc ${sc.cls}${sc.status === 'TRIGGER' ? ' trg' : ''}">${sc.status}</span>` : ''}</div><div class="r2"><span class="seg4" title="${TFS.map(([k, l]) => l + (tr && tr[k] ? (tr[k].trend === 1 ? '↑' : tr[k].trend === -1 ? '↓' : '·') : '')).join('  ')}">${TFS.map(([k]) => { const t = tr && tr[k] ? tr[k].trend : 0; return `<i class="${t === 1 ? 'u' : t === -1 ? 'd' : ''}"></i>`; }).join('')}</span><b class="scn">${sc ? sc.score : ''}</b></div></div>`;
       return `<div class="row ${c.sym === S.sel ? 'sel' : ''}" data-s="${c.sym}"><span class="s"><button type="button" class="fav${favHas(c.sym) ? ' on' : ''}" data-fav="${c.sym}" title="Ulubione" aria-label="Ulubione ${c.sym.replace('USDT', '')}">${favHas(c.sym) ? '★' : '☆'}</button>${c.sym.replace('USDT', '')}<small>/USDT</small>${sc ? `<span class="sc ${sc.cls}">${sc.score} ${sc.status}</span>` : ''}</span><span class="c ${c.chg >= 0 ? 'up' : 'dn'}">${c.chg >= 0 ? '+' : ''}${c.chg.toFixed(2)}%</span><span class="bd">${TFS.map(([k, l]) => badge(tr, k, l)).join('')}</span></div>`;
     }).join('');
   }
@@ -2899,7 +2961,11 @@ if (typeof document !== 'undefined') (() => {
     const el = $('top3');
     if (!Object.keys(S.scores).length) { el.innerHTML = '<div class="mu" style="padding:8px 10px">Uruchom „Skanuj trendy”, aby zobaczyć Top 3 na dziś.</div>'; return; }
     const top = Object.entries(S.scores).filter(([, v]) => ['TRIGGER', 'READY', 'WAIT'].includes(v.status)).sort((a, b) => cmpScore(a[1], b[1])).slice(0, 3);
-    el.innerHTML = '<div class="t3h">TOP 3 NA DZIŚ</div>' + (top.map(([sym, v], i) => `<div class="t3" data-s="${sym}"><b>${i + 1}. ${sym.replace('USDT', '')}</b><span class="sc ${v.cls}">${v.score} ${v.status}</span><div class="mu">${esc(v.line)}</div></div>`).join('') || '<div class="mu" style="padding:6px 10px">Żaden coin nie przechodzi filtrów i progów.</div>');
+    const open = LS_('t3open', '0') === '1';
+    const sum = top.map(([sym]) => sym.replace('USDT', '')).join(' · ');
+    const hd = `<button type="button" class="t3h" id="t3tog" aria-expanded="${open}">${open ? '▾' : '▸'} TOP 3 NA DZIŚ${!open && sum ? ` <span class="t3s">· ${sum}</span>` : ''}</button>`;
+    if (!open) { el.innerHTML = hd; return; }
+    el.innerHTML = hd + (top.map(([sym, v], i) => `<div class="t3" data-s="${sym}"><b>${i + 1}. ${sym.replace('USDT', '')}</b><span class="sc ${v.cls}">${v.score} ${v.status}</span><div class="mu">${esc(v.line)}</div></div>`).join('') || '<div class="mu" style="padding:6px 10px">Żaden coin nie przechodzi filtrów i progów.</div>');
   }
 
   // ---------- UI ----------
@@ -2973,7 +3039,7 @@ if (typeof document !== 'undefined') (() => {
   renderZoneBtns();
   $('zIn').onclick = () => Chart.zoom(0.75); $('zOut').onclick = () => Chart.zoom(1.33); $('zEnd').onclick = () => Chart.toEnd();
   $('btnScan').onclick = scanAll;
-  $('top3').onclick = e => { const r = e.target.closest('.t3'); if (!r) return; S.sel = r.dataset.s; renderList(); draw(); };
+  $('top3').onclick = e => { if (e.target.closest('#t3tog')) { SS_('t3open', LS_('t3open', '0') === '1' ? '0' : '1'); renderTop3(); return; } const r = e.target.closest('.t3'); if (!r) return; S.sel = r.dataset.s; renderList(); draw(); };
   $('btnMacro').onclick = () => { $('macroBox').hidden = !$('macroBox').hidden; };
   $('btnJ').onclick = () => { $('jBox').hidden = !$('jBox').hidden; if (!$('jBox').hidden) { renderJournal(); updateJournal(); } };
   $('jRefresh').onclick = updateJournal;
@@ -3081,6 +3147,11 @@ if (typeof document !== 'undefined') (() => {
       $('ocBtc').innerHTML = `BTC 4H ${ar(t4)} · coin 4H ${ar(tc)}: <b>${rel}</b>${rs}`;
     } catch (e) { /* bez danych BTC */ }
   }
+  // podgląd (?sd=2): składany blok ustawień skanera
+  { const lab = () => { $('btnScanSet').textContent = '⚙ ' + $('btnAuto').textContent + (($('selFavScan').value | 0) ? ' · ★ ' + $('selFavScan').value + ' min' : '') + ($('scanSet').classList.contains('open') ? ' ▴' : ' ▾'); };
+    $('btnScanSet').onclick = () => { $('scanSet').classList.toggle('open'); lab(); };
+    new MutationObserver(lab).observe($('btnAuto'), { childList: true, characterData: true, subtree: true });
+    $('selFavScan').addEventListener('change', lab); lab(); }
   function renderSbar(sym, cs) {
     const { tr, res } = cs, el = $('sbar'), dir = res.bias > 0 ? 'Long' : res.bias < 0 ? 'Short' : '';
     const why = res.filters.length ? res.filters[0].msg : reasonLine(res, tr);
