@@ -223,71 +223,9 @@ body.fs #split,body.fs #under{display:none}
 
 @media(max-width:1100px){#cgrid{grid-template-rows:minmax(300px,1fr) auto}}
 @media(max-width:760px){#minis{display:block;margin-top:8px;container-type:normal}#sbar{height:auto}}
-/* ===== Nowy wygląd (body.sk2): ta sama paleta co Busola (mięta #00f6ac, czerń), zaokrąglone karty i pigułki. Przełącznik ✦ w nagłówku wraca do starego ===== */
-body.sk2{background:radial-gradient(900px 520px at 0% -6%,rgba(0,246,172,.15),transparent 62%),var(--bg)}
-html.light body.sk2{background:linear-gradient(160deg,#c6f5e5 0%,#f2f5f4 34%),var(--bg)}
-body.sk2 #app{gap:12px;padding:0 14px 14px}
-body.sk2 header{border-bottom:0;padding:12px 4px 4px;gap:8px 16px}
-body.sk2 .card{border-radius:22px;box-shadow:0 14px 34px rgba(0,0,0,.38),inset 0 1px 0 rgba(255,255,255,.04)}
-html.light body.sk2 .card{border-color:#e6ece9;box-shadow:0 10px 28px rgba(20,70,55,.10)}
-body.sk2 .cardh{border-bottom:0;padding:14px 16px 8px}body.sk2 .cardh b{font-size:17px;font-family:'Space Grotesk',Inter,sans-serif}
-body.sk2 #side .tools,body.sk2 #bar,body.sk2 #top3,body.sk2 #dbar,body.sk2 #scoreCard,body.sk2 #sbar{border-color:transparent}
-body.sk2 button,body.sk2 select,body.sk2 input:not([type=checkbox]):not([type=radio]){border-radius:999px;padding:7px 14px}
-body.sk2 select{padding-right:10px}
-body.sk2 .fav{border-radius:0;padding:0 5px 0 0}
-body.sk2 .ddw .dd button,body.sk2 .dd button{border-radius:999px;padding:6px 12px}
-body.sk2 #nav button{padding:7px 14px}
-body.sk2 #bar{gap:6px 6px}body.sk2 #bar button,body.sk2 #bar input:not([type=checkbox]){padding:5px 10px}body.sk2 #bar .g{gap:4px}body.sk2 #bar .ddw .ddb{padding:5px 10px}
-body.sk2 #nav button.on{background:var(--acc);color:var(--ink);border-color:var(--acc);font-weight:700}
-html.light body.sk2 #nav button.on{background:var(--acc);color:#fff}
-body.sk2 button.go{box-shadow:0 6px 18px rgba(0,246,172,.28)}
-html.light body.sk2 button.go{box-shadow:0 6px 16px rgba(0,112,78,.25);color:#fff}
-body.sk2 button.on{background:rgba(0,246,172,.16);border-color:var(--acc)}
-html.light body.sk2 button.on{background:#d9efe7}
-body.sk2 #dirF button{border-radius:999px;padding:7px 6px}
-body.sk2 #dirF button.on{background:var(--acc);color:var(--ink);border-color:var(--acc);font-weight:700}
-html.light body.sk2 #dirF button.on{color:#fff}
-body.sk2 .row{border-bottom:0;border-radius:16px;margin:1px 8px;padding:9px 12px}
-body.sk2 .row.sel{background:var(--selbg);box-shadow:inset 0 0 0 1px var(--acc)}
-body.sk2 .b,body.sk2 .sc,body.sk2 .badge,body.sk2 .tag{border-radius:999px}
-body.sk2 .b{padding:2px 8px}
-body.sk2 .mono{font-family:'Space Grotesk',Inter,sans-serif;font-variant-numeric:tabular-nums}
-body.sk2 #bar .t,body.sk2 .st,body.sk2 #scoreCard .st{font-family:'Space Grotesk',Inter,sans-serif}
-body.sk2 #top3{margin:6px 12px 10px;padding:8px 6px 6px;border-radius:20px;background:#00f6ac;color:#020202;box-shadow:0 12px 28px rgba(0,246,172,.22)}
-body.sk2 #top3 .t3h{color:#03402f;font-weight:700;padding:6px 12px 4px}
-body.sk2 #top3 .t3{border-top:1px solid rgba(2,2,2,.16);padding:7px 12px;border-radius:0;color:#020202}
-body.sk2 #top3 .t3:hover{background:rgba(2,2,2,.07)}
-body.sk2 #top3 .t3 b{font-size:15px;font-family:'Space Grotesk',Inter,sans-serif}
-body.sk2 #top3 .sc,body.sk2 #top3 .sc.up,body.sk2 #top3 .sc.dn,body.sk2 #top3 .sc.wr,body.sk2 #top3 .sc.acc{background:#020202;color:#00f6ac}
-body.sk2 #top3 .up,body.sk2 #top3 .dn,body.sk2 #top3 .mu,body.sk2 #top3 .wr,body.sk2 #top3 small{color:#03402f}
-body.sk2 .mp{border-radius:18px}
-body.sk2 #chartW #chart{border-radius:14px}
-body.sk2 .dd{border-radius:16px;box-shadow:0 14px 34px rgba(0,0,0,.5)}
-body.sk2 .toast{border-radius:16px}
-body.sk2 .scanbar{padding:0 14px 6px}
-body.sk2 #sess{padding:0 6px}
-body.sk2 .pc,body.sk2 .stg{border-radius:14px}
-body.sk2 #main.card{background:transparent;border:0;box-shadow:none;gap:12px;overflow:visible}
-body.sk2 #chartCard{background:var(--panel);border:1px solid var(--line);border-radius:22px;box-shadow:0 14px 34px rgba(0,0,0,.38),inset 0 1px 0 rgba(255,255,255,.04);overflow:hidden}
-html.light body.sk2 #chartCard{border-color:#e6ece9;box-shadow:0 10px 28px rgba(20,70,55,.10)}
-body.sk2 #cgrid{gap:12px;padding:6px 12px 12px}
-body.sk2 #sbar{border-radius:20px;background:rgba(255,255,255,.03)}
-html.light body.sk2 #sbar{background:#f6f9f8}
-body.sk2 #under{background:transparent;padding:2px 2px 6px}
-body.sk2 #anat{border-top:0}
-body.sk2 .ag{grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;padding:0 0 8px}
-body.sk2 .ah{padding:2px 4px 8px}
-body.sk2 .ac{border-radius:20px;padding:14px 16px;background:var(--panel);box-shadow:0 14px 34px rgba(0,0,0,.30);border-color:var(--line)}
-html.light body.sk2 .ac{box-shadow:0 10px 26px rgba(20,70,55,.10);border-color:#e6ece9}
-body.sk2 .ac h4{font-size:10.5px;margin-bottom:6px}
-body.sk2 #scoreCard,body.sk2 #info{border:1px solid var(--line);border-radius:20px;margin:0 0 12px;box-shadow:0 14px 34px rgba(0,0,0,.30)}
-html.light body.sk2 #scoreCard,html.light body.sk2 #info{border-color:#e6ece9;box-shadow:0 10px 26px rgba(20,70,55,.10)}
-body.fs.sk2 #chartCard{border:0;border-radius:0;box-shadow:none}body.fs.sk2 #app{padding:0;gap:0}body.fs.sk2 #cgrid{padding:0;gap:0}body.fs.sk2 #chartW #chart{border-radius:0}body.fs.sk2 #main.card{gap:0}
-body.sk2 #evView{background:transparent;border:0;box-shadow:none;border-radius:0}
 </style>
 </head>
 <body>
-<script>try{if(localStorage.getItem('nav_skin')!=='old')document.body.classList.add('sk2')}catch(e){document.body.classList.add('sk2')}</script>
 <div id="app">
   <header id="top">
     <div class="brand"><svg class="logo" width="30" height="30" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="38" fill="none" stroke="currentColor" stroke-opacity=".28" stroke-width="2.6"/><line x1="50" y1="9" x2="50" y2="17" transform="rotate(0 50 50)" stroke="currentColor" stroke-opacity="0.85" stroke-width="3.4" stroke-linecap="round"/><line x1="50" y1="9" x2="50" y2="14" transform="rotate(30 50 50)" stroke="currentColor" stroke-opacity="0.4" stroke-width="2.2" stroke-linecap="round"/><line x1="50" y1="9" x2="50" y2="14" transform="rotate(60 50 50)" stroke="currentColor" stroke-opacity="0.4" stroke-width="2.2" stroke-linecap="round"/><line x1="50" y1="9" x2="50" y2="17" transform="rotate(90 50 50)" stroke="currentColor" stroke-opacity="0.85" stroke-width="3.4" stroke-linecap="round"/><line x1="50" y1="9" x2="50" y2="14" transform="rotate(120 50 50)" stroke="currentColor" stroke-opacity="0.4" stroke-width="2.2" stroke-linecap="round"/><line x1="50" y1="9" x2="50" y2="14" transform="rotate(150 50 50)" stroke="currentColor" stroke-opacity="0.4" stroke-width="2.2" stroke-linecap="round"/><line x1="50" y1="9" x2="50" y2="17" transform="rotate(180 50 50)" stroke="currentColor" stroke-opacity="0.85" stroke-width="3.4" stroke-linecap="round"/><line x1="50" y1="9" x2="50" y2="14" transform="rotate(210 50 50)" stroke="currentColor" stroke-opacity="0.4" stroke-width="2.2" stroke-linecap="round"/><line x1="50" y1="9" x2="50" y2="14" transform="rotate(240 50 50)" stroke="currentColor" stroke-opacity="0.4" stroke-width="2.2" stroke-linecap="round"/><line x1="50" y1="9" x2="50" y2="17" transform="rotate(270 50 50)" stroke="currentColor" stroke-opacity="0.85" stroke-width="3.4" stroke-linecap="round"/><line x1="50" y1="9" x2="50" y2="14" transform="rotate(300 50 50)" stroke="currentColor" stroke-opacity="0.4" stroke-width="2.2" stroke-linecap="round"/><line x1="50" y1="9" x2="50" y2="14" transform="rotate(330 50 50)" stroke="currentColor" stroke-opacity="0.4" stroke-width="2.2" stroke-linecap="round"/><g transform="rotate(40 50 50)"><path d="M50 17 L61 50 L39 50 Z" fill="var(--acc)"/><path d="M50 83 L61 50 L39 50 Z" fill="currentColor" fill-opacity=".35"/></g><circle cx="50" cy="50" r="5.6" fill="var(--bg)" stroke="var(--acc)" stroke-width="2.6"/></svg><span class="bn">BUSOLA</span><span class="bs">NAWIGATOR</span></div>
@@ -305,7 +243,6 @@ body.sk2 #evView{background:transparent;border:0;box-shadow:none;border-radius:0
     <a class="applink" href="../" title="Wróć do aplikacji Busola (ten sam skaner, układ na telefon)" aria-label="Wróć do aplikacji Busola">←<span class="alt"> Aplikacja</span></a><span class="mu" id="srcLabel"></span>
     <span class="sp"></span>
     <span class="mono mu" id="clock"></span>
-    <button id="btnSkin" title="Nowy / stary wygląd (paleta Busoli w obu)" aria-label="Zmień wygląd">✦</button>
     <button id="btnTheme" title="Motyw jasny / ciemny (wspólny z aplikacją Busola)" aria-label="Zmień motyw">☀</button>
     <button id="btnDemo"><span class="dl">Tryb </span>demo</button>
   </header>
@@ -3047,9 +2984,6 @@ if (typeof document !== 'undefined') (() => {
     $('btnTheme').textContent = t === 'light' ? '☾' : '☀'; draw();
   };
   $('btnTheme').textContent = document.documentElement.classList.contains('light') ? '☾' : '☀';
-  { const sk = () => document.body.classList.contains('sk2'); const paint = () => { $('btnSkin').classList.toggle('on', sk()); const mf = $('evMap'); if (mf && mf.getAttribute('src')) mf.setAttribute('src', EV.map[2]()); draw(); };
-    $('btnSkin').onclick = () => { document.body.classList.toggle('sk2'); try { localStorage.setItem('nav_skin', sk() ? 'new' : 'old'); } catch (er) { /* tylko w pamięci */ } paint(); setTimeout(() => window.dispatchEvent(new Event('resize')), 30); };
-    $('btnSkin').classList.toggle('on', sk()); }
   $('btnTheme').onclick = () => setTheme(document.documentElement.classList.contains('light') ? 'dark' : 'light', true);
   $('btnDemo').onclick = async () => {
     S.scanning = false; S.cache = {}; S.trends = {}; S.scores = {}; S.sobs = {};
@@ -3096,7 +3030,7 @@ if (typeof document !== 'undefined') (() => {
 
   // ---------- Mapa i Makro z Busoli: ten sam kod co w aplikacji, w ramce (te same dane i ten sam motyw) ----------
   const EVSRC = location.protocol === 'file:' ? 'https://trendrider-crypto.github.io/busola/' : '../';
-  const EV = { map: ['evMap', 'btnMapV', () => EVSRC + '?embed=map&skin=nav' + (document.body.classList.contains('sk2') ? '&sk2=1' : '')], mk: ['evMk', 'btnMkV', () => EVSRC + '?embed=macro'] };
+  const EV = { map: ['evMap', 'btnMapV', () => EVSRC + '?embed=map&skin=nav'], mk: ['evMk', 'btnMkV', () => EVSRC + '?embed=macro'] };
   let VCUR = null;
   function leaveV() {
     VCUR = null; document.body.classList.remove('ev'); $('evView').hidden = true;
