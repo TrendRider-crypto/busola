@@ -796,6 +796,20 @@ function liquidityOf(c, price, now) {
   return { above: mk(ah, 1), below: mk(bl, -1), sweeps };
 }
 
+// Możliwa zmiana charakteru trendu 1D (opis, nie sygnał): 4H i 1H (oraz 15M, jeśli sprawdzono) idą przeciw trendowi 1D.
+// 1D zmienia kierunek (CHoCH) dopiero, gdy zamknięta dzienna świeca zamknie się za ostatnim niezłamanym szczytem struktury (trend spadkowy) albo dołkiem (trend wzrostowy).
+function flipOf(d, now) {
+  if (!d || !d.cd || !d.t || !(d.last > 0) || !d.t.d1) return null;
+  const closed = closedOnly(d.cd, now); if (closed.length < 30) return null;
+  const a = analyze(closed, N_PIV); if (a.trend !== d.t.d1) return null;
+  const lv = a.trend === -1 ? a.lastH : a.lastL; if (!lv || lv.broken) return null;
+  const opp = -a.trend, names = [];
+  if (d.t.h4 !== opp || d.t.h1 !== opp) return null;
+  names.push('4H', '1H');
+  if (d.c15) { if (d.t.m15 !== opp) return null; names.push('15M'); }
+  return { dir: opp, level: lv.price, dist: (lv.price / d.last - 1) * 100, names };
+}
+
 // Zbieranie płynności na 1D (opis, nie sygnał): niezdjęty wcześniej dołek/szczyt pivotu, który został zdjęty knotem w ostatnich K świecach (razem z trwającą).
 // 'sweep' = świeca, która pierwsza przebiła poziom, zamknęła się z powrotem po właściwej stronie (dla trwającej świecy: cena teraz); 'break' = zamknęła się za poziomem.
 // Po zamknięciu świecy poziom znika z listy "niezdjętych" w liquidityOf, więc ta funkcja trzyma go jeszcze przez K świec.
@@ -1803,6 +1817,11 @@ function detailInner(d) {
     h += `<div class="lab">Ostatnie 24 godziny</div><div class="chartw ${c24}${an}" style="--el:${Math.round(el)}ms"><svg class="chart" viewBox="0 0 322 110" preserveAspectRatio="none" fill="none" aria-hidden="true"><defs><linearGradient id="gC" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="currentColor" stop-opacity=".28"/><stop offset="1" stop-color="currentColor" stop-opacity="0"/></linearGradient></defs><path d="M${pts.replace(/ /g, ' L')} L322,110 L0,110 Z" fill="url(#gC)"/><line class="pl" x1="0" x2="322" y1="${yN.toFixed(1)}" y2="${yN.toFixed(1)}"/><polyline points="${pts}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><i class="mk now" style="left:100%;top:${pyN}%"></i><span class="plab" style="top:${pyN}%">${fmtPrice(d.last)}</span><i class="mk lo" style="left:${(cd.xy[cd.iMin][0] / 322 * 100).toFixed(1)}%;top:${(cd.xy[cd.iMin][1] / 110 * 100).toFixed(1)}%"></i><i class="mk hi" style="left:${(cd.xy[cd.iMax][0] / 322 * 100).toFixed(1)}%;top:${(cd.xy[cd.iMax][1] / 110 * 100).toFixed(1)}%"></i></div><div class="cl"><span>min ${fmtPrice(cd.low)}</span><span>max ${fmtPrice(cd.high)}</span></div>`;
   } else if (d.loading) h += '<div class="loading">Pobieram wykres…</div>';
   h += `<div class="lab">Kierunki</div><div class="tfs" style="margin-top:0">${tfChips(d)}</div><div class="note">Kierunek to trend struktury rynku na danym interwale (wyższe lub niższe szczyty i dołki), a nie ruch ceny z ostatniej godziny.</div>`;
+  const fl = flipOf(d, Date.now());
+  if (fl) {
+    const up = fl.dir > 0, over = up ? d.last >= fl.level : d.last <= fl.level, nm = fl.names.length === 3 ? '4H, 1H i 15M' : '4H i 1H';
+    h += `<div class="react pb"><span class="ic">↻</span><div><b>Możliwa zmiana charakteru trendu 1D</b><span class="t">${nm} idą ${up ? 'w górę' : 'w dół'}, a 1D nadal ${up ? 'w dół' : 'w górę'}. 1D zmieni kierunek dopiero po zamknięciu dziennej świecy ${up ? 'nad' : 'pod'} ${fmtPrice(fl.level)} (${up ? 'ostatni szczyt' : 'ostatni dołek'} struktury${over ? ', cena jest już po tej stronie, liczy się zamknięcie dnia' : ', ' + fmtPct(fl.dist) + ' od ceny'}). Do tego czasu to może być zwykła korekta w trendzie 1D. Opis, nie sygnał.</span></div></div>`;
+  }
   if (d.pending) h += '<div class="loading">Sprawdzam OI i interwał 15M…</div>';
   else if (d.status === 'NO TRADE') {
     const names = ['1D', '4H', '1H', '15M'], vals = [d.t.d1, d.t.h4, d.t.h1, d.t.m15];
