@@ -334,7 +334,7 @@ body.sk2 #evView{background:transparent;border:0;box-shadow:none;border-radius:0
       <span class="g"><button id="zOut">−</button><button id="zIn">+</button><button id="zEnd">⇥</button></span>
       <button id="btnFS" title="Wykres na cały ekran (klawisz F, wyjście Esc; strzałki ↑↓ zmieniają coin)">⛶ Pełny ekran</button>
       <label class="mu">Pivot N <input id="nIn" type="number" min="1" max="10" value="3" style="width:52px"></label>
-      <span class="g" id="drawBtns"><button id="btnTL" title="Linia trendu: kliknij dwa punkty (przyciąga do szczytów i dołków świec). Esc anuluje.">╱ Trend</button><button id="btnHL" title="Linia pozioma: jedno kliknięcie. Esc anuluje.">― Poziom</button></span>
+      <span class="g" id="drawBtns"><button id="btnTL" title="Linia trendu: kliknij dwa punkty (przyciąga do szczytów i dołków świec). Esc anuluje.">╱ Trend</button><button id="btnHL" title="Linia pozioma: jedno kliknięcie. Esc anuluje.">― Poziom</button><button id="btnDelDr" hidden title="Usuwa wszystkie narysowane linie (trendu i poziome) tego coina. Pojedynczą linię usuniesz w Alerty → Usuń.">✕ Linie</button></span>
       <span class="ddw" id="ddOB"><button class="ddb" id="btnOB">OB</button><div class="dd" hidden></div></span>
       <span class="ddw" id="ddFVG"><button class="ddb" id="btnFVG">FVG</button><div class="dd" hidden></div></span>
       <span class="ddw" id="ddLS"><button class="ddb" id="btnLS">LS</button><div class="dd" hidden></div></span>
@@ -3155,7 +3155,17 @@ if (typeof document !== 'undefined') (() => {
       } catch (e) { d.side = null; d.lastT = Math.floor(Date.now() / 1000) - STEP[d.tf]; }
     }
     function sync() { Chart.setDrawings(curList()); updBtn(); }
-    function updBtn() { $('btnAl').textContent = 'Alerty (' + allLines().filter(x => x.d.alert).length + ')'; }
+    let delArm = 0;
+    function updBtn() {
+      $('btnAl').textContent = 'Alerty (' + allLines().filter(x => x.d.alert).length + ')';
+      const n = (store[keyOf(exName(), S.sel)] || []).length, b = $('btnDelDr');
+      b.hidden = !n; if (!delArm) b.textContent = '✕ Linie (' + n + ')';
+    }
+    $('btnDelDr').onclick = () => {
+      const k = keyOf(exName(), S.sel), n = (store[k] || []).length; if (!n) return;
+      if (!delArm) { $('btnDelDr').textContent = 'Usunąć ' + n + '? Kliknij ponownie'; delArm = setTimeout(() => { delArm = 0; updBtn(); }, 3500); return; }
+      clearTimeout(delArm); delArm = 0; delete store[k]; save(); sync(); render();
+    };
     async function add(d) {
       d.id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6); d.tf = S.tf; d.alert = true; d.fired = null; d.created = Date.now();
       const ex = exName(), sym = S.sel; await arm(ex, sym, d);
