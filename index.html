@@ -527,6 +527,76 @@ html.skin-nav.sk2 .nv-zc, html.skin-nav.sk2 .skin-nav .mpd-sp, html.skin-nav.sk2
 html.skin-nav.sk2 .nv-pad { padding: 14px 16px; }
 html.skin-nav.sk2 .nv-fn { border-top-color: transparent; }
 html.skin-nav.sk2 .skin-nav .empty, html.skin-nav.sk2 .empty { border-radius: 14px; }
+
+/* ---- Skórka Fold dla Mapy i Makro w nowym Nawigatorze (?embed=map|macro&skin=fold): grafitowe szkło, te same dane ---- */
+html.skin-fold.dark { --bg: #171b23; --surface: #222833; --surface2: #2a313c; --line: rgba(255,255,255,.08); --glass: #222833; --glass-line: rgba(255,255,255,.08); --glass-sh: none; --fg: #e9edf3; --muted: #8e97a7; --up: #4fb39a; --down: #e0646c; --acc: #4fb39a; --sel: #5fa8f5; --up-soft: rgba(79,179,154,.15); --down-soft: rgba(224,100,108,.15); --warn: #e2b061; --warn-soft: rgba(226,176,97,.14); --gold-soft: rgba(79,179,154,.12); --gold-line: #4a5466;
+  --fp1: rgba(62,71,87,.55); --fp2: rgba(34,40,51,.62); --fhi: rgba(255,255,255,.09); --fsh: 0 10px 28px rgba(0,0,0,.3); --fin: #1d222b; --fbtn: rgba(255,255,255,.1); --fw: #eef1f5; --fwt: #1b2029; }
+html.skin-fold.light { --fp1: #ffffff; --fp2: #f6f8f9; --fhi: rgba(255,255,255,.9); --fsh: 0 6px 18px rgba(20,30,40,.08); --fin: #f1f4f6; --fbtn: #e2ebe8; --fw: #1b2029; --fwt: #ffffff; }
+html.skin-fold, html.skin-fold body { background: transparent !important; }
+html.skin-fold body::before, html.skin-fold body::after { display: none !important; }
+html.skin-fold .app { max-width: none; padding: 0; }
+html.skin-fold.skin-nav, html.skin-fold.skin-nav body { height: 100%; overflow: hidden; }
+/* mapa */
+.fdw { display: grid; grid-template-columns: minmax(0, 1fr) 236px; grid-template-rows: minmax(0, 1fr) auto; gap: 10px; height: 100vh; padding: 0; }
+.fd-p { background: linear-gradient(180deg, var(--fp1), var(--fp2)); border: 1px solid var(--line); border-radius: 16px; box-shadow: inset 0 1px 0 var(--fhi), var(--fsh); padding: 12px 14px; min-width: 0; min-height: 0; }
+.fd-h { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; min-width: 0; } .fd-h b { font-size: 14px; font-weight: 600; white-space: nowrap; }
+.fd-big { font-size: 15px !important; } .fd-m { color: var(--muted); font-size: 11.5px; } .fd-sp { flex: 1; }
+.fd-seg { display: flex; gap: 2px; padding: 2px; border-radius: 12px; background: var(--fin); border: 1px solid var(--line); flex: none; }
+html.skin-fold .fd-seg .mp-btn { height: 36px; padding: 0 12px; border: 0; border-radius: 9px; background: transparent; color: var(--muted); font: inherit; font-size: 12.5px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; box-shadow: none; }
+html.skin-fold .fd-seg .mp-btn.on, html.skin-fold .fd-seg #mpPlay { background: var(--fbtn); color: var(--fg); }
+.fd-ch { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; }
+.fd-plot { min-height: 0; border: 1px solid var(--line); border-radius: 12px; background: rgba(0,0,0,.12); overflow: hidden; display: flex; }
+.fd-plot svg { width: 100%; height: 100%; display: block; }
+.fd-rg { display: flex; align-items: center; gap: 10px; margin-top: 8px; font-size: 11.5px; color: var(--muted); } .fd-rg input { flex: 1; accent-color: var(--up); height: 28px; } .fd-rg .up { color: var(--up); }
+.fd-r { display: grid; grid-template-rows: auto auto minmax(0, 1fr); gap: 10px; min-height: 0; }
+.fd-dh { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; } .fd-tk { font-size: 17px; } .fd-dh small { color: var(--muted); font-size: 12px; }
+.fd-chg { font-size: 19px; white-space: nowrap; } .fd-tg { margin-top: 6px; }
+.fd-kv { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 8px 0; } .fd-kv small { display: block; color: var(--muted); font-size: 10.5px; } .fd-kv b { font-size: 13px; font-variant-numeric: tabular-nums; }
+html.skin-fold .fd-spk { width: 100%; height: 40px; border: 1px solid var(--line); border-radius: 8px; display: block; }
+.fd-b { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+html.skin-fold .fd-b .mp-btn { height: 38px; display: grid; place-items: center; padding: 0 6px; border-radius: 10px; border: 1px solid var(--line); background: var(--fbtn); color: var(--fg); font: inherit; font-size: 12px; text-decoration: none; white-space: nowrap; box-shadow: none; }
+html.skin-fold .fd-b .mp-btn.w { background: var(--fw); color: var(--fwt); border-color: var(--fw); font-weight: 600; }
+.fd-br { padding: 10px 14px; } .fd-br .fd-h { margin-bottom: 4px; }
+.fd-bn { display: flex; justify-content: space-between; align-items: baseline; } .fd-bn > b { font-size: 24px; font-weight: 600; }
+.fd-bar { display: flex; height: 6px; border-radius: 3px; overflow: hidden; background: var(--fbtn); margin: 6px 0; } .fd-bar i { display: block; height: 100%; } .fd-bar i.up { background: var(--up); } .fd-bar i.down { background: var(--down); }
+.fd-secs { display: flex; flex-direction: column; overflow: hidden; } .fd-scr { overflow-y: auto; min-height: 0; flex: 1; margin: 0 -6px; scrollbar-width: none; }
+.fd-sec { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) 54px 46px; gap: 8px; align-items: center; padding: 6px; border: 0; border-radius: 9px; background: transparent; color: var(--fg); font: inherit; font-size: 12px; text-align: left; min-height: 36px; }
+.fd-sec span:first-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .fd-sec small { color: var(--muted); }
+.fd-sec.on { background: var(--fbtn); } .fd-sec b { text-align: right; font-variant-numeric: tabular-nums; }
+.fd-sb { height: 5px; border-radius: 3px; background: var(--fbtn); overflow: hidden; display: block; } .fd-sb i { display: block; height: 100%; } .fd-sb.u i { background: var(--up); } .fd-sb.d i { background: var(--down); margin-left: auto; }
+.fd-bot { grid-column: 1 / -1; min-width: 0; } .fd-bot .fd-h { margin-bottom: 8px; }
+.fd-cards { display: flex; gap: 10px; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; scrollbar-width: none; padding: 2px 2px 4px; }
+.fd-cards::-webkit-scrollbar { display: none; }
+.fd-c { flex: 0 0 172px; scroll-snap-align: start; text-align: left; padding: 10px 12px; border: 1px solid var(--line); border-radius: 14px; background: linear-gradient(180deg, var(--fp1), var(--fp2)); box-shadow: inset 0 1px 0 var(--fhi); color: var(--fg); font: inherit; cursor: pointer; }
+.fd-c.sel { border-color: var(--up); }
+.fd-ct { display: flex; justify-content: space-between; gap: 6px; font-size: 14px; } .fd-cr { color: var(--muted); font-size: 11px; line-height: 1.45; margin-top: 5px; }
+html.skin-fold .fd-c .mp-sp { width: 100%; height: 22px; margin-top: 4px; display: block; }
+html.skin-fold .mp-tag { display: inline-block; padding: 0 7px; border-radius: 999px; font-size: 9.5px; font-weight: 700; letter-spacing: .02em; white-space: nowrap; background: transparent; border: 1.5px solid currentColor; }
+html.skin-fold .mp-tag.lb { color: var(--up); } html.skin-fold .mp-tag.sb { color: var(--down); }
+html.skin-fold .mp-tag.sc { color: var(--up); border-style: dashed; } html.skin-fold .mp-tag.lu { color: var(--warn); border-style: dashed; }
+html.skin-fold .mp-tag.flat, html.skin-fold .mp-tag.na { color: var(--muted); }
+html.skin-fold .mp-sp.up { stroke: var(--up); } html.skin-fold .mp-sp.down { stroke: var(--down); }
+html.skin-fold .mp-pl.up, html.skin-fold .mp-dot.up { stroke: var(--up); } html.skin-fold .mp-pl.dn, html.skin-fold .mp-dot.dn { stroke: var(--down); }
+html.skin-fold .mp-dot.up { fill: var(--up); } html.skin-fold .mp-dot.dn { fill: var(--down); }
+html.skin-fold .mp-tx.up { fill: var(--up); } html.skin-fold .mp-tx.dn { fill: var(--down); } html.skin-fold .mp-tx.sel { fill: var(--sel); }
+html.skin-fold .mp-ax { fill: var(--muted); } html.skin-fold .mp-ax.now { fill: var(--up); }
+html.skin-fold .mp-grid { stroke: rgba(255,255,255,.06); } html.skin-fold.light .mp-grid { stroke: rgba(0,0,0,.07); } html.skin-fold .mp-zero { stroke: var(--muted); stroke-dasharray: 4 4; opacity: .6; }
+html.skin-fold .empty { padding: 14px; color: var(--muted); font-size: 12px; background: none; border: 0; }
+html.skin-fold .up { color: var(--up); } html.skin-fold .down { color: var(--down); }
+html.skin-fold .nav, html.skin-fold #btnBack { display: none !important; }
+/* makro: każdy blok jako panel z tytułem w środku, trzy kolumny */
+html.skin-fold .hdr { display: none; }
+html.skin-fold .meta { margin: 0 2px 8px; font-size: 11.5px; color: var(--muted); }
+html.skin-fold .mkw { column-count: 3; column-width: auto; column-gap: 10px; padding: 0; }
+html.skin-fold .mkc { break-inside: avoid; padding: 12px 14px; margin: 0 0 10px; background: linear-gradient(180deg, var(--fp1), var(--fp2)); border: 1px solid var(--line); border-radius: 16px; box-shadow: inset 0 1px 0 var(--fhi), var(--fsh); }
+html.skin-fold .mkc .mp-sec { margin: 0 0 8px; font-size: 14px; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--fg); font-family: Inter, system-ui, sans-serif; }
+html.skin-fold .mkc .mp-card { margin: 0; padding: 0; background: none; border: 0; box-shadow: none; border-radius: 0; -webkit-backdrop-filter: none; backdrop-filter: none; }
+html.skin-fold .mkc .mp-t, html.skin-fold .mkc small { color: var(--muted); }
+html.skin-fold .fine { margin: 2px 2px 10px; font-size: 10.5px; line-height: 1.4; color: var(--muted); }
+html.skin-fold.embed .mkw .mp-card .mp-card { background: none; }
+html.skin-fold.dark { --gold: #4fb39a; }
+html.skin-fold .fd-spk { height: 30px !important; } .fd-d { padding: 10px 14px; } .fd-kv { margin: 6px 0; } .fd-b .mp-btn { height: 36px !important; }
+.fd-sec { min-height: 32px; padding: 4px 6px; }
 </style>
 </head>
 <body>
@@ -1954,8 +2024,8 @@ function mapDetail(x) {
     + `<div class="mpd-b"><a class="mp-btn" href="${tvLink(x.sym)}" target="_blank" rel="noopener">Wykres TradingView</a>${canOpen ? `<button type="button" class="mp-btn" data-open="${x.sym}">Otwórz w Nawigatorze</button>` : ''}</div></div>`;
 }
 // Mapa w skórce Kokpit (Busola Nawigator, ?embed=map&skin=nav, od 1100 px): cztery kolumny. Te same dane, te same etykiety i ta sama logika co w aplikacji, inny układ.
-const mapNavOn = () => SKIN && window.innerWidth >= 1100;
-function mapDims() { return { W: Math.max(420, window.innerWidth - 856), H: Math.max(300, window.innerHeight - 164) }; }
+const mapNavOn = () => SKIN && (FOLD || window.innerWidth >= 1100);
+function mapDims() { return FOLD ? { W: Math.max(320, window.innerWidth - 290), H: Math.max(200, window.innerHeight - 292) } : { W: Math.max(420, window.innerWidth - 856), H: Math.max(300, window.innerHeight - 164) }; }
 // Świece 4H z najbliższymi strefami OB i FVG (1H i 4H) z tych samych danych co w aplikacji (d.zn). Opis, nie sygnał.
 function mapZoneChart(d, price) {
   const c0 = d.c4h; if (!c0 || c0.length < 20) return '';
@@ -2043,6 +2113,47 @@ function mapHtmlNav(items, mode) {
   h += `<section class="nv-p"><div class="nv-scr">${mapDetailNav(wp.find(x => x.sym === selSym))}</div></section></div></div>`;
   return h;
 }
+// Mapa w skórce Fold (nowy Nawigator na rozłożony telefon): ścieżki dnia, karta coina, szerokość rynku, sektory i ruchy dnia jako karty przesuwane palcem. Te same dane i etykiety co w aplikacji.
+function mapHtmlFold(items, mode) {
+  const all = items.filter(x => x.path), secs = mapSectors(all);
+  if (S.mapSec && !secs.some(q => q.name === S.mapSec)) S.mapSec = '';
+  const wp = S.mapSec ? all.filter(x => mapSector(x.sym) === S.mapSec) : all;
+  const br = mapBreadth(items), btc = items.find(x => x.sym === 'BTCUSDT'), rk = mapRank(wp, 10), side = S.mapSide === 'dn' ? 'dn' : 'up';
+  const selSym = (wp.find(x => x.sym === S.mapSel) || rk.top[0] || rk.bottom[0] || {}).sym; if (selSym) S.mapSel = selSym;
+  const sel = wp.find(x => x.sym === selSym), win = mode === 'day' ? 'od 00:00 UTC' : 'z 24 godz.';
+  const chart = mapChartHtml(items, S.mapF, S.mapTrim);
+  let h = `<div class="fdw"><section class="fd-p fd-ch"><div class="fd-h"><b>Ścieżki dnia</b><span class="fd-m">${S.demo ? 'DEMO · ' : ''}${wp.length} coinów · ${win}${S.mapSec ? ' · ' + esc(S.mapSec) : ''}</span><span class="fd-sp"></span>`
+    + `<div class="fd-seg"><button class="mp-btn" id="mpPlay" aria-label="Odtwórz dzień">${mapBtnHtml()}</button><button class="mp-btn${S.mapTrim ? ' on' : ''}" id="mpTrim" aria-pressed="${S.mapTrim}">Bez skrajnych</button><button class="mp-btn${S.mapFl ? ' on' : ''}" id="mpFl" aria-pressed="${S.mapFl}">Promienie</button></div></div>`
+    + `<div id="mpPlot" class="fd-plot">${chart || '<div class="empty">Za mało coinów w tym wyborze, żeby narysować ścieżki.</div>'}</div>`
+    + `<div class="fd-rg"><span>${mode === 'day' ? '00:00' : '−24 g'}</span><input class="mp-range" id="mpRange" type="range" min="0" max="1000" value="${Math.round(S.mapF * 1000)}" aria-label="Moment dnia"><span class="up">teraz</span></div></section>`;
+  // karta wybranego coina
+  h += '<aside class="fd-r"><section class="fd-p fd-d">';
+  if (sel) {
+    const d = sel.d, up = sel.chg >= 0, canOpen = window.parent && window.parent !== window;
+    h += `<div class="fd-dh"><div><b class="fd-tk">${esc(base(sel.sym))}</b><small>/USDT</small><div class="fd-m">${esc(mapSector(sel.sym))}</div></div><b class="fd-chg ${up ? 'up' : 'down'}">${up ? '▲' : '▼'} ${fmtPct(Math.abs(sel.chg)).replace('+', '')}</b></div>`
+      + `<div class="fd-tg">${sel.label ? `<span class="mp-tag ${sel.label}">${MAP_LAB[sel.label]}</span>` : `<span class="mp-tag na">${S.mapOiBusy ? 'Pobieram OI…' : 'Brak OI'}</span>`}</div>`
+      + `<div class="fd-kv"><div><small>Cena</small><b>${fmtPrice(S.mapLast[sel.sym] || d.last)}</b></div><div><small>Cena 4 g</small><b class="${cls(sel.p4)}">${fmtPct(sel.p4)}</b></div><div><small>OI 4 g</small><b class="${cls(sel.oi4)}">${sel.oi4 == null ? '–' : fmtPct(sel.oi4)}</b></div></div>`
+      + sparkSvg(sel.path.pts, 200, 40, 'mp-sp fd-spk ' + (up ? 'up' : 'down'), 1.6)
+      + `<div class="fd-b">${canOpen ? `<button type="button" class="mp-btn w" data-open="${sel.sym}">Otwórz wykres</button>` : ''}<a class="mp-btn" href="${tvLink(sel.sym)}" target="_blank" rel="noopener">TradingView</a></div>`;
+  } else h += '<div class="fd-m">Wybierz coina z wykresu albo z kart na dole.</div>';
+  h += '</section>';
+  // szerokość rynku
+  const tot = br.oiUp + br.oiDown;
+  h += `<section class="fd-p fd-br"><div class="fd-h"><b>Szerokość rynku</b><span class="fd-sp"></span><span class="fd-m">OI 4 g</span></div>`
+    + (br.oiN ? `<div class="fd-bn"><b class="up">${br.oiUp}</b>${btc && btc.chg != null ? `<span class="fd-m">BTC <b class="${cls(btc.chg)}">${fmtPct(btc.chg)}</b></span>` : '<span></span>'}<b class="down">${br.oiDown}</b></div>${tot ? `<div class="fd-bar"><i class="up" style="width:${(br.oiUp / tot * 100).toFixed(1)}%"></i><i class="down" style="width:${(br.oiDown / tot * 100).toFixed(1)}%"></i></div>` : ''}`
+      : `<div class="fd-m">${S.mapOiBusy ? `Pobieram OI ${S.mapOiN}/${S.mapOiTot}` : 'Brak danych OI.'}</div>`)
+    + `<div class="fd-m">Ceny: ${br.pUp} w górę / ${br.pDown} w dół</div></section>`;
+  // sektory (klik filtruje)
+  const allAvg = all.length ? all.reduce((a, x) => a + x.chg, 0) / all.length : 0, mx = Math.max(0.5, ...secs.map(q => Math.abs(q.avg)), Math.abs(allAvg));
+  const row = (name, label, avg, n, on) => `<button type="button" class="fd-sec${on ? ' on' : ''}" data-sec="${esc(name)}"><span>${esc(label)} <small>${n}</small></span><span class="fd-sb ${avg >= 0 ? 'u' : 'd'}"><i style="width:${(Math.abs(avg) / mx * 100).toFixed(0)}%"></i></span><b class="${avg >= 0 ? 'up' : 'down'}">${fmtPct(avg)}</b></button>`;
+  h += `<section class="fd-p fd-secs"><div class="fd-h"><b>Sektory</b><span class="fd-sp"></span><span class="fd-m">klik filtruje</span></div><div class="fd-scr">${row('', 'Wszystkie', allAvg, all.length, !S.mapSec)}${secs.map(q => row(q.name, q.name, q.avg, q.n, S.mapSec === q.name)).join('')}</div></section></aside>`;
+  // ruchy dnia: karty przesuwane palcem
+  const list = side === 'dn' ? rk.bottom : rk.top;
+  const card = (x, i) => { const up = x.chg >= 0; return `<button type="button" class="fd-c${selSym === x.sym ? ' sel' : ''}" data-pick="${x.sym}"><div class="fd-ct"><b>${i + 1}. ${esc(base(x.sym))}</b><b class="${up ? 'up' : 'down'}">${fmtPct(x.chg)}</b></div><div class="fd-tg">${x.label ? `<span class="mp-tag ${x.label}">${MAP_LAB[x.label]}</span>` : `<span class="mp-tag na">${S.mapOiBusy ? 'Pobieram OI…' : 'Brak OI'}</span>`}</div><div class="fd-cr">cena 4 g ${fmtPct(x.p4)}<br>OI 4 g ${x.oi4 == null ? '–' : fmtPct(x.oi4)}</div>${sparkSvg(x.path.pts, 150, 22, 'mp-sp ' + (up ? 'up' : 'down'), 1.5)}</button>`; };
+  h += `<section class="fd-bot"><div class="fd-h"><b class="fd-big">Ruchy dnia</b><span class="fd-m">‹ przesuń palcem ›</span><span class="fd-sp"></span><div class="fd-seg"><button class="mp-btn${side === 'up' ? ' on' : ''}" data-side="up">Najsilniejsze</button><button class="mp-btn${side === 'dn' ? ' on' : ''}" data-side="dn">Najsłabsze</button></div></div>`
+    + `<div class="fd-cards">${list.length ? list.map(card).join('') : `<div class="empty">${side === 'dn' ? 'Żaden coin nie jest teraz na minusie.' : 'Żaden coin nie jest teraz na plusie.'}</div>`}</div></section></div>`;
+  return h;
+}
 function mapHtml() {
   const items = mapItems(), wp = items.filter(x => x.path), mode = wp.length ? wp[0].path.mode : 'day';
   let h = `<header class="hdr"><div class="brand"><button class="ibtn" id="btnBack" aria-label="Wróć">${svgI(ICO.back, 20, 2.2)}</button><span>Mapa</span></div><div class="hbtns"><button class="ibtn${S.mapOiBusy ? ' spin' : ''}" id="btnMapRef" aria-label="Odśwież mapę"${S.mapOiBusy ? ' disabled' : ''}>${svgI(ICO.refresh, 20, 1.8)}</button></div></header>`;
@@ -2051,7 +2162,7 @@ function mapHtml() {
   if (S.mapOiBusy) h += `<div class="bar" role="progressbar" aria-label="Pobieranie danych OI" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(S.mapOiN / Math.max(1, S.mapOiTot) * 100)}"><i style="width:${Math.round(S.mapOiN / Math.max(1, S.mapOiTot) * 100)}%"></i></div>`;
   if (S.demo) h += `<div class="banner demo"><span>Dane DEMO: sztuczne, tylko do oglądania wyglądu. To nie są prawdziwe ceny.</span></div>`;
   if (!items.length) return h + `<div class="empty">${S.scanning ? 'Skanuję rynek. Mapa pojawi się, gdy skan pobierze świece.' : S.err ? 'Brak danych ze skanu (' + esc(S.err) + '). Wróć i odśwież skan.' : 'Najpierw potrzebny jest skan. Wróć i odśwież.'}</div>`;
-  if (mapNavOn()) return mapHtmlNav(items, mode);
+  if (mapNavOn()) return FOLD ? mapHtmlFold(items, mode) : mapHtmlNav(items, mode);
   const br = mapBreadth(items), tot = br.oiUp + br.oiDown, btc = items.find(x => x.sym === 'BTCUSDT');
   let sBr = `<div class="mp-card"><div class="mp-lab">Szerokość rynku</div>`;
   sBr += br.oiN ? `<div class="mp-br"><div><div class="mp-n up">${br.oiUp}</div><div class="mp-t">OI rośnie (4 godz.)</div></div><div style="text-align:right"><div class="mp-n down">${br.oiDown}</div><div class="mp-t">OI spada (4 godz.)</div></div></div>${tot ? `<div class="mp-bar"><i style="width:${(br.oiUp / tot * 100).toFixed(1)}%;background:var(--up)"></i><i style="width:${(br.oiDown / tot * 100).toFixed(1)}%;background:var(--down)"></i></div>` : ''}` : `<div class="mp-t" style="margin-top:8px">${S.mapOiBusy ? 'Pobieram OI…' : 'Brak danych OI (giełda nie odpowiedziała)'}</div>`;
@@ -2202,7 +2313,7 @@ function macroHtml() {
   return h;
 }
 function render() {
-  if (S.view === 'map') { const sy0 = window.scrollY; $app.innerHTML = mapHtml() + navHtml('map'); window.scrollTo(0, sy0); return; }
+  if (S.view === 'map') { const sy0 = window.scrollY, fc = $app.querySelector('.fd-cards'), fsl = fc ? fc.scrollLeft : 0; $app.innerHTML = mapHtml() + navHtml('map'); window.scrollTo(0, sy0); const fc2 = $app.querySelector('.fd-cards'); if (fc2) fc2.scrollLeft = fsl; return; }
   if (S.view === 'lab') { const sy0 = window.scrollY; $app.innerHTML = labHtml() + navHtml('journal'); window.scrollTo(0, sy0); return; }
   if (S.view === 'macro') { const sy0 = window.scrollY; $app.innerHTML = macroHtml() + navHtml('macro'); window.scrollTo(0, sy0); return; }
   if (S.view === 'journal') { const sy0 = window.scrollY; $app.innerHTML = journalHtml() + navHtml('journal'); window.scrollTo(0, sy0); return; }
@@ -2266,6 +2377,7 @@ $app.addEventListener('click', e => {
     return S.mapF >= 1 ? mapAnimate(9000, 0) : mapAnimate(9000 * (1 - S.mapF), S.mapF);
   }
   const sc = t.closest('[data-sec]'); if (sc) { S.mapSec = sc.dataset.sec || ''; S.mapCache = null; return render(); }
+  const sd = t.closest('[data-side]'); if (sd) { S.mapSide = sd.dataset.side; return render(); }
   const pk = t.closest('[data-pick]'); if (pk) { S.mapSel = pk.dataset.pick; return render(); }
   const op = t.closest('[data-open]'); if (op) { try { window.parent.postMessage({ busola: 'open', sym: op.dataset.open }, location.origin); } catch (er) { /* bez rodzica */ } return; }
   if (t.closest('#btnTv')) return tvAsk();
@@ -2330,7 +2442,9 @@ try {
 if (/[?&]demo\b/.test(location.search)) S.demo = true;
 // Tryb osadzony (dla Busola Nawigator): ?embed=map albo ?embed=macro. Ten sam kod i te same dane, bez dolnego paska i przycisku wstecz.
 const EMB = (location.search.match(/[?&]embed=(map|macro)\b/) || [])[1] || null;
-const SKIN = EMB === 'map' && /[?&]skin=nav\b/.test(location.search);
+const SKIN = EMB === 'map' && /[?&]skin=(nav|fold)\b/.test(location.search);
+const FOLD = !!EMB && /[?&]skin=fold\b/.test(location.search);   // nowy Nawigator (Fold): grafitowe panele, karty przesuwane palcem
+if (FOLD) document.documentElement.classList.add('skin-fold');
 if (EMB) { document.documentElement.classList.add('embed'); S.view = EMB; }
 if (SKIN) document.documentElement.classList.add('skin-nav');
 if (SKIN && /[?&]sk2=1\b/.test(location.search)) document.documentElement.classList.add('sk2');   // nowy wygląd Nawigatora (paleta Busoli, zaokrąglone karty)

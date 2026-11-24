@@ -287,10 +287,258 @@ body.sd3 .r2{display:flex;align-items:center;gap:10px;margin-top:8px}
 body.sd3 .seg4{display:flex;gap:4px;flex:1}body.sd3 .seg4 i{flex:1;height:4px;border-radius:2px;background:var(--trk2)}body.sd3 .seg4 i.u{background:var(--up)}body.sd3 .seg4 i.d{background:var(--dn)}
 body.sd3 .scn{font-size:12px;color:var(--mut);font-variant-numeric:tabular-nums;min-width:22px;text-align:right;font-weight:600}
 }
+
+/* ======== NOWY WYGLĄD (Fold rozłożony, poziomo, dotyk): grafitowe szkło, złote logo ======== */
+html:not(.light){--bg:#171b23;--panel:#222833;--panel2:#2a313c;--line:#323a47;--txt:#e9edf3;--mut:#8e97a7;--up:#4fb39a;--dn:#e0646c;--warn:#e2b061;--acc:#4fb39a;--accS:rgba(79,179,154,.16);--ink:#0f1a17;--trk:#2c3340;--upS:rgba(79,179,154,.15);--dnS:rgba(224,100,108,.15);--warnS:rgba(226,176,97,.14);--inp:#1d222b;--navOn:#323a48;--navLn:#4a5466;--hov:#2a313c;--selbg:rgba(79,179,154,.12);--trk2:#3a4250;--vbad:#2a1f25;--vok:#1c2a28;--lsS:#2d2640;
+  --pg1:rgba(62,71,87,.55);--pg2:rgba(34,40,51,.62);--hi:rgba(255,255,255,.09);--gl:rgba(255,255,255,.08);--gold:#d9b56c;--rdy:#5fa8f5;--chip:rgba(56,64,79,.55);--shd:0 10px 28px rgba(0,0,0,.3)}
+html.light{--pg1:#ffffff;--pg2:#f6f8f9;--hi:rgba(255,255,255,.9);--gl:#dde3e8;--gold:#a87b22;--rdy:#0369a1;--chip:#ffffff;--shd:0 6px 18px rgba(20,30,40,.08)}
+html:not(.light) body.fold{background:radial-gradient(1200px 600px at 55% -10%,#2f3746 0,transparent 60%),linear-gradient(180deg,#1d222c,#151920)}
+body.fold{font-size:12.5px;overflow:hidden}
+body.fold #app,body.fold.dr #app{grid-template-columns:76px minmax(0,1fr) clamp(224px,24vw,300px);grid-template-rows:auto minmax(0,1fr) auto;gap:10px;padding:10px 12px 10px 0;height:100%}
+body.fold .card,body.fold #sbar,body.fold #scoreCard{background:linear-gradient(180deg,var(--pg1),var(--pg2));border:1px solid var(--gl);border-radius:16px;box-shadow:inset 0 1px 0 var(--hi),var(--shd)}
+body.fold button,body.fold select,body.fold input{border-radius:10px;border-color:var(--gl)}
+body.fold button:hover{border-color:var(--navLn)}
+body.fold button.on{background:var(--navOn);border-color:var(--navLn);color:var(--txt)}
+body.fold button.go{background:linear-gradient(180deg,#5cc4a9,#3f9e86);border-color:#5cc4a9;color:#0f1a17}
+html.light body.fold button.go{background:var(--acc);color:#fff;border-color:var(--acc)}
+
+/* --- lewe menu z ikonami --- */
+body.fold #top{grid-column:1;grid-row:1/-1;flex-direction:column;flex-wrap:nowrap;align-items:stretch;gap:4px;padding:10px 6px;border:0;border-right:1px solid var(--gl);background:linear-gradient(180deg,rgba(31,37,48,.9),rgba(23,27,35,.9));min-height:0;overflow:auto}
+html.light body.fold #top{background:var(--panel)}
+body.fold .brand{flex-direction:column;justify-content:center;gap:2px;padding:0 0 8px;color:var(--gold)}
+body.fold .brand .logo{width:32px;height:32px}
+body.fold .brand .logo{color:var(--gold)}body.fold .brand .bn{font-size:12px;letter-spacing:2px;color:var(--gold)}body.fold .brand .bs{font-size:7.5px;letter-spacing:1.5px;padding:0;border:0;background:none;color:var(--mut)}
+body.fold #nav{flex-direction:column;flex-wrap:nowrap;gap:2px;flex:none}
+body.fold #nav button,body.fold #btnSetP{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:52px;padding:6px 2px;font-size:10px;line-height:1.15;text-align:center;border:0;border-radius:12px;width:100%;white-space:normal;background:transparent;color:var(--mut);box-shadow:none}
+body.fold #nav button::before,body.fold #btnSetP::before{content:'';display:block;width:21px;height:21px;background:currentColor;-webkit-mask-position:center;mask-position:center;-webkit-mask-size:contain;mask-size:contain;-webkit-mask-repeat:no-repeat;mask-repeat:no-repeat}
+body.fold #nav button.on,body.fold #btnSetP.on{color:var(--txt);background:linear-gradient(180deg,rgba(78,88,106,.75),rgba(48,56,70,.75));box-shadow:inset 0 1px 0 var(--hi),0 6px 16px rgba(0,0,0,.3)}
+html.light body.fold #nav button.on,html.light body.fold #btnSetP.on{background:var(--navOn);box-shadow:none}
+body.fold #nav button:hover,body.fold #btnSetP:hover{color:var(--txt)}
+body.fold #top .sp{flex:1}
+body.fold #nav #navMain::before{-webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='4' y='4' width='7' height='7' rx='1.5'/%3E%3Crect x='13' y='4' width='7' height='7' rx='1.5'/%3E%3Crect x='4' y='13' width='7' height='7' rx='1.5'/%3E%3Crect x='13' y='13' width='7' height='7' rx='1.5'/%3E%3C/svg%3E");mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='4' y='4' width='7' height='7' rx='1.5'/%3E%3Crect x='13' y='4' width='7' height='7' rx='1.5'/%3E%3Crect x='4' y='13' width='7' height='7' rx='1.5'/%3E%3Crect x='13' y='13' width='7' height='7' rx='1.5'/%3E%3C/svg%3E")}
+body.fold #nav #btnMapV::before{-webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z'/%3E%3Cpath d='M9 4v14M15 6v14'/%3E%3C/svg%3E");mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z'/%3E%3Cpath d='M9 4v14M15 6v14'/%3E%3C/svg%3E")}
+body.fold #nav #btnMkV::before{-webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='8'/%3E%3Cpath d='M4 12h16M12 4c3 3 3 13 0 16M12 4c-3 3-3 13 0 16'/%3E%3C/svg%3E");mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='8'/%3E%3Cpath d='M4 12h16M12 4c3 3 3 13 0 16M12 4c-3 3-3 13 0 16'/%3E%3C/svg%3E")}
+body.fold #nav #btnPlan::before{-webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='4' y='5' width='16' height='15' rx='2'/%3E%3Cpath d='M4 10h16M9 3v4M15 3v4'/%3E%3C/svg%3E");mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='4' y='5' width='16' height='15' rx='2'/%3E%3Cpath d='M4 10h16M9 3v4M15 3v4'/%3E%3C/svg%3E")}
+body.fold #nav #btnBT::before{-webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 19h16M6 16l4-5 3 3 5-7'/%3E%3C/svg%3E");mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 19h16M6 16l4-5 3 3 5-7'/%3E%3C/svg%3E")}
+body.fold #nav #btnJ::before{-webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 4h10l3 3v13H6z'/%3E%3Cpath d='M9 10h7M9 14h7'/%3E%3C/svg%3E");mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 4h10l3 3v13H6z'/%3E%3Cpath d='M9 10h7M9 14h7'/%3E%3C/svg%3E")}
+body.fold #nav #btnSt::before{-webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 17l5-6 4 3 7-8'/%3E%3Ccircle cx='9' cy='11' r='1.5'/%3E%3Ccircle cx='13' cy='14' r='1.5'/%3E%3C/svg%3E");mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 17l5-6 4 3 7-8'/%3E%3Ccircle cx='9' cy='11' r='1.5'/%3E%3Ccircle cx='13' cy='14' r='1.5'/%3E%3C/svg%3E")}
+body.fold #nav #btnMacro::before{-webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='8'/%3E%3Cpath d='M12 7v5l3 2'/%3E%3C/svg%3E");mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='8'/%3E%3Cpath d='M12 7v5l3 2'/%3E%3C/svg%3E")}
+body.fold #nav #btnAl::before{-webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 17V11a6 6 0 0112 0v6l2 2H4z'/%3E%3Cpath d='M10 21h4'/%3E%3C/svg%3E");mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 17V11a6 6 0 0112 0v6l2 2H4z'/%3E%3Cpath d='M10 21h4'/%3E%3C/svg%3E")}
+body.fold #btnSetP::before{-webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3Cpath d='M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1'/%3E%3C/svg%3E");mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='3'/%3E%3Cpath d='M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1'/%3E%3C/svg%3E")}
+
+/* --- górny pasek --- */
+body.fold #tbar{grid-column:2/-1;grid-row:1;min-width:0;display:flex;align-items:center;gap:8px;min-width:0}
+body.fold #tbar .sp{flex:1}
+body.fold #srchBox{flex:0 1 360px;display:flex;align-items:center;gap:8px;height:42px;padding:0 12px;border-radius:12px;background:var(--chip);border:1px solid var(--gl);box-shadow:inset 0 1px 0 var(--hi);color:var(--mut)}
+body.fold #srchBox input{flex:1;min-width:0;border:0;background:transparent;padding:0;height:100%;font-size:13px;color:var(--txt);outline:none}
+body.fold #banner{grid-column:auto;flex:1 1 auto;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:8px 12px;border-radius:12px;border:1px solid rgba(226,176,97,.3);font-size:11.5px}
+body.fold #tbar>*:not(#banner):not(.sp){flex:none}
+body.fold #clock,body.fold #btnTheme,body.fold #btnDemo,body.fold #tbar .applink{display:inline-flex;align-items:center;justify-content:center;height:42px;min-width:42px;padding:0 12px;border-radius:12px;background:var(--chip);border:1px solid var(--gl);box-shadow:inset 0 1px 0 var(--hi);color:var(--txt);font-size:12.5px;text-decoration:none;white-space:nowrap}
+body.fold #srcLabel{display:none}body.fold #setPop .applink{display:inline-grid;place-items:center;height:42px;padding:0 14px;border-radius:10px;border:1px solid var(--gl);color:var(--txt);text-decoration:none;margin-top:14px}
+body.fold #btnDemo .dl{display:inline}
+
+/* --- wykres --- */
+body.fold #main{grid-column:2;grid-row:2;min-height:0;min-width:0}
+body.fold #chartCard{border:0}
+body.fold #bar{display:flex;flex-direction:column;gap:8px;padding:12px 14px 8px;border:0}
+body.fold #bar .b1,body.fold #bar .b2{display:flex;align-items:center;gap:8px;min-width:0}
+body.fold #bar .t{font-size:17px;font-weight:600;margin:0 4px 0 0;white-space:nowrap}
+body.fold #bar .fav{font-size:20px;padding:0 4px;height:40px;color:var(--gold)}
+body.fold #vtabs{display:flex;gap:2px;margin-left:6px}
+body.fold #vtabs button{height:40px;padding:0 13px;border:0;background:transparent;color:var(--mut);border-radius:10px}
+body.fold #vtabs button.on{background:rgba(255,255,255,.08);color:var(--txt)}
+html.light body.fold #vtabs button.on{background:var(--navOn)}
+body.fold #pxTop{display:none}
+body.fold #bar button,body.fold #bar .ddb{height:40px;padding:0 13px}
+body.fold #bar .seg{display:flex;gap:0;padding:2px;border-radius:12px;background:var(--inp);border:1px solid var(--gl)}
+body.fold #bar .seg button,body.fold #bar .seg button:first-child,body.fold #bar .seg button:last-child{height:36px;min-width:50px;margin:0;border:0;border-radius:9px;background:transparent;color:var(--mut)}
+body.fold #bar .seg button.on{background:rgba(255,255,255,.1);color:var(--txt)}
+html.light body.fold #bar .seg button.on{background:var(--navOn)}
+body.fold #bar .b2 .ddi{left:0;right:auto}
+body.fold #cgrid{flex:1;display:grid;grid-template-columns:50px minmax(0,1fr);grid-template-rows:minmax(0,1fr);gap:8px;padding:0 12px 12px;min-height:0}
+body.fold #vtools{display:flex;flex-direction:column;gap:4px;min-height:0;padding:2px 0;position:relative;z-index:5}
+body.fold #vtools .g,body.fold #vtools .seg{display:flex;flex-direction:column;gap:4px;padding:0;border:0;background:none}
+body.fold #vtools button,body.fold #vtools .ddb{width:50px;height:40px;flex:none;padding:0 2px;font-size:10.5px;line-height:1.1;white-space:normal;border-radius:10px;background:var(--inp);border:1px solid var(--gl);color:var(--mut)}
+body.fold #zOut,body.fold #zIn,body.fold #zEnd{font-size:16px;min-width:44px!important}
+body.fold #bar .b2 .sp{flex:1}
+body.fold #vtools button.on,body.fold #vtools .ddb.act{background:var(--accS);border-color:var(--acc);color:var(--acc)}
+body.fold #vtools .vsep{height:1px;background:var(--gl);margin:3px 6px;flex:none}
+body.fold #vtools .ddw{display:block}
+body.fold #vtools .dd{left:calc(100% + 8px);top:0;z-index:45}
+body.fold #chartW #chart{border:1px solid var(--gl);border-radius:12px}
+body.fold #split,body.fold #btnAnat{display:none!important}
+body.fold #under{display:none;flex:1;height:auto;min-height:0;overflow:auto;padding:0 12px 12px}
+body.fold[data-vt="a"] #cgrid,body.fold[data-vt="d"] #cgrid{display:none}
+body.fold[data-vt="a"] #chartCard,body.fold[data-vt="d"] #chartCard{flex:none}
+body.fold #btnDemo{gap:4px}
+body.fold[data-vt="a"] #under,body.fold[data-vt="d"] #under{display:block}
+body.fold[data-vt="a"] #info{display:none!important}
+body.fold[data-vt="d"] #anat,body.fold[data-vt="d"] #dbar{display:none}
+body.fold[data-vt="d"] #info{display:grid!important;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));max-height:none;border:0;background:none;padding:4px 0}
+body.fold #anat{border:0}
+body.fold #anat .ah{padding:2px 2px 8px}
+body.fold .ag{grid-template-columns:repeat(2,minmax(0,1fr))}
+
+/* --- prawa kolumna --- */
+body.fold #rcol{grid-column:3;grid-row:2;display:flex;flex-direction:column;gap:10px;min-height:0;overflow-y:auto;scrollbar-width:none}
+body.fold #rcol::-webkit-scrollbar{display:none}
+body.fold #minis{flex:none;height:clamp(250px,44vh,330px)}
+body.fold #sbar{padding:12px 14px}
+body.fold #scoreCard{display:block;padding:12px 14px;flex:none}
+body.fold #scoreCard:empty{display:none}
+body.fold #scoreCard>div+div{margin-top:12px;padding-top:10px;border-top:1px solid var(--gl)}
+body.fold .lay{grid-template-columns:minmax(0,1fr) 54px 42px}
+body.fold .oc-b button{min-height:40px}
+
+/* --- skaner na dole: karty przesuwane palcem --- */
+body.fold #side{grid-column:2/-1;grid-row:3;min-width:0;display:flex;flex-direction:row;flex-wrap:wrap;align-items:center;gap:8px 8px;padding:10px 12px 8px;min-height:0;overflow:visible}
+body.fold #side .cardh{flex:1 1 auto;border:0;padding:0 2px;gap:10px;min-width:0}
+body.fold #side .cardh b{font-size:14px}
+body.fold #side .cardh .hd{font-size:11.5px;white-space:nowrap}
+body.fold #scanInfo{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+body.fold #side .tools{border:0;padding:0;flex:none}
+body.fold #sortSel{height:40px;padding:0 8px;font-size:12px}
+body.fold #dirF{flex:none;display:flex;gap:2px;padding:2px;border-radius:12px;background:var(--inp);border:1px solid var(--gl);margin:0}
+body.fold #dirF button{flex:none;height:36px;padding:0 12px;border:0;border-radius:9px;background:transparent;color:var(--mut);font-size:12px}
+body.fold #dirF button.on{background:rgba(255,255,255,.1);color:var(--txt)}
+html.light body.fold #dirF button.on{background:var(--navOn)}
+body.fold #dirF #btnFavF{color:var(--gold)}
+body.fold #btnScan{order:5;height:40px;padding:0 16px;flex:none;border-radius:12px;font-size:13px}
+body.fold #scanSetBar,body.fold #top3{display:none!important}
+body.fold #scanBar,body.fold #favInfo{order:6;flex:1 0 100%;padding:0 2px;border:0}
+body.fold #list{order:7;flex:1 0 100%;width:100%;min-width:0;align-items:stretch;display:flex;gap:10px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;scrollbar-width:none;padding:2px 2px 4px;min-height:118px}
+body.fold #list::-webkit-scrollbar{display:none}
+body.fold #list .row{display:block;flex:0 0 184px;scroll-snap-align:start;padding:10px 12px;border:1px solid var(--gl);border-radius:14px;background:linear-gradient(180deg,var(--pg1),var(--pg2));box-shadow:inset 0 1px 0 var(--hi);cursor:pointer}
+body.fold #list .row:hover{border-color:var(--navLn)}
+body.fold #list .row.sel{border-color:var(--acc);box-shadow:inset 0 1px 0 var(--hi),0 0 0 1px rgba(79,179,154,.35)}
+body.fold .r1{display:flex;align-items:center;gap:4px;min-width:0}
+body.fold .rk{font-style:normal;color:var(--mut);font-size:11px;flex:none;font-variant-numeric:tabular-nums}
+body.fold .r1 .fav{flex:none;padding:2px 3px;font-size:15px}
+body.fold .tk{font-size:14px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+body.fold .r1 .sc{margin-left:auto;flex:none;background:transparent;border:1.5px solid currentColor;border-radius:999px;padding:1px 7px;font-weight:700;letter-spacing:.5px;font-size:9.5px}
+body.fold .r1 .sc.up{color:var(--up)}body.fold .r1 .sc.dn{color:var(--dn)}body.fold .r1 .sc.acc{color:var(--rdy)}body.fold .r1 .sc.wr{color:var(--warn)}body.fold .r1 .sc.mu{color:var(--mut)}
+body.fold .rp{display:flex;align-items:baseline;justify-content:space-between;gap:6px;margin-top:6px}
+body.fold .rp b{font-size:15px;font-weight:600;font-family:Inter,system-ui,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.fold .rp .c{font-size:12px;flex:none}
+body.fold .r2{display:flex;align-items:center;gap:8px;margin-top:9px}
+body.fold .seg4{display:flex;gap:4px;flex:1}body.fold .seg4 i{flex:1;height:4px;border-radius:2px;background:var(--trk2)}body.fold .seg4 i.u{background:var(--up)}body.fold .seg4 i.d{background:var(--dn)}
+body.fold .scn{font-size:12px;color:var(--mut);font-variant-numeric:tabular-nums;min-width:20px;text-align:right;font-weight:600}
+
+/* --- panele nakładane: Planer, Dziennik, Backtest…; Mapa/Makro; ustawienia --- */
+body.fold #rside{position:fixed;top:62px;right:12px;bottom:12px;width:min(600px,calc(100vw - 112px));z-index:40;grid-column:auto;grid-row:auto;box-shadow:0 18px 50px rgba(0,0,0,.5)}
+body.fold.drw #rside{width:calc(100vw - 112px)}
+html:not(.light) body.fold #rside,html:not(.light) body.fold #setPop{background:linear-gradient(180deg,#2a313d,#20262f)}
+body.fold #rClose{height:40px;min-width:40px}
+body.fold #evView{grid-column:2/-1;grid-row:2/-1}
+body.fold.ev #rcol{display:none}
+body.fold #setPop{position:fixed;top:62px;left:88px;width:min(560px,calc(100vw - 112px));max-height:calc(100vh - 80px);overflow:auto;z-index:50;box-shadow:0 18px 50px rgba(0,0,0,.5)}
+body.fold #setPop[hidden]{display:none}
+body.fold #setPop .spb{padding:4px 14px 14px}
+body.fold #setPop h4{margin:12px 0 8px;font-size:11px;color:var(--mut);letter-spacing:.7px;text-transform:uppercase}
+body.fold #setPop #scanSet{display:flex!important;flex-wrap:wrap;gap:8px;padding:0;border:0}
+body.fold #setPop #scanSet>*{height:42px}
+body.fold #setPop #sess{display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:0}
+body.fold #setPop .sbar{display:inline-block}
+body.fold #setClose{height:40px;min-width:40px}
+
+/* --- pełny ekran wykresu --- */
+body.fold.fs #app{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr);padding:0;gap:0}
+body.fold.fs #main{grid-column:1;grid-row:1}
+body.fold.fs #tbar,body.fold.fs #rcol,body.fold.fs #top{display:none!important}
+body.fold.fs #main.card{border-radius:0}
+
+/* ======== v2: wygląd 1:1 jak na makiecie ======== */
+html:not(.light){--cvbg:rgba(20,24,31,.45)}html.light{--cvbg:#fafbfc}
+body.fold .brand .logo{display:none}
+body.fold .brand{padding:4px 0 12px}
+body.fold .brand .bn{font-size:15px;letter-spacing:2.6px;font-weight:700;color:var(--gold)}
+body.fold .brand .bs{font-size:7.5px;letter-spacing:1.8px;color:var(--mut);font-weight:500}
+body.fold #nav button .n{display:block;font-size:10px;color:var(--gold);line-height:1}
+body.fold #nav button:not(#btnJ) .n.z{display:none}
+body.fold #clock{display:none!important}
+body.fold #tbar .chip{display:inline-flex;align-items:center;gap:7px;height:42px;padding:0 14px;border-radius:12px;background:var(--chip);border:1px solid var(--gl);box-shadow:inset 0 1px 0 var(--hi);font-size:13px;white-space:nowrap;flex:none}
+body.fold #clk2{font-variant-numeric:tabular-nums}
+body.fold #srcChip{color:var(--gold)}body.fold #srcChip::after{content:"";width:8px;height:8px;border-radius:50%;background:currentColor}
+body.fold #srcChip.demo{color:var(--warn)}
+/* nagłówek wykresu */
+body.fold #bar{gap:10px;padding:14px 16px 8px}
+body.fold #bar .fav{font-size:16px;height:auto;padding:0;background:none;border:0}
+body.fold #coinIc{width:26px;height:26px;border-radius:50%;flex:none;display:grid;place-items:center;font-weight:700;font-size:12px;color:#fff;background:linear-gradient(135deg,hsl(var(--h,30) 85% 62%),hsl(calc(var(--h,30) - 18) 80% 48%))}
+body.fold #coinIc:empty{display:none}
+body.fold #bar .t{font-size:17px;font-weight:600}
+body.fold #vtabs{margin-left:10px}body.fold #vtabs button{height:34px;padding:0 12px;font-size:13px}
+body.fold #pxTop{display:block;margin-left:auto;font-size:13px;white-space:nowrap}body.fold #pxTop b{font-size:14px;margin:0 6px 0 4px}
+body.fold #bar .b2 button,body.fold #bar .b2 .ddb{height:38px;font-size:13px}
+body.fold #bar .seg button,body.fold #bar .seg button:first-child,body.fold #bar .seg button:last-child{height:34px;min-width:46px}
+body.fold #btnIND::after{content:" ▾"}
+body.fold #btnSET{font-size:0!important}body.fold #btnSET::after{content:attr(data-l);font-size:13px}
+/* narzędzia w ramce wykresu */
+body.fold #cgrid{gap:0;grid-template-columns:46px minmax(0,1fr)}
+body.fold #vtools{gap:2px;padding:6px 3px;border:1px solid var(--gl);border-right-color:var(--gl);border-radius:12px 0 0 12px;background:var(--cvbg);align-items:center}
+body.fold #chartW #chart{border-left:0;border-radius:0 12px 12px 0}
+body.fold #vtools button,body.fold #vtools .ddb{width:38px;height:38px;border:0;background:transparent;color:var(--mut);font-size:11px;border-radius:9px}
+body.fold #vtools button:hover{color:var(--txt)}
+body.fold #vtools button.on,body.fold #vtools .ddb.act{background:rgba(79,179,154,.14);color:var(--up)}
+body.fold #zIn,body.fold #zOut,body.fold #btnTL,body.fold #btnHL,body.fold #vtools #btnFS{font-size:0!important}
+body.fold #zIn::before,body.fold #zOut::before,body.fold #btnTL::before,body.fold #btnHL::before,body.fold #vtools #btnFS::before{content:"";display:block;width:18px;height:18px;margin:auto;background:currentColor;-webkit-mask:var(--ic) center/contain no-repeat;mask:var(--ic) center/contain no-repeat}
+body.fold #zIn{--ic:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round'%3E%3Cpath d='M12 3v18M3 12h18'/%3E%3C/svg%3E")}
+body.fold #btnTL{--ic:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round'%3E%3Cpath d='M4 20L20 4'/%3E%3C/svg%3E")}
+body.fold #btnHL{--ic:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round'%3E%3Cpath d='M3 12h18'/%3E%3C/svg%3E")}
+body.fold #zOut{--ic:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='6'/%3E%3Cpath d='M20 20l-4-4M8 11h6'/%3E%3C/svg%3E")}
+body.fold #vtools #btnFS{--ic:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round'%3E%3Cpath d='M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5'/%3E%3C/svg%3E")}
+body.fold #btnDelDr{font-size:9.5px!important}
+/* prawa kolumna */
+body.fold #minis{height:auto;container-type:normal}
+body.fold #sbar{display:block;height:auto;padding:14px 16px;overflow:visible}
+body.fold #rcol .oc-h{font-size:12.5px;letter-spacing:0;text-transform:none;color:var(--mut);margin-bottom:8px}
+body.fold .fo1{display:flex;align-items:center;gap:14px}
+body.fold .fbig{font-size:30px;font-weight:600;letter-spacing:-.5px;line-height:1}body.fold .fbig small{font-size:14px;color:var(--mut);font-weight:500}
+body.fold .fo2{display:flex;flex-direction:column;align-items:flex-start;gap:5px;font-size:13px}
+body.fold .fpill{border:1.5px solid currentColor;border-radius:999px;padding:1px 9px;font-size:10px;font-weight:700;letter-spacing:.6px;color:var(--mut)}
+body.fold .fpill.up{color:var(--up)}body.fold .fpill.dn{color:var(--dn)}body.fold .fpill.acc{color:var(--rdy)}body.fold .fpill.wr{color:var(--warn)}
+body.fold #sbar .oc-i{margin-top:8px;font-size:11px}
+body.fold #sbar .oc-b{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:8px;margin-top:12px}
+body.fold #sbar .oc-b button{height:40px;padding:0 6px;font-size:12.5px;white-space:nowrap;border-radius:10px}
+body.fold #btnWhy{background:#eef1f5;color:#1b2029;border-color:#eef1f5;font-weight:600}
+html.light body.fold #btnWhy{background:#1b2029;color:#fff;border-color:#1b2029}
+body.fold #ivCard,body.fold #stCard{background:linear-gradient(180deg,var(--pg1),var(--pg2));border:1px solid var(--gl);border-radius:16px;box-shadow:inset 0 1px 0 var(--hi),var(--shd);padding:12px 14px;flex:none}
+body.fold #ivCard:empty{display:none}
+body.fold .ivg{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+body.fold .iv{text-align:center;padding:7px 4px;border:1px solid var(--gl);border-radius:10px;font-size:12.5px;background:rgba(0,0,0,.08)}
+body.fold .iv span{color:var(--mut);margin-right:3px}
+body.fold #stCard::before{content:"Strefy i wejście 15M";display:block;font-size:12.5px;color:var(--mut);margin-bottom:6px}
+body.fold #stCard #scoreCard{background:none;border:0;box-shadow:none;padding:0;display:block}
+body.fold #scoreCard .sc-l,body.fold #scoreCard .sc-r>.mu{display:none}
+body.fold #scoreCard>div+div{margin:0;padding:0;border:0}
+body.fold #scoreCard .lay{grid-template-columns:minmax(0,1fr) 60px 38px;margin:5px 0;font-size:12px;gap:8px}
+body.fold #scoreCard .lay b{color:var(--mut);font-weight:500}
+body.fold #scoreCard .bar{height:4px}
+body.fold #liqRow{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;padding-top:8px;border-top:1px solid var(--gl)}
+body.fold #liqRow:empty{display:none}
+body.fold #liqRow .lq{font-size:11.5px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}body.fold #liqRow .lq b{color:var(--txt)}
+body.fold #liqRow button{height:38px;padding:0 12px;flex:none;border-radius:10px;font-weight:700}
+/* skaner */
+body.fold #side .cardh b{font-size:15px}
+body.fold #btnScan{font-size:0!important;padding:0 16px}body.fold #btnScan::after{content:attr(data-l);font-size:13px;font-weight:700}
+body.fold #ldots{order:8;flex:1 0 100%;display:flex;justify-content:center;gap:5px;min-height:6px}
+body.fold #ldots i{width:6px;height:6px;border-radius:3px;background:var(--trk2)}body.fold #ldots i.on{width:16px;background:var(--txt)}
+body.fold #list .row{flex:0 0 188px;padding:11px 13px}
+body.fold .r1 .tk{font-size:14px}
+body.fold .rm{display:flex;align-items:flex-end;justify-content:space-between;gap:6px;margin-top:6px}
+body.fold .rp{display:flex;flex-direction:column;align-items:flex-start;gap:2px;margin:0;min-width:0}
+body.fold .rp b{font-size:17px;font-weight:600}
+body.fold .spk{width:80px;height:30px;flex:none;overflow:visible}body.fold .spk path{fill:none;stroke-width:1.6;stroke:var(--mut);vector-effect:non-scaling-stroke}
+body.fold .spk.u path{stroke:var(--up)}body.fold .spk.d path{stroke:var(--dn)}
+body.fold .srow{display:flex;gap:8px;flex-wrap:wrap}body.fold .srow>*{height:42px}
+body.fold #bar{align-items:stretch}
+body.fold .brand .bn{font-size:13px;letter-spacing:2px}
+body.fold #sbar .oc-b{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr)}body.fold #sbar .oc-b button{font-size:12px;padding:0 4px}
+body.fold #scoreCard .lay{grid-template-columns:minmax(0,1fr) 44px 36px}body.fold #scoreCard .lay span:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.fold #evView .evw,body.fold #evView iframe{background:transparent;border:0}
 </style>
 </head>
 <body>
-<script>document.body.classList.add("sd2","sd3")</script>
+<script>document.body.classList.add("fold")</script>
 <div id="app">
   <header id="top">
     <div class="brand"><svg class="logo" width="30" height="30" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="38" fill="none" stroke="currentColor" stroke-opacity=".28" stroke-width="2.6"/><line x1="50" y1="9" x2="50" y2="17" transform="rotate(0 50 50)" stroke="currentColor" stroke-opacity="0.85" stroke-width="3.4" stroke-linecap="round"/><line x1="50" y1="9" x2="50" y2="14" transform="rotate(30 50 50)" stroke="currentColor" stroke-opacity="0.4" stroke-width="2.2" stroke-linecap="round"/><line x1="50" y1="9" x2="50" y2="14" transform="rotate(60 50 50)" stroke="currentColor" stroke-opacity="0.4" stroke-width="2.2" stroke-linecap="round"/><line x1="50" y1="9" x2="50" y2="17" transform="rotate(90 50 50)" stroke="currentColor" stroke-opacity="0.85" stroke-width="3.4" stroke-linecap="round"/><line x1="50" y1="9" x2="50" y2="14" transform="rotate(120 50 50)" stroke="currentColor" stroke-opacity="0.4" stroke-width="2.2" stroke-linecap="round"/><line x1="50" y1="9" x2="50" y2="14" transform="rotate(150 50 50)" stroke="currentColor" stroke-opacity="0.4" stroke-width="2.2" stroke-linecap="round"/><line x1="50" y1="9" x2="50" y2="17" transform="rotate(180 50 50)" stroke="currentColor" stroke-opacity="0.85" stroke-width="3.4" stroke-linecap="round"/><line x1="50" y1="9" x2="50" y2="14" transform="rotate(210 50 50)" stroke="currentColor" stroke-opacity="0.4" stroke-width="2.2" stroke-linecap="round"/><line x1="50" y1="9" x2="50" y2="14" transform="rotate(240 50 50)" stroke="currentColor" stroke-opacity="0.4" stroke-width="2.2" stroke-linecap="round"/><line x1="50" y1="9" x2="50" y2="17" transform="rotate(270 50 50)" stroke="currentColor" stroke-opacity="0.85" stroke-width="3.4" stroke-linecap="round"/><line x1="50" y1="9" x2="50" y2="14" transform="rotate(300 50 50)" stroke="currentColor" stroke-opacity="0.4" stroke-width="2.2" stroke-linecap="round"/><line x1="50" y1="9" x2="50" y2="14" transform="rotate(330 50 50)" stroke="currentColor" stroke-opacity="0.4" stroke-width="2.2" stroke-linecap="round"/><g transform="rotate(40 50 50)"><path d="M50 17 L61 50 L39 50 Z" fill="var(--acc)"/><path d="M50 83 L61 50 L39 50 Z" fill="currentColor" fill-opacity=".35"/></g><circle cx="50" cy="50" r="5.6" fill="var(--bg)" stroke="var(--acc)" stroke-width="2.6"/></svg><span class="bn">BUSOLA</span><span class="bs">NAWIGATOR</span></div>
@@ -305,72 +553,59 @@ body.sd3 .scn{font-size:12px;color:var(--mut);font-variant-numeric:tabular-nums;
       <button id="btnMacro" title="Zdarzenia makro dodawane ręcznie: wstrzymują wynik o ±12 h">Zdarzenia (0)</button>
       <button id="btnAl">Alerty (0)</button>
     </nav>
-    <a class="applink" href="../" title="Wróć do aplikacji Busola (ten sam skaner, układ na telefon)" aria-label="Wróć do aplikacji Busola">←<span class="alt"> Aplikacja</span></a><span class="mu" id="srcLabel"></span>
     <span class="sp"></span>
-    <span class="mono mu" id="clock"></span>
-    <button id="btnTheme" title="Motyw jasny / ciemny (wspólny z aplikacją Busola)" aria-label="Zmień motyw">☀</button>
-    <button id="btnDemo"><span class="dl">Tryb </span>demo</button>
+    <button id="btnSetP" title="Ustawienia skanera i sesje rynkowe">Ustawienia</button>
   </header>
-  <div id="sess"><span id="sessBox" style="display:contents"></span><span class="sp" style="flex:1"></span><span id="nextEv"></span></div>
-  <div id="banner"></div>
+  <div id="tbar"><label id="srchBox"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><input id="search" placeholder="Szukaj coina…" autocomplete="off"></label><div id="banner"></div><span class="sp"></span><span class="mu" id="srcLabel"></span><span class="mono" id="clock"></span><span class="chip" id="clk2"></span><button id="btnTheme" title="Motyw jasny / ciemny (wspólny z aplikacją Busola)" aria-label="Zmień motyw">☀</button><span class="chip" id="srcChip" title="Źródło danych (zmienisz w Ustawieniach)"></span></div>
+  
+  
   <div id="toasts"></div>
-  <aside id="side" class="card">
-    <div class="cardh"><b>SKANER <span class="mu hd">· 1D → 4H → 1H → 15M</span></b><span class="mu" id="scanInfo"></span><span style="flex:1"></span><button id="btnScan" class="go">Skanuj trendy (100)</button></div>
-    <div class="scanbar" id="scanBar" hidden><div class="pbarw"><i></i></div><span></span></div>
-    <div class="tools"><input id="search" placeholder="Szukaj coina…"><select id="sortSel"><option value="vol">Wolumen</option><option value="chg">Zmiana 24h</option><option value="al">Zgodność TF</option><option value="sc">Wynik</option></select></div>
-    <div class="tools" id="dirF" style="gap:4px"><button data-d="0" class="on">Wszystko</button><button data-d="1">Long</button><button data-d="-1">Short</button><button id="btnFavF" title="Pokaż tylko ulubione coiny (★). Ulubione ustawiasz gwiazdką przy coinie; ta sama lista jest używana w powiadomieniach o strukturze.">★</button></div>
-    <div class="tools" id="scanSetBar"><button id="btnScanSet">⚙ Auto-skan: wył. ▾</button></div>
-    <div class="tools" id="scanSet" style="flex-wrap:wrap">
+  <section id="setPop" class="card" hidden><div class="cardh"><b>Ustawienia</b><span style="flex:1"></span><button id="setClose" aria-label="Zamknij">✕</button></div><div class="spb"><h4>Skaner</h4><div class="tools" id="scanSet" style="flex-wrap:wrap">
       <button id="btnAuto">Auto-skan: wył.</button>
       <select id="selEx" title="Giełda, z której pochodzą świece i ceny"><option value="binance">Giełda: Binance</option><option value="weex">Giełda: Weex</option><option value="bitunix">Giełda: Bitunix</option></select>
     <button id="btnTF" title="Kontrakty na akcje, ETF-y i surowce z Binance Futures">Akcje/ETF: wył.</button>
       <select id="selFavScan" title="Osobny, częstszy skan samych ulubionych (★). Odświeża trendy i wynik na liście; nie zapisuje nic do Dziennika ani do logu struktury."><option value="0">★ skan: wył.</option><option value="2">★ skan co 2 min</option><option value="5">★ skan co 5 min</option></select>
       <select id="selVol" title="Minimalny wolumen 24h"><option value="5">wol. ≥ 5 mln</option><option value="20">wol. ≥ 20 mln</option><option value="50">wol. ≥ 50 mln</option><option value="100">wol. ≥ 100 mln</option></select>
-    </div>
+    </div><h4>Lista i dane</h4><div class="srow"><select id="sortSel"><option value="vol">Wolumen</option><option value="chg">Zmiana 24h</option><option value="al">Zgodność TF</option><option value="sc">Wynik</option></select><button id="btnDemo"><span class="dl">Tryb </span>demo</button></div><h4>Sesje rynkowe</h4><div id="sess"><span id="sessBox" style="display:contents"></span><span class="sp" style="flex:1"></span><span id="nextEv"></span></div><a class="applink" href="../">← Aplikacja Busola (telefon)</a></div></section>
+  <aside id="side" class="card">
+    <div class="cardh"><b>Skaner</b><span class="mu hd">‹ przesuń palcem ›</span><span class="mu" id="scanInfo"></span><span style="flex:1"></span></div>
+    <div class="scanbar" id="scanBar" hidden><div class="pbarw"><i></i></div><span></span></div>
+    <div class="tools"></div>
+    <div class="tools" id="dirF" style="gap:4px"><button data-d="0" class="on">Wszystko</button><button data-d="1">Long</button><button data-d="-1">Short</button><button id="btnFavF" title="Pokaż tylko ulubione coiny (★). Ulubione ustawiasz gwiazdką przy coinie; ta sama lista jest używana w powiadomieniach o strukturze.">★</button></div>
+    <button id="btnScan" class="go">Skanuj trendy (100)</button><div class="tools" id="scanSetBar"><button id="btnScanSet">⚙ Auto-skan: wył. ▾</button></div>
+    
     <div class="scanbar" id="favInfo" hidden></div>
     <div id="top3"></div>
-    <div id="list"></div>
+    <div id="list"></div><div id="ldots"></div>
   </aside>
   <section id="main" class="card">
     <div id="chartCard">
     <div id="bar">
-      <button id="btnFav" class="fav" title="Ulubione: dodaje coina do Twojej listy (ta sama lista co powiadomienia struktury)" aria-label="Ulubione">☆</button><span class="t" id="title">—</span>
-      <span class="g seg" id="tfBtns"></span>
-      <span class="sep"></span>
-      <span class="g seg"><button id="zOut" title="Oddal">−</button><button id="zIn" title="Przybliż">+</button><button id="zEnd" title="Przewiń do ostatniej świecy">⇥</button></span>
-      <span class="sep"></span>
-      <span class="g" id="drawBtns"><button id="btnTL" title="Linia trendu: kliknij dwa punkty (przyciąga do szczytów i dołków świec). Esc anuluje.">╱ Trend</button><button id="btnHL" title="Linia pozioma: jedno kliknięcie. Esc anuluje.">― Poziom</button><button id="btnDelDr" hidden title="Usuwa wszystkie narysowane linie (trendu i poziome) tego coina. Pojedynczą linię usuniesz w Alerty → Usuń.">✕ Linie</button></span>
-      <span class="sep"></span>
-      <span class="g">
-      <span class="ddw" id="ddOB"><button class="ddb" id="btnOB">OB</button><div class="dd" hidden></div></span>
-      <span class="ddw" id="ddFVG"><button class="ddb" id="btnFVG">FVG</button><div class="dd" hidden></div></span>
-      <span class="ddw" id="ddLS"><button class="ddb" id="btnLS">LS</button><div class="dd" hidden></div></span>
-      <span class="ddw" id="ddIND"><button class="ddb" id="btnIND" title="Wskaźniki na wykresie (wszystkie domyślnie wyłączone)">Wskaźniki</button><div class="dd ddi" hidden>
+      <div class="b1"><button id="btnFav" class="fav" title="Ulubione: dodaje coina do Twojej listy (ta sama lista co powiadomienia struktury)" aria-label="Ulubione">☆</button><span id="coinIc"></span><span class="t" id="title">—</span><span id="vtabs"><button data-v="c" class="on">Wykres</button><button data-v="a">Anatomia</button><button data-v="d">Strefy</button></span><span class="sp"></span><span id="pxTop"></span></div>
+      <div class="b2"><span class="g seg" id="tfBtns"></span><span class="ddw" id="ddIND"><button class="ddb" id="btnIND" title="Wskaźniki na wykresie (wszystkie domyślnie wyłączone)">Wskaźniki</button><div class="dd ddi" hidden>
         <label class="ind"><input id="chkHU" type="checkbox"><span><b>Hurst</b><small>cykl: kanał 15 ± 2×ATR, oscylator w panelu pod wykresem</small></span></label>
         <label class="ind"><input id="chkST" type="checkbox"><span><b>SuperTrend</b><small>ATR 10, mnożnik 3: linia pod ceną = trend wzrostowy, nad ceną = spadkowy</small></span></label>
         <label class="ind"><input id="chkEMA" type="checkbox"><span><b>EMA 20/50/200</b><small>średnie kroczące na wykresie</small></span></label>
         <label class="ind"><input id="chkMACD" type="checkbox"><span><b>MACD 12/26/9</b><small>panel pod wykresem: histogram, MACD, sygnał</small></span></label>
         <label class="ind"><input id="chkRSI" type="checkbox"><span><b>RSI 14</b><small>panel pod wykresem, poziomy 30 i 70</small></span></label>
         <div class="indn">Opis stanu wykresu, nie sygnały.</div>
-      </div></span>
-      </span>
-      <span class="ddw" id="ddSET"><button class="ddb" id="btnSET" title="Ustawienia wykresu: Pivot N i profil wolumenu">⚙ N=3</button><div class="dd ddi" hidden>
+      </div></span><span class="ddw" id="ddSET"><button class="ddb" id="btnSET" title="Ustawienia wykresu: Pivot N i profil wolumenu">⚙ N=3</button><div class="dd ddi" hidden>
         <label class="ind"><span><b>Pivot N</b><small>ile świec po każdej stronie potwierdza szczyt lub dołek (1–10); zmienia trend, strefy i poziomy</small></span><input id="nIn" type="number" min="1" max="10" value="3" style="width:56px;margin-left:auto"></label>
         <label class="ind"><input id="chkVP" type="checkbox" checked><span><b>Profil wolumenu</b><small>poziomy z największym obrotem, POC i obszar wartości (VAH/VAL)</small></span></label>
-      </div></span>
-      <span class="sp"></span>
-      <button id="btnFS" title="Wykres na cały ekran (klawisz F, wyjście Esc; strzałki ↑↓ zmieniają coin)">⛶ Pełny ekran</button>
+      </div></span></div>
     </div>
     <div id="cgrid">
+      <div id="vtools"><button id="zIn" title="Przybliż">+</button><button id="btnTL" title="Linia trendu: kliknij dwa punkty (przyciąga do szczytów i dołków świec). Esc anuluje.">╱ Trend</button><button id="btnHL" title="Linia pozioma: jedno kliknięcie. Esc anuluje.">― Poziom</button><button id="btnDelDr" hidden title="Usuwa wszystkie narysowane linie (trendu i poziome) tego coina. Pojedynczą linię usuniesz w Alerty → Usuń.">✕ Linie</button><span class="ddw" id="ddOB"><button class="ddb" id="btnOB">OB</button><div class="dd" hidden></div></span><span class="ddw" id="ddFVG"><button class="ddb" id="btnFVG">FVG</button><div class="dd" hidden></div></span><span class="ddw" id="ddLS"><button class="ddb" id="btnLS">LS</button><div class="dd" hidden></div></span><button id="btnVP" title="Profil wolumenu (POC, VAH/VAL)">VP</button><button id="zOut" title="Oddal">−</button><button id="btnFS" title="Wykres na cały ekran (klawisz F, wyjście Esc; strzałki ↑↓ zmieniają coin)">⛶ Pełny ekran</button><button id="zEnd" hidden title="Przewiń do ostatniej świecy">⇥</button></div>
+      
       <div id="chartW"><span id="price" class="mu"></span><div id="chart"></div></div>
-      <div id="minis"><div id="sbar"></div></div>
+      
     </div>
     </div>
     <div id="split" role="separator" aria-orientation="horizontal" title="Przeciągnij, żeby zmienić wysokość wykresów. Dwuklik przywraca domyślną."></div>
     <div id="under">
     <div id="anat"><div class="ah"><b>Anatomia coina</b><span class="mu">opis rynku, nie sygnał</span><span style="flex:1"></span><button id="btnAnat">▾ Zwiń</button></div><div class="ag" id="anatG"></div></div>
     <div id="dbar"></div>
-    <div id="scoreCard"></div>
+    
     <div id="info">
       <div><h3>Trend wg struktury (zamknięte świece)</h3><div id="tfTable"></div><div id="align" style="margin-top:8px"></div></div>
       <div><h3>Ostatnie zdarzenia (<span id="evTf"></span>)</h3><div id="evList"></div></div>
@@ -378,6 +613,7 @@ body.sd3 .scn{font-size:12px;color:var(--mut);font-variant-numeric:tabular-nums;
     </div>
     </div>
   </section>
+  <aside id="rcol"><div id="minis"><div id="sbar"></div></div><section id="ivCard"></section><section id="stCard"><div id="scoreCard"></div><div id="liqRow"></div></section></aside>
   <section id="evView" class="card" hidden><div class="evw"><iframe id="evMap" title="Mapa rynku (Busola)" hidden></iframe><iframe id="evMk" title="Makro (Busola)" hidden></iframe></div></section>
   <aside id="rside" class="card" hidden>
     <div class="cardh"><b id="rTitle"></b><span style="flex:1"></span><button id="rClose">✕</button></div>
@@ -1609,6 +1845,9 @@ if (typeof document !== 'undefined') (() => {
   const TFS = [['1d', '1D'], ['4h', '4H'], ['1h', '1H'], ['15m', '15M']];
   const STEP = { '15m': 900, '1h': 3600, '4h': 14400, '1d': 86400, '1w': 604800 };
   const DEMO_SYMS = 'BTC ETH SOL XRP BNB DOGE ADA AVAX LINK TRX HYPE SUI LTC DOT BCH NEAR APT ARB OP INJ ATOM FIL TON AAVE UNI ETC XLM HBAR ICP RUNE SEI'.split(' ');
+  // wykresiki na kartach: ostatnie 24 zamknięcia 1H z tego samego skanu (tylko do wyświetlenia)
+  const SPK = {};
+  const sparkSvg = a => { if (!a || a.length < 2) return '<svg class="spk" viewBox="0 0 72 32"></svg>'; const mn = Math.min(...a), mx = Math.max(...a), r = mx - mn || 1; const d = a.map((v, i) => (i ? 'L' : 'M') + (i * 72 / (a.length - 1)).toFixed(1) + ' ' + (30 - (v - mn) / r * 28).toFixed(1)).join(''); return `<svg class="spk ${a[a.length - 1] >= a[0] ? 'u' : 'd'}" viewBox="0 0 72 32" preserveAspectRatio="none"><path d="${d}"/></svg>`; };
   const S = { coins: [], sel: 'BTCUSDT', tf: '4h', N: 3, demo: false, cache: {}, trends: {}, scores: {}, scanning: false, lastPrice: '' };
 
   const $ = id => document.getElementById(id);
@@ -1624,9 +1863,11 @@ if (typeof document !== 'undefined') (() => {
     const LMAP = { '#0e1110': '#e8edeb', '#a3a8a6': '#5a5f5d', '#232826': '#cfd6d3', '#00f6ac': '#00946a', '#ff7a7a': '#d64538', '#f2b766': '#b86b00',
       '#4dd0e1': '#0097a7', '#ffb74d': '#e08600', '#00bfff': '#0084c8', '#3a403e': '#9aa3a0', '#0a0d0c': '#f2f5f4',
       'rgba(245,197,66,0.85)': 'rgba(176,100,0,0.95)', 'rgba(245,197,66,0.38)': 'rgba(214,150,0,0.38)', 'rgba(125,138,153,0.55)': 'rgba(90,95,93,0.6)' };
+    // motyw ciemny (wygląd Fold): grafitowe tło i stonowana zieleń/czerwień
+    const DMAP = { '#070909': '#161b23', '#0e1110': '#222833', '#232826': '#2a313c', '#a3a8a6': '#8e97a7', '#00f6ac': '#4fb39a', '#ff7a7a': '#e0646c', '#f2b766': '#e2b061', '#0a0d0c': '#161b23', '#3a403e': '#3b4351' };
     ['fillStyle', 'strokeStyle'].forEach(k => {
       const d = Object.getOwnPropertyDescriptor(CanvasRenderingContext2D.prototype, k);
-      Object.defineProperty(ctx, k, { configurable: true, get() { return d.get.call(this); }, set(v) { d.set.call(this, IS_LIGHT() && typeof v === 'string' && LMAP[v] ? LMAP[v] : v); } });
+      Object.defineProperty(ctx, k, { configurable: true, get() { return d.get.call(this); }, set(v) { d.set.call(this, typeof v === 'string' ? (IS_LIGHT() ? (LMAP[v] || v) : (DMAP[v] || v)) : v); } });
     });
     const PR = 62, PB = 22;
     let data = [], ann = { events: [], pivots: [], showPiv: true, tf: '4h' };
@@ -2162,6 +2403,7 @@ if (typeof document !== 'undefined') (() => {
           const cs = await computeSetup(c.sym);
           S.trends[c.sym] = Object.fromEntries(Object.entries(cs.tr).map(([k, v]) => [k, { trend: v.trend }]));
           S.scores[c.sym] = summ(cs.res)
+          SPK[c.sym] = ((cs.tr['1h'] && cs.tr['1h'].c) || []).slice(-24).map(k => k.close);
           logSignal(c.sym, cs); structObs(c.sym, cs);
         } catch (e) { S.trends[c.sym] = null; }
         done++; $('btnScan').textContent = `Skanuję ${done}/${S.coins.length}`; $('scanBar').firstChild.firstChild.style.width = (done / S.coins.length * 100) + '%'; $('scanBar').lastChild.textContent = `${done}/${S.coins.length} rynków`;
@@ -2193,10 +2435,11 @@ if (typeof document !== 'undefined') (() => {
     if (sort === 'al') L = [...L].sort((a, b) => Math.abs(alignment(S.trends[b.sym])) - Math.abs(alignment(S.trends[a.sym])));
     if (sort === 'sc') L = [...L].sort((a, b) => { const x = S.scores[a.sym], y = S.scores[b.sym]; if (!x && !y) return 0; if (!x) return 1; if (!y) return -1; return cmpScore(x, y); });
     if (FAVF && !L.length) { $('list').innerHTML = '<div class="mu" style="padding:12px 10px">Brak ulubionych na liście skanera. Dodaj coina gwiazdką ☆ (coin musi być na liście: wolumen ≥ ' + U.minVol + ' mln, top 100).</div>'; return; }
-    const CARDS = document.body.classList.contains('sd3') && CARDMQ.matches;
+    const CARDS = document.body.classList.contains('fold');
     $('list').innerHTML = L.map((c, i) => {
       const tr = S.trends[c.sym], sc = S.scores[c.sym];
-      if (CARDS) return `<div class="row ${c.sym === S.sel ? 'sel' : ''}" data-s="${c.sym}"><div class="r1"><i class="rk">${i + 1}</i><button type="button" class="fav${favHas(c.sym) ? ' on' : ''}" data-fav="${c.sym}" title="Ulubione" aria-label="Ulubione ${c.sym.replace('USDT', '')}">${favHas(c.sym) ? '★' : '☆'}</button><b class="tk">${c.sym.replace('USDT', '')}</b><span class="c ${c.chg >= 0 ? 'up' : 'dn'}">${c.chg >= 0 ? '+' : ''}${c.chg.toFixed(1)}%</span>${sc ? `<span class="sc ${sc.cls}${sc.status === 'TRIGGER' ? ' trg' : ''}">${sc.status}</span>` : ''}</div><div class="r2"><span class="seg4" title="${TFS.map(([k, l]) => l + (tr && tr[k] ? (tr[k].trend === 1 ? '↑' : tr[k].trend === -1 ? '↓' : '·') : '')).join('  ')}">${TFS.map(([k]) => { const t = tr && tr[k] ? tr[k].trend : 0; return `<i class="${t === 1 ? 'u' : t === -1 ? 'd' : ''}"></i>`; }).join('')}</span><b class="scn">${sc ? sc.score : ''}</b></div></div>`;
+      if (CARDS) { const nm = c.sym.replace('USDT', ''), sp = SPK[c.sym], px = c.last || (sp && sp.length ? sp[sp.length - 1] : 0);
+        return `<div class="row ${c.sym === S.sel ? 'sel' : ''}" data-s="${c.sym}"><div class="r1"><b class="tk">${i + 1}. ${nm}</b>${sc ? `<span class="sc ${sc.cls}">${sc.status}</span>` : ''}</div><div class="rm"><div class="rp"><b>${px ? fmt(px) : '–'}</b><span class="c ${c.chg >= 0 ? 'up' : 'dn'}">${c.chg >= 0 ? '+' : ''}${c.chg.toFixed(1).replace('.', ',')}%</span></div>${sparkSvg(sp)}</div><div class="r2"><span class="seg4">${TFS.map(([k]) => { const t = tr && tr[k] ? tr[k].trend : 0; return `<i class="${t === 1 ? 'u' : t === -1 ? 'd' : ''}"></i>`; }).join('')}</span><b class="scn">${sc ? sc.score : ''}</b></div></div>`; }
       return `<div class="row ${c.sym === S.sel ? 'sel' : ''}" data-s="${c.sym}"><span class="s"><button type="button" class="fav${favHas(c.sym) ? ' on' : ''}" data-fav="${c.sym}" title="Ulubione" aria-label="Ulubione ${c.sym.replace('USDT', '')}">${favHas(c.sym) ? '★' : '☆'}</button>${c.sym.replace('USDT', '')}<small>/USDT</small>${sc ? `<span class="sc ${sc.cls}">${sc.score} ${sc.status}</span>` : ''}</span><span class="c ${c.chg >= 0 ? 'up' : 'dn'}">${c.chg >= 0 ? '+' : ''}${c.chg.toFixed(2)}%</span><span class="bd">${TFS.map(([k, l]) => badge(tr, k, l)).join('')}</span></div>`;
     }).join('');
   }
@@ -2364,7 +2607,7 @@ if (typeof document !== 'undefined') (() => {
     try {
       const tr = await trendsFor(sym);
       if (sym !== S.sel) return;
-      S.trends[sym] = Object.fromEntries(Object.entries(tr).map(([k, v]) => [k, { trend: v.trend }]));
+      S.trends[sym] = Object.fromEntries(Object.entries(tr).map(([k, v]) => [k, { trend: v.trend }])); SPK[sym] = ((tr['1h'] && tr['1h'].c) || []).slice(-24).map(k => k.close);
       $('tfTable').innerHTML = TFS.map(([k, l]) => {
         const t = tr[k], e = t.last;
         return `<div class="tf"><b>${l}</b><span class="${t.trend === 1 ? 'up' : t.trend === -1 ? 'dn' : 'mu'}">${t.trend === 1 ? 'WZROST ↑' : t.trend === -1 ? 'SPADEK ↓' : 'brak'}</span><small>${e ? e.kind + ' ' + (e.dir === 1 ? '↑' : '↓') + ' @ ' + fmt(e.price) + ' · ' + fdate(t.c[e.idx].time) : '—'}</small></div>`;
@@ -2492,7 +2735,7 @@ if (typeof document !== 'undefined') (() => {
       if (sym !== S.sel) return;
       const { tr, res, zones, vp, price, atr4, pos } = cs;
       renderDbar(sym, pos); S.cs = { sym, cs }; renderSbar(sym, cs);
-      S.trends[sym] = Object.fromEntries(Object.entries(tr).map(([k, v]) => [k, { trend: v.trend }]));
+      S.trends[sym] = Object.fromEntries(Object.entries(tr).map(([k, v]) => [k, { trend: v.trend }])); SPK[sym] = ((tr['1h'] && tr['1h'].c) || []).slice(-24).map(k => k.close);
       S.scores[sym] = summ(res)
       logSignal(sym, cs);
       zones.forEach(z => {
@@ -3165,6 +3408,18 @@ if (typeof document !== 'undefined') (() => {
       ${res.stop != null ? `<div class="oc-s mu">Stop (za strefą) <b class="mono" style="color:var(--txt)">${fmt(res.stop)}</b></div>` : ''}
       ${ocInfo(sym, cs)}
       <div class="oc-b"><button id="btnWhy" class="${$('info').classList.contains('open') ? 'on' : ''}">Skąd ten wynik?</button><button id="btnPlanGo">Planer</button></div>`;
+    if (document.body.classList.contains('fold')) {
+      const ag = res.bias ? ['1d', '4h', '1h', '15m'].filter(k => tr[k] && tr[k].trend === res.bias).length : 0;
+      const wnh = (ocInfo(sym, cs).match(/<div class="wn">.*?<\/div>/g) || []).join('');
+      el.innerHTML = `<div class="oc-h">Ocena coina</div><div class="fo1"><div class="fbig">${res.score}<small>/100</small></div><div class="fo2"><span class="fpill ${stCls(res)}">${res.status}</span>${dir ? `<b class="${res.bias > 0 ? 'up' : 'dn'}">${res.bias > 0 ? '▲' : '▼'} ${dir} · ${ag} z 4</b>` : '<span class="mu">bez kierunku</span>'}</div></div>${wnh ? `<div class="oc-i">${wnh}</div>` : ''}<div class="oc-b"><button id="btnWhy">Skąd ten wynik?</button><button id="btnPlanGo">Planer</button></div>`;
+      $('ivCard').innerHTML = '<div class="oc-h">Interwały</div><div class="ivg">' + TFS.map(([k, l]) => { const t = tr[k] ? tr[k].trend : 0; return `<div class="iv"><span>${l}</span> <b>${t > 0 ? 'Long' : t < 0 ? 'Short' : 'brak'}</b></div>`; }).join('') + '</div>';
+      const u1 = anatUnswept(tr['1d'].c, cs.price);
+      $('liqRow').innerHTML = `<span class="lq">Liq 1D: ${u1 && u1.up ? `<b>${fmt(u1.up.price)}</b> ↑` : '–'} · ${u1 && u1.dn ? `<b>${fmt(u1.dn.price)}</b> ↓` : '–'}</span><button id="btnJGo" class="go">Dziennik</button>`;
+      $('btnJGo').onclick = () => openR('j');
+      const cn = S.coins.find(c => c.sym === sym), nm = sym.replace('USDT', '');
+      $('pxTop').innerHTML = `<span class="mu">Cena:</span> <b>${fmt(cs.price)}</b>${cn ? ` <span class="${cn.chg >= 0 ? 'up' : 'dn'}">${cn.chg >= 0 ? '+' : ''}${cn.chg.toFixed(2).replace('.', ',')}%</span>` : ''}`;
+      $('coinIc').textContent = nm.slice(0, 1); $('coinIc').style.setProperty('--h', ({ BTC: 34, ETH: 245, SOL: 275, BNB: 45, XRP: 210, DOGE: 48, ADA: 220, TRX: 0, LINK: 225 })[nm] ?? ([...nm].reduce((a, ch) => a + ch.charCodeAt(0), 0) * 47 % 360));
+    }
     ocBtc(sym, cs);
     $('btnWhy').onclick = () => { $('info').classList.toggle('open'); $('btnWhy').classList.toggle('on'); window.dispatchEvent(new Event('resize')); };
     $('btnPlanGo').onclick = () => openR('plan', true);
@@ -3189,7 +3444,7 @@ if (typeof document !== 'undefined') (() => {
 
   // ---------- Mapa i Makro z Busoli: ten sam kod co w aplikacji, w ramce (te same dane i ten sam motyw) ----------
   const EVSRC = location.protocol === 'file:' ? 'https://trendrider-crypto.github.io/busola/' : '../';
-  const EV = { map: ['evMap', 'btnMapV', () => EVSRC + '?embed=map&skin=nav'], mk: ['evMk', 'btnMkV', () => EVSRC + '?embed=macro'] };
+  const EV = { map: ['evMap', 'btnMapV', () => EVSRC + '?embed=map&skin=fold'], mk: ['evMk', 'btnMkV', () => EVSRC + '?embed=macro&skin=fold'] };
   let VCUR = null;
   function leaveV() {
     VCUR = null; document.body.classList.remove('ev'); $('evView').hidden = true;
@@ -3412,6 +3667,50 @@ if (typeof document !== 'undefined') (() => {
   }, 5000);
 
   (async () => { renderMacro(); await loadCoins(); renderList(); renderTop3(); renderJournal(); draw(); })();
+})();
+</script>
+<script>
+// ---------- układ Fold: zakładki wykresu, panel ustawień, przewijanie listy ----------
+(function () {
+  const $ = id => document.getElementById(id), B = document.body;
+  const resize = () => setTimeout(() => window.dispatchEvent(new Event('resize')), 30);
+  function setVT(v) {
+    B.dataset.vt = v;
+    [...$('vtabs').children].forEach(b => b.classList.toggle('on', b.dataset.v === v));
+    resize();
+  }
+  setVT('c');
+  $('vtabs').onclick = e => { const b = e.target.closest('button'); if (b) setVT(b.dataset.v); };
+  // „Skąd ten wynik?” w ocenie otwiera zakładkę Szczegóły
+  document.addEventListener('click', e => { if (e.target.closest('#btnWhy')) setVT(B.dataset.vt === 'd' ? 'c' : 'd'); }, true);
+  const sp = $('setPop');
+  const setP = on => { sp.hidden = !on; $('btnSetP').classList.toggle('on', on); };
+  $('btnSetP').onclick = () => setP(sp.hidden);
+  $('setClose').onclick = () => setP(false);
+  document.addEventListener('pointerdown', e => { if (!sp.hidden && !e.target.closest('#setPop') && !e.target.closest('#btnSetP')) setP(false); });
+  // na komputerze kółko myszy przewija listę coinów w bok
+  $('list').addEventListener('wheel', e => { if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) { $('list').scrollLeft += e.deltaY; e.preventDefault(); } }, { passive: false });
+  // wybrany coin zawsze widoczny na liście (np. po zmianie strzałkami)
+  let lastSel = null;
+  new MutationObserver(() => {
+    const r = $('list').querySelector('.row.sel'); if (!r || r.dataset.s === lastSel) return; lastSel = r.dataset.s;
+    const L = $('list'), a = r.offsetLeft - L.offsetLeft, b = a + r.offsetWidth;
+    if (a < L.scrollLeft || b > L.scrollLeft + L.clientWidth) L.scrollTo({ left: Math.max(0, a - 12), behavior: 'smooth' });
+  }).observe($('list'), { childList: true });
+
+  // ---------- etykiety jak na makiecie (bez zmiany logiki) ----------
+  const mo = (el, fn, opt) => { if (!el) return; fn(); new MutationObserver(fn).observe(el, opt || { childList: true, characterData: true, subtree: true }); };
+  mo($('clock'), () => { const t = $('clock').textContent; $('clk2').textContent = t ? t.slice(0, 5) : ''; });
+  const src = () => { const d = $('btnDemo').classList.contains('on'), ex = $('selEx'); $('srcChip').textContent = d ? 'Demo' : ex.options[ex.selectedIndex].text.replace('Giełda: ', ''); $('srcChip').classList.toggle('demo', d); };
+  mo($('btnDemo'), src, { attributes: true, attributeFilter: ['class'] }); $('selEx').addEventListener('change', src);
+  mo($('btnSET'), () => $('btnSET').dataset.l = $('btnSET').textContent.replace('⚙ N=', '⚙ Pivot N=') + ' ▾');
+  mo($('btnScan'), () => { const t = $('btnScan').textContent; $('btnScan').dataset.l = /^Skanuj trendy/.test(t) ? '↻ Skanuj' : t; });
+  document.querySelectorAll('#nav button').forEach(b => mo(b, () => { const m = b.textContent.match(/^(.*?) \((\d+)\)$/); if (m) b.innerHTML = m[1] + '<span class="n' + (m[2] === '0' ? ' z' : '') + '">' + m[2] + '</span>'; }));
+  const vp = () => $('btnVP').classList.toggle('on', $('chkVP').checked);
+  $('btnVP').onclick = () => { $('chkVP').click(); vp(); }; $('chkVP').addEventListener('change', vp); vp();
+  const dots = () => { const L = $('list'), n = Math.min(8, Math.max(1, Math.ceil(L.scrollWidth / Math.max(1, L.clientWidth)))), a = Math.min(n - 1, Math.round(L.scrollLeft / Math.max(1, L.clientWidth)));
+    $('ldots').innerHTML = n > 1 ? Array.from({ length: n }, (_, i) => `<i class="${i === a ? 'on' : ''}"></i>`).join('') : ''; };
+  $('list').addEventListener('scroll', dots, { passive: true }); new MutationObserver(dots).observe($('list'), { childList: true }); window.addEventListener('resize', dots); dots();
 })();
 </script>
 </body>
