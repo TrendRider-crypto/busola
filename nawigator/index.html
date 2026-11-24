@@ -535,6 +535,15 @@ body.fold .brand .bn{font-size:13px;letter-spacing:2px}
 body.fold #sbar .oc-b{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr)}body.fold #sbar .oc-b button{font-size:12px;padding:0 4px}
 body.fold #scoreCard .lay{grid-template-columns:minmax(0,1fr) 44px 36px}body.fold #scoreCard .lay span:first-child{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 body.fold #evView .evw,body.fold #evView iframe{background:transparent;border:0}
+
+/* ---- Jasny motyw (Fold): grafitowe tło jak w ciemnym, wszystkie kafle białe ---- */
+html.light body.fold{background:radial-gradient(1200px 600px at 55% -10%,#2f3746 0,transparent 60%),linear-gradient(180deg,#1d222c,#151920);--shd:0 10px 26px rgba(0,0,0,.35);--gl:#e3e8ec}
+html.light body.fold #top{background:linear-gradient(180deg,rgba(31,37,48,.9),rgba(23,27,35,.9));border-right-color:rgba(255,255,255,.08);--mut:#8e97a7;--txt:#e9edf3;--gold:#d9b56c;--hi:rgba(255,255,255,.09)}
+html.light body.fold #nav button.on,html.light body.fold #btnSetP.on{background:linear-gradient(180deg,rgba(78,88,106,.75),rgba(48,56,70,.75));box-shadow:inset 0 1px 0 rgba(255,255,255,.09),0 6px 16px rgba(0,0,0,.3)}
+html.light body.fold #top #nav button .n,html.light body.fold #top .bs{color:#8e97a7}
+html.light body.fold #srchBox,html.light body.fold #clock,html.light body.fold #clk2,html.light body.fold #btnTheme,html.light body.fold #srcChip,html.light body.fold #tbar .applink{background:#fff;border-color:transparent;box-shadow:var(--shd)}
+html.light body.fold #evView,html.light body.fold #evView .evw{border-color:transparent;box-shadow:none}
+html.light body.fold #list .row{background:linear-gradient(180deg,#eef1f4,#e6eaee);border-color:#dde2e7;box-shadow:none}html.light body.fold #list .row.sel{border-color:var(--acc);box-shadow:0 0 0 1px rgba(0,112,78,.3)}
 </style>
 </head>
 <body>
