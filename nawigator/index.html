@@ -1846,7 +1846,34 @@ const Engine = (() => {
     return { side, lastT: isFinite(lastT) ? lastT : null, hit };
   }
 
-  return { backtestSR, SR_VARIANTS, srSplit, srBoot, srVerdict, srGroups, backtestBR, brGroups, BR_VARIANTS, dvLiq, rankStudy, rankStat, lineAt, lineScan, SESSIONS, sessionState, fmtDur, committee, sizing, timeMachine, backtestCoin, backtestDV, backtestDV3, dv3, dv3Long, dv3Groups, dvGroups, daVinci, trendFollow, btBaseline, btCompare, btStats, btGroups, aggFunding, derivState, derivReading, hurst, hurstState, findPivots, analyze, atrArr, zones, volumeProfile, sweeps, scoreSetup, makeSignal, isDuplicate, resolveTrade, journalStats };
+  // ---------- Ruchy dnia (jak na Mapie): zmiana od 00:00 UTC i miejsce w rankingu ----------
+  // Tylko świece 1H zamknięte do chwili t. W pierwszych 4 godzinach po północy UTC okno 24 godz. (jak na Mapie).
+  function dayChgAt(c1h, t) {
+    if (!c1h || !c1h.length) return null;
+    let lo = 0, hi = c1h.length;   // liczba świec zamkniętych do t
+    while (lo < hi) { const m = (lo + hi) >> 1; if ((c1h[m].time + 3600) * 1000 <= t) lo = m + 1; else hi = m; }
+    const n = lo; if (n < 2) return null;
+    const last = c1h[n - 1].close, d = new Date(t), ds = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+    let ref = null;
+    if (t - ds >= 4 * 3600e3) { const k = c1h.findIndex(x => x.time * 1000 >= ds); if (k >= 0 && k < n) ref = c1h[k].open; }
+    else { for (let k = n - 1; k >= 0; k--) if ((c1h[k].time + 3600) * 1000 <= t - 24 * 3600e3) { ref = c1h[k].close; break; } }
+    return ref > 0 ? (last / ref - 1) * 100 : null;
+  }
+  // Reguła ustalona z góry (27.11.2026): coin jest "w Ruchach dnia" dla LONG, gdy jest na plusie i w najsilniejszej ćwiartce coinów,
+  // dla SHORT, gdy jest na minusie i w najsłabszej ćwiartce. Ćwiartka = round(n / 4), min. 1.
+  function rankTag(dir, chg, all) {
+    const v = all.filter(x => x != null && isFinite(x)); if (chg == null || !isFinite(chg) || v.length < 4) return null;
+    const n = v.length, K = Math.max(1, Math.round(n / 4)), pos = 1 + v.filter(x => x > chg).length;   // 1 = najsilniejszy
+    const inMap = dir > 0 ? (chg > 0 && pos <= K) : (chg < 0 && pos > n - K);
+    return { pos, n, chg: +chg.toFixed(2), inMap };
+  }
+  // Przepływ jak na Mapie: znak zmiany ceny i OI (kontrakty) w tym samym oknie 4 godz., te same progi (cena 0,2%, OI 0,1%).
+  function flowLabel(p4, oi4) {
+    if (p4 == null || oi4 == null || !isFinite(p4) || !isFinite(oi4)) return null;
+    if (Math.abs(p4) <= 0.2 || Math.abs(oi4) <= 0.1) return 'flat';
+    return p4 > 0 ? (oi4 > 0 ? 'lb' : 'sc') : (oi4 > 0 ? 'sb' : 'lu');
+  }
+  return { dayChgAt, rankTag, flowLabel, backtestSR, SR_VARIANTS, srSplit, srBoot, srVerdict, srGroups, backtestBR, brGroups, BR_VARIANTS, dvLiq, rankStudy, rankStat, lineAt, lineScan, SESSIONS, sessionState, fmtDur, committee, sizing, timeMachine, backtestCoin, backtestDV, backtestDV3, dv3, dv3Long, dv3Groups, dvGroups, daVinci, trendFollow, btBaseline, btCompare, btStats, btGroups, aggFunding, derivState, derivReading, hurst, hurstState, findPivots, analyze, atrArr, zones, volumeProfile, sweeps, scoreSetup, makeSignal, isDuplicate, resolveTrade, journalStats };
 })();
 // ===================== ENGINE-END =====================
 
@@ -1855,7 +1882,8 @@ if (typeof document !== 'undefined') (() => {
   const STEP = { '15m': 900, '1h': 3600, '4h': 14400, '1d': 86400, '1w': 604800 };
   const DEMO_SYMS = 'BTC ETH SOL XRP BNB DOGE ADA AVAX LINK TRX HYPE SUI LTC DOT BCH NEAR APT ARB OP INJ ATOM FIL TON AAVE UNI ETC XLM HBAR ICP RUNE SEI'.split(' ');
   // wykresiki na kartach: ostatnie 24 zamknięcia 1H z tego samego skanu (tylko do wyświetlenia)
-  const SPK = {};
+  const SPK = {}, DAYC = {}, P4C = {};   // DAYC: zmiana od 00:00 UTC, P4C: zmiana ceny w 4 godz. (do opisu sygnałów w Dzienniku)
+  const flowNote = (sym, cs) => { const c = (cs.tr['1h'] && cs.tr['1h'].c) || [], now = Date.now(); DAYC[sym] = Engine.dayChgAt(c, now); let r = null; for (let k = c.length - 1; k >= 0; k--) if ((c[k].time + 3600) * 1000 <= now - 4 * 3600e3) { r = c[k].close; break; } P4C[sym] = r > 0 && cs.price > 0 ? (cs.price / r - 1) * 100 : null; };
   const sparkSvg = a => { if (!a || a.length < 2) return '<svg class="spk" viewBox="0 0 72 32"></svg>'; const mn = Math.min(...a), mx = Math.max(...a), r = mx - mn || 1; const d = a.map((v, i) => (i ? 'L' : 'M') + (i * 72 / (a.length - 1)).toFixed(1) + ' ' + (30 - (v - mn) / r * 28).toFixed(1)).join(''); return `<svg class="spk ${a[a.length - 1] >= a[0] ? 'u' : 'd'}" viewBox="0 0 72 32" preserveAspectRatio="none"><path d="${d}"/></svg>`; };
   const S = { coins: [], sel: 'BTCUSDT', tf: '4h', N: 3, demo: false, cache: {}, trends: {}, scores: {}, scanning: false, lastPrice: '' };
 
@@ -2412,7 +2440,7 @@ if (typeof document !== 'undefined') (() => {
           const cs = await computeSetup(c.sym);
           S.trends[c.sym] = Object.fromEntries(Object.entries(cs.tr).map(([k, v]) => [k, { trend: v.trend }]));
           S.scores[c.sym] = summ(cs.res)
-          SPK[c.sym] = ((cs.tr['1h'] && cs.tr['1h'].c) || []).slice(-24).map(k => k.close);
+          SPK[c.sym] = ((cs.tr['1h'] && cs.tr['1h'].c) || []).slice(-24).map(k => k.close); flowNote(c.sym, cs);
           logSignal(c.sym, cs); structObs(c.sym, cs);
         } catch (e) { S.trends[c.sym] = null; }
         done++; $('btnScan').textContent = `Skanuję ${done}/${S.coins.length}`; $('scanBar').firstChild.firstChild.style.width = (done / S.coins.length * 100) + '%'; $('scanBar').lastChild.textContent = `${done}/${S.coins.length} rynków`;
@@ -2423,7 +2451,7 @@ if (typeof document !== 'undefined') (() => {
     await Promise.all([worker(), worker(), worker(), worker()]);
     S.scanning = false; $('btnScan').textContent = 'Skanuj trendy (100)'; $('scanBar').hidden = true;
     $('sortSel').value = 'sc'; renderList(); renderTop3();
-    updateJournal(); structAfterScan();
+    tagJournal(); updateJournal(); structAfterScan();
   }
 
   // ---------- lista ----------
@@ -2784,6 +2812,20 @@ if (typeof document !== 'undefined') (() => {
     const sig = Engine.makeSignal(sym, cs.res, cs.price, Date.now());
     if (!sig || Engine.isDuplicate(jl(), sig)) return;
     sig.ex = U.ex; jl().push(sig); saveJ(); renderJournal();
+    if (!S.scanning) { flowNote(sym, cs); tagJournal(); }
+  }
+  // Opis sygnału z Mapy (nie zmienia reguły TRIGGER): miejsce w Ruchach dnia wśród coinów skanera i przepływ cena × OI z 4 godz.
+  // Opisujemy tylko świeże sygnały (do 2 godz.), żeby ranking i OI były z chwili sygnału.
+  async function tagJournal() {
+    const now = Date.now(), fresh = jl().filter(x => now - x.t < 2 * 3600e3 && (x.rk === undefined || x.flow === undefined));
+    for (const x of fresh) {
+      if (x.rk === undefined) x.rk = Engine.rankTag(x.dir, DAYC[x.sym], S.coins.map(c => DAYC[c.sym]));
+      if (x.flow === undefined) {
+        x.flow = null;
+        if (!S.demo) { try { const h = await getJSON(`https://fapi.binance.com/futures/data/openInterestHist?symbol=${x.sym}&period=5m&limit=49`); const a = +h[0].sumOpenInterest, b = +h[h.length - 1].sumOpenInterest; const oi4 = a > 0 ? (b / a - 1) * 100 : null; x.oi4 = oi4 == null ? null : +oi4.toFixed(2); x.p4 = P4C[x.sym] == null ? null : +P4C[x.sym].toFixed(2); x.flow = Engine.flowLabel(P4C[x.sym], oi4); } catch (e) { /* brak OI: zostaje bez opisu */ } }
+      }
+    }
+    if (fresh.length) { saveJ(); renderJournal(); }
   }
   async function klinesSince(sym, t0) {
     if (S.demo) return klines(sym, '15m');
@@ -2804,15 +2846,16 @@ if (typeof document !== 'undefined') (() => {
       return `<span>${lab}</span><b>${s.n}</b><b>${s.winRate == null ? '–' : Math.round(s.winRate * 100) + '%'}</b><b class="${s.sumR > 0 ? 'up' : s.sumR < 0 ? 'dn' : ''}">${s.n ? fR(s.sumR) : '–'}</b><b>${s.avgR == null ? '–' : fR(s.avgR)}</b><b>${s.pf == null ? '–' : s.pf === Infinity ? '∞' : s.pf.toFixed(2)}</b>`;
     };
     const n = Engine.journalStats(list).n;
-    $('jStats').innerHTML = `<div class="jst"><span class="h">${S.demo ? 'DEMO' : 'LIVE'}</span><span class="h">zamk.</span><span class="h">wygr.</span><span class="h">suma</span><span class="h">śr.</span><span class="h">PF</span>${row('Wszystkie', list)}${row('z LS', list.filter(x => x.ls > 0))}${row('bez LS', list.filter(x => !x.ls))}${row('z 1W', list.filter(x => x.w1 !== false))}${row('bez 1W', list.filter(x => x.w1 === false))}</div>` +
+    $('jStats').innerHTML = `<div class="jst"><span class="h">${S.demo ? 'DEMO' : 'LIVE'}</span><span class="h">zamk.</span><span class="h">wygr.</span><span class="h">suma</span><span class="h">śr.</span><span class="h">PF</span>${row('Wszystkie', list)}${row('z LS', list.filter(x => x.ls > 0))}${row('bez LS', list.filter(x => !x.ls))}${row('w Ruchach dnia', list.filter(x => x.rk && x.rk.inMap))}${row('poza Ruchami', list.filter(x => x.rk && !x.rk.inMap))}${row('przepływ zgodny', list.filter(x => x.flow && x.flow === (x.dir > 0 ? 'lb' : 'sb')))}${row('przepływ inny', list.filter(x => x.flow && x.flow !== (x.dir > 0 ? 'lb' : 'sb')))}</div>` +
       `<div class="mu" style="font-size:11px">${n < 30 ? `Mało danych (${n} zamkniętych): wnioski dopiero od ok. 30 zamkniętych sygnałów.${S.demo ? ' To dane syntetyczne, tylko do testu.' : ''}` : 'Wynik w R = wielokrotność ryzyka na transakcję (1R = odległość wejścia od stopu).'}</div>`;
     const stTxt = x => x.status === 'open' ? `<span class="wr">otwarty${x.mfe ? ' · MFE ' + x.mfe.toFixed(1) + 'R' : ''}</span>` : x.status === 'win' ? `<b class="up">${fR(x.r)}</b>` : x.status === 'loss' ? `<b class="dn">${fR(x.r)}</b>` : `<span class="${x.r >= 0 ? 'up' : 'dn'}">wygasł ${fR(x.r)}</span>`;
-    $('jList').innerHTML = [...list].reverse().map(x => `<div class="jrow"><span><b class="${x.dir > 0 ? 'up' : 'dn'}">${x.sym.replace('USDT', '')} ${x.dir > 0 ? '↑ LONG' : '↓ SHORT'}</b> <small>${fdate(x.t / 1000)} · ${x.score} pkt${x.ls ? ' (LS +' + x.ls + '%)' : ''} · ${esc(x.zone)}</small></span><span>${stTxt(x)}</span><small class="mu" style="grid-column:1/3">we ${fmt(x.entry)} · st ${fmt(x.stop)} · cel ${fmt(x.entry + x.dir * (x.rr || 2) * Math.abs(x.entry - x.stop))}</small></div>`).join('') || '<span class="mu">Brak sygnałów. Włącz „Auto-skan" albo uruchom „Skanuj trendy", a TRIGGER zapisze się tutaj.</span>';
+    $('jList').innerHTML = [...list].reverse().map(x => `<div class="jrow"><span><b class="${x.dir > 0 ? 'up' : 'dn'}">${x.sym.replace('USDT', '')} ${x.dir > 0 ? '↑ LONG' : '↓ SHORT'}</b> <small>${fdate(x.t / 1000)} · ${x.score} pkt${x.ls ? ' (LS +' + x.ls + '%)' : ''} · ${esc(x.zone)}${x.rk ? ` · Ruchy dnia ${x.rk.pos}/${x.rk.n}${x.rk.inMap ? ' ✓' : ''}` : ''}${x.flow ? ' · ' + FLOWLAB[x.flow] : ''}</small></span><span>${stTxt(x)}</span><small class="mu" style="grid-column:1/3">we ${fmt(x.entry)} · st ${fmt(x.stop)} · cel ${fmt(x.entry + x.dir * (x.rr || 2) * Math.abs(x.entry - x.stop))}</small></div>`).join('') || '<span class="mu">Brak sygnałów. Włącz „Auto-skan" albo uruchom „Skanuj trendy", a TRIGGER zapisze się tutaj.</span>';
   }
+  const FLOWLAB = { lb: 'Nowe longi', sb: 'Nowe shorty', sc: 'Zamykanie shortów', lu: 'Zamykanie longów', flat: 'Bez wyraźnego ruchu' };
   const csvEsc = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
   function journalCsv() {
-    const head = ['data', 'coin', 'kierunek', 'wynik', 'wynik_baza', 'LS_%', 'strefa', 'wejscie', 'stop', 'cel', 'status', 'R', 'MFE_R', 'MAE_R', 'uzyto_1W'];
-    return [head.join(',')].concat(jl().map(x => [new Date(x.t).toISOString(), x.sym, x.dir > 0 ? 'LONG' : 'SHORT', x.score, x.base, x.ls || 0, x.zone, x.entry, x.stop, x.entry + x.dir * (x.rr || 2) * Math.abs(x.entry - x.stop), x.status, x.r == null ? '' : x.r.toFixed(2), (x.mfe || 0).toFixed(2), (x.mae || 0).toFixed(2), x.w1 === false ? 'nie' : 'tak'].map(csvEsc).join(','))).join('\n');
+    const head = ['data', 'coin', 'kierunek', 'wynik', 'wynik_baza', 'LS_%', 'strefa', 'wejscie', 'stop', 'cel', 'status', 'R', 'MFE_R', 'MAE_R', 'uzyto_1W', 'zmiana_dnia_%', 'miejsce_dnia', 'coinow', 'w_ruchach_dnia', 'cena_4g_%', 'OI_4g_%', 'przeplyw'];
+    return [head.join(',')].concat(jl().map(x => [new Date(x.t).toISOString(), x.sym, x.dir > 0 ? 'LONG' : 'SHORT', x.score, x.base, x.ls || 0, x.zone, x.entry, x.stop, x.entry + x.dir * (x.rr || 2) * Math.abs(x.entry - x.stop), x.status, x.r == null ? '' : x.r.toFixed(2), (x.mfe || 0).toFixed(2), (x.mae || 0).toFixed(2), x.w1 === false ? 'nie' : 'tak', x.rk ? x.rk.chg : '', x.rk ? x.rk.pos : '', x.rk ? x.rk.n : '', x.rk ? (x.rk.inMap ? 'tak' : 'nie') : '', x.p4 ?? '', x.oi4 ?? '', x.flow ? FLOWLAB[x.flow] : ''].map(csvEsc).join(','))).join('\n');
   }
 
 
@@ -3028,7 +3071,9 @@ if (typeof document !== 'undefined') (() => {
   }
   const fR = v => v == null ? '–' : (v > 0 ? '+' : '') + v.toFixed(2) + 'R';
   function renderBt(trades, base, meta) {
-    renderG([...(base && base.length ? [Engine.btCompare(trades, base)] : []), ...Engine.btGroups(trades, meta)]);
+    const tg = trades.filter(x => x.rk), S_ = Engine.btStats;
+    const rkG = tg.length ? [{ title: 'Ruchy dnia z Mapy (test filtra, reguła z 27.11)', rows: [['Wszystkie z rankingiem', tg], ['W Ruchach dnia, zgodny kierunek', tg.filter(x => x.rk.inMap)], ['Poza Ruchami dnia', tg.filter(x => !x.rk.inMap)], ['  w tym LONG w Ruchach', tg.filter(x => x.rk.inMap && x.dir > 0)], ['  w tym SHORT w Ruchach', tg.filter(x => x.rk.inMap && x.dir < 0)]].map(([label, l]) => ({ label, s: S_(l) })) }] : [];
+    renderG([...(base && base.length ? [Engine.btCompare(trades, base)] : []), ...rkG, ...Engine.btGroups(trades, meta)], tg.length ? '<div class="mu" style="margin:6px 0">Ruchy dnia: LONG liczy się, gdy coin jest na plusie od 00:00 UTC i w najsilniejszej ćwiartce coinów testu, SHORT gdy na minusie i w najsłabszej ćwiartce (jak „Najsilniejsze/Najsłabsze” na Mapie). Kryterium ustalone przed wynikami: filtr uznajemy, jeśli w ≥ 3 z 4 okien (teraz, 180, 360, 540 dni wstecz) średnie R „W Ruchach dnia” jest wyższe niż „Wszystkie z rankingiem”, a w oknie 540 dni (nieoglądanym) jest też powyżej zera, przy co najmniej 60 transakcjach w filtrze na okno.</div>' : '');
   }
   function renderG(G, note) {
     const pf = v => v == null ? '–' : v === Infinity ? '∞' : v.toFixed(2);
@@ -3037,7 +3082,7 @@ if (typeof document !== 'undefined') (() => {
   }
   async function runBacktest() {
     if (BT.running) { BT.stop = true; return; }
-    BT.running = true; BT.stop = false; BT.trades = []; BT.base = []; BT.skipped = []; BT.funnel = {}; BT.thesis = {};
+    BT.running = true; BT.stop = false; BT.trades = []; BT.base = []; BT.skipped = []; BT.funnel = {}; BT.thesis = {}; BT.h1 = {};
     $('btGo').textContent = 'Stop'; $('btCsv').hidden = true; $('btRes').innerHTML = '';
     const nC = +$('btN').value, days = +$('btD').value, off = +$('btO').value, cost = +$('btC').value || 0, now = Date.now() - off * 86400e3, startMs = now - days * 86400e3, fetchEnd = off ? Math.min(Date.now(), now + 8 * 86400e3) : null, slip = +$('btS').value || 0;   // +8 dni: zamknięcie transakcji z końca okresu
     const coins = S.coins.slice(0, nC), t0 = Date.now();
@@ -3051,14 +3096,19 @@ if (typeof document !== 'undefined') (() => {
           for (const [tf, back] of [['15m', 3], ['1h', 14], ['4h', 60], ['1d', 300], ['1w', 1400]]) { d[tf] = await klinesRange(sym, tf, startMs - back * 86400e3, fetchEnd); if (BT.stop) break; }
           if (BT.stop) break;
           const tr = await Engine.backtestCoin(d, { N: S.N, startMs, endMs: now, costPct: cost, slipPct: slip, use1w: U.use1w }, async f => { say(`liczę ${Math.round(f * 100)}%`); await sleep(0); return BT.stop; });
-          BT.trades.push(...tr);
+          BT.trades.push(...tr); BT.h1[sym] = d['1h'];
           BT.base.push(...Engine.btBaseline(d, tr, { N: S.N, startMs, endMs: now, costPct: cost + slip }, 1000 + i));
         } catch (e) { BT.skipped.push(sym.replace('USDT', '')); }
         rend();
       }
       $('btProg').textContent = (BT.stop ? 'Zatrzymano. ' : 'Gotowe. ') + `Okres ${new Date(startMs).toLocaleDateString('pl-PL')}–${new Date(now).toLocaleDateString('pl-PL')}. Transakcji: ${BT.trades.length}, czas ${Math.round((Date.now() - t0) / 1000)} s, ${S.demo ? 'dane DEMO (sztuczne, tylko test działania)' : 'dane Binance'}, 1W ${U.use1w ? 'włączony' : 'wyłączony'}, koszt ${cost}%.` + (BT.skipped.length ? ` Pominięte (błąd pobierania): ${BT.skipped.join(', ')}.` : '');
     } catch (e) { $('btProg').textContent = 'Błąd: ' + e.message + ' (przerwane; wyniki do tej pory poniżej)'; }
-    BT.running = false; $('btGo').textContent = 'Start'; $('btCsv').hidden = !BT.trades.length; rend();
+    tagRanks(); BT.running = false; $('btGo').textContent = 'Start'; $('btCsv').hidden = !BT.trades.length; rend();
+  }
+  // Ruchy dnia dla każdej transakcji: ranking liczony na wszystkich coinach testu, tylko z cen znanych w chwili sygnału.
+  function tagRanks() {
+    const H = BT.h1 || {}, syms = Object.keys(H); if (syms.length < 4) return;
+    for (const x of BT.trades) { if (!H[x.sym]) continue; const all = syms.map(s => Engine.dayChgAt(H[s], x.t)); x.rk = Engine.rankTag(x.dir, Engine.dayChgAt(H[x.sym], x.t), all); }
   }
 
   // ---------- test rankingu dnia ----------
@@ -3201,8 +3251,8 @@ if (typeof document !== 'undefined') (() => {
   $('btTF').onclick = runTrendTest;
   $('btCsv').onclick = async () => {
     const gen = BT.trades.length && !BT.trades[0].pts;
-    const head = gen ? ['data', 'coin', 'kierunek', 'wariant', 'ext_ATR', 'glebokosc_sweepu_ATR', 'koszt_R', 'status', 'R_brutto', 'R_netto'] : ['data', 'coin', 'kierunek', 'wynik', 'wynik_baza', 'LS_%', 'strefa', 'wejscie_typ', 'pkt_trend', 'pkt_strefa', 'pkt_vp', 'pkt_hurst', 'status', 'R_brutto', 'R_netto'];
-    const row = x => gen ? [new Date(x.t).toISOString(), x.sym, x.dir > 0 ? 'LONG' : 'SHORT', x.variant, x.ext == null ? '' : x.ext.toFixed(2), x.depthAtr == null ? '' : x.depthAtr.toFixed(2), x.costR == null ? '' : x.costR.toFixed(3), x.status, x.r.toFixed(2), x.rNet.toFixed(3)] : [new Date(x.t).toISOString(), x.sym, x.dir > 0 ? 'LONG' : 'SHORT', x.score, x.base, x.ls, x.zone, x.entryKind, x.pts.trend, x.pts.zone, x.pts.vp, x.pts.hurst, x.status, x.r.toFixed(2), x.rNet.toFixed(3)];
+    const head = gen ? ['data', 'coin', 'kierunek', 'wariant', 'ext_ATR', 'glebokosc_sweepu_ATR', 'koszt_R', 'status', 'R_brutto', 'R_netto'] : ['data', 'coin', 'kierunek', 'wynik', 'wynik_baza', 'LS_%', 'strefa', 'wejscie_typ', 'pkt_trend', 'pkt_strefa', 'pkt_vp', 'pkt_hurst', 'status', 'R_brutto', 'R_netto', 'zmiana_dnia_%', 'miejsce_dnia', 'coinow', 'w_ruchach_dnia'];
+    const row = x => gen ? [new Date(x.t).toISOString(), x.sym, x.dir > 0 ? 'LONG' : 'SHORT', x.variant, x.ext == null ? '' : x.ext.toFixed(2), x.depthAtr == null ? '' : x.depthAtr.toFixed(2), x.costR == null ? '' : x.costR.toFixed(3), x.status, x.r.toFixed(2), x.rNet.toFixed(3)] : [new Date(x.t).toISOString(), x.sym, x.dir > 0 ? 'LONG' : 'SHORT', x.score, x.base, x.ls, x.zone, x.entryKind, x.pts.trend, x.pts.zone, x.pts.vp, x.pts.hurst, x.status, x.r.toFixed(2), x.rNet.toFixed(3), x.rk ? x.rk.chg : '', x.rk ? x.rk.pos : '', x.rk ? x.rk.n : '', x.rk ? (x.rk.inMap ? 'tak' : 'nie') : ''];
     const csv = [head.join(',')].concat(BT.trades.map(x => row(x).map(csvEsc).join(','))).join('\n');
     const ta = $('btTa'); ta.value = csv; ta.hidden = false; ta.focus(); ta.select();
     try { await navigator.clipboard.writeText(csv); $('btCsv').textContent = 'Skopiowano'; } catch (e) { $('btCsv').textContent = 'Zaznaczono, skopiuj ręcznie'; }
